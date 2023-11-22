@@ -1,4 +1,7 @@
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.9.0" width="400" height="374" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.9.1" width="200" height="187" />
+
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.9.1)](https://npmjs.com/package/bunshine)
+[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.9.1)](https://opensource.org/licenses/ISC)
 
 # Bunshine
 
@@ -70,7 +73,7 @@ app.patch('/users/:id', async ({ request, params, url }) => {
 });
 
 app.on404(c => {
-  // called when no other handler matches
+  // called when no handlers match the requested path
   console.log('404');
   return c.json({ error: 'Not found' }, { status: 404 });
 });
@@ -91,6 +94,10 @@ function authorize(authHeader: string) {
   }
 }
 ```
+
+### What is `c` here?
+
+### What does it mean that "every handler is treated like middleware"?
 
 ## Serving static files
 
@@ -183,29 +190,33 @@ const app = new Router();
 app.get('/', c => c.text('Hello World!'));
 
 // WebSocket routes
-app.socket.at('/games/rooms/:room', {
+app.socket.at<{ user: string }>('/games/rooms/:room', {
   // Optional. Allows you to specify arbitrary data to attach to ws.data.
   upgrade: ({ request, params, url }) => {
     const cookies = req.headers.get('cookie');
     const user = getUserFromCookies(cookies);
     return { user };
   },
+  // Optional. Allows you to deal with errors thrown by handlers.
+  error: (ws, error) => {
+    console.log('WebSocket error', error);
+  },
   // Optional. Called when the client connects
-  open(ws: ServerWebSocketWithData) {
+  open(ws) {
     const room = ws.data.params.room;
     const user = ws.data.user;
     markUserEntrance(room, user);
     ws.send(getGameState(room));
   },
   // Optional. Called when the client sends a message
-  message(ws: ServerWebSocketWithData, message: Buffer) {
+  message(ws, message) {
     const room = ws.data.params.room;
     const user = ws.data.user;
     const result = saveMove(room, user, message);
     ws.send(result);
   },
   // Optional. Called when the client disconnects
-  close(ws: ServerWebSocketWithData, code: number, message: string) {
+  close(ws, code, message) {
     const room = ws.data.params.room;
     const user = ws.data.user;
     markUserExit(room, user);
@@ -302,21 +313,21 @@ livePrice.addEventListener('price', e => {
 Bunshine uses the `path-to-regexp` package for processing path routes. For more
 info, checkout the [path-to-regexp docs](https://www.npmjs.com/package/path-to-regexp).
 
-| Path                       | URL                       | params                      |
-| -------------------------- | ------------------------- | --------------------------- |
-| `'/path'`                  | `'/path'`                 | `{}`                        |
-| `'/users/:id'`             | `'/users/123'`            | `{ id: '123' }`             |
-| `'/users/:id/groups'`      | `'/users/123/groups'`     | `{ id: '123' }`             |
-| `'/users/:id/groups/:gid'` | `'/users/123/groups/abc'` | `{ id: '123', gid: 'abc' }` |
-| `'/star/*'`                | `'/star/man'`             | `{ 0: 'man' }`              |
-| `'/star/*/can'`            | `'/star/man/can'`         | `{ 0: 'man' }`              |
-| `'/users/(\\d+)'`          | `'/users/123'`            | `{ 0: '123' }`              |
-| `/users/(\d+)/`            | `'/users/123'`            | `{ 0: '123' }`              |
-| `/users/([a-z-]+)/`        | `'/users/abc-def'`        | `{ 0: 'abc-def' }`          |
-| `'/(users\|u)/:id'`        | `'/users/123'`            | `{ id: '123' }`             |
-| `'/(users\|u)/:id'`        | `'/u/123'`                | `{ id: '123' }`             |
-| `'/:a/:b?'`                | `'/123'`                  | `{ a: '123' }`              |
-| `'/:a/:b?'`                | `'/123/abc'`              | `{ a: '123', b: 'abc' }`    |
+| Path                   | URL                   | params                   |
+| ---------------------- | --------------------- | ------------------------ |
+| `'/path'`              | `'/path'`             | `{}`                     |
+| `'/users/:id'`         | `'/users/123'`        | `{ id: '123' }`          |
+| `'/users/:id/groups'`  | `'/users/123/groups'` | `{ id: '123' }`          |
+| `'/u/:id/groups/:gid'` | `'/u/1/groups/a'`     | `{ id: '1', gid: 'a' }`  |
+| `'/star/*'`            | `'/star/man'`         | `{ 0: 'man' }`           |
+| `'/star/*/can'`        | `'/star/man/can'`     | `{ 0: 'man' }`           |
+| `'/users/(\\d+)'`      | `'/users/123'`        | `{ 0: '123' }`           |
+| `/users/(\d+)/`        | `'/users/123'`        | `{ 0: '123' }`           |
+| `/users/([a-z-]+)/`    | `'/users/abc-def'`    | `{ 0: 'abc-def' }`       |
+| `'/(users\|u)/:id'`    | `'/users/123'`        | `{ id: '123' }`          |
+| `'/(users\|u)/:id'`    | `'/u/123'`            | `{ id: '123' }`          |
+| `'/:a/:b?'`            | `'/123'`              | `{ a: '123' }`           |
+| `'/:a/:b?'`            | `'/123/abc'`          | `{ a: '123', b: 'abc' }` |
 
 ## Middleware
 
@@ -346,16 +357,17 @@ app.listen({ port: 3100 });
 
 ## Roadmap
 
-- ✅HttpRouter
-- ✅WebSocketRouter
-- ✅Context
-- ✅middlware > serveFiles
-- 🔲middlware > cors
-- 🔲middlware > devLogger
-- 🔲middlware > performanceLogger
-- 🔲middlware > prodLogger
-- 🔲middlware > securityHeaders
-- 🔲examples/server.ts
+- ✅ HttpRouter
+- ✅ SocketRouter
+- ✅ Context
+- ✅ middleware > serveFiles
+- ✅ middleware > cors
+- ✅ middleware > devLogger
+- ✅ middleware > prodLogger
+- 🔲 middleware > performanceLogger
+- 🔲 middleware > securityHeaders
+- 🔲 examples/server.ts
+- 🔲 GitHub Actions to run tests and coverage
 
 ## License
 

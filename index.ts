@@ -14,6 +14,9 @@ export { performanceLogger } from './src/middleware/performanceLogger/performanc
 export { prodLogger } from './src/middleware/prodLogger/prodLogger';
 export { securityHeaders } from './src/middleware/securityHeaders/securityHeaders';
 export { serveFiles } from './src/middleware/serveFiles/serveFiles';
+export { Router as HttpRouter };
 import HttpRouter from './src/HttpRouter/HttpRouter';
+
+const Router = HttpRouter;
 
 export default HttpRouter;

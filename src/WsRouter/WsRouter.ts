@@ -136,9 +136,11 @@ export default class WsRouter {
           target[eventName]?.(ws, ...args);
         } catch (e) {
           const error = e as Error;
+          // @ts-expect-error
           if (typeof target?.error === 'function') {
             try {
-              target?.error?.(ws, eventName, error);
+              // @ts-expect-error
+              target.error(ws, eventName, error);
             } catch (e) {
               const error = e as Error;
               this.fallbackError(ws, eventName, error);

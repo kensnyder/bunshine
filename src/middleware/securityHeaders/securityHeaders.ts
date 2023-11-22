@@ -42,11 +42,12 @@ const defaultOptions: SecurityHeaderOptions = {
 };
 
 export function securityHeaders(options: SecurityHeaderOptions): Middleware {
-  const headers = Object.entries({ ...defaultOptions, ...options }).map(
-    ([name, value]) => {
-      return [dasherize(name), value];
-    }
-  );
+  const headers: Array<[string, SecurityHeader]> = Object.entries({
+    ...defaultOptions,
+    ...options,
+  }).map(([name, value]) => {
+    return [dasherize(name), value];
+  });
   return async (context, next) => {
     const resp = await next();
     for (const [name, value] of headers) {
