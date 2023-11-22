@@ -1,0 +1,21 @@
+{
+  "name": "bunshine",
+  "version": "0.9.0",
+  "module": "server/server.ts",
+  "type": "module",
+  "scripts": {
+    "coverage": "bun test --coverage",
+    "start": "bun ./examples/server.ts"
+  },
+  "dependencies": {
+    "path-to-regexp": "^6.2.1"
+  },
+  "devDependencies": {
+    "@types/eventsource": "^1.1.15",
+    "bun-types": "^1.0.13",
+    "eventsource": "^2.0.2",
+    "prettier": "^3.1.0",
+    "prettier-plugin-organize-imports": "^3.2.4",
+    "typescript": "^5.2.2"
+  }
+}
