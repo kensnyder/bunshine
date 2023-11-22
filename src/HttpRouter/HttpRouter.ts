@@ -1,7 +1,7 @@
 import type { ServeOptions, Server } from 'bun';
 import Context from '../Context/Context';
 import PathMatcher from '../PathMatcher/PathMatcher';
-import WsRouter from '../WsRouter/WsRouter.ts';
+import SocketRouter from '../SocketRouter/SocketRouter.ts';
 import { fallback404 } from './fallback404';
 import { fallback500 } from './fallback500';
 
@@ -51,7 +51,7 @@ const filters = {
 export default class HttpRouter {
   locals: Record<string, any> = {};
   pathMatcher: PathMatcher<RouteInfo> = new PathMatcher<RouteInfo>();
-  _wsRouter?: WsRouter;
+  _wsRouter?: SocketRouter;
   _onErrors: any[] = [];
   _on404s: any[] = [];
   listen = (options: Omit<ServeOptions, 'fetch'> = {}) => {
@@ -71,7 +71,7 @@ export default class HttpRouter {
   };
   get socket() {
     if (!this._wsRouter) {
-      this._wsRouter = new WsRouter(this);
+      this._wsRouter = new SocketRouter(this);
     }
     return this._wsRouter;
   }

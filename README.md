@@ -1,7 +1,7 @@
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.9.1" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.9.2" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.9.1)](https://npmjs.com/package/bunshine)
-[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.9.1)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.9.2)](https://npmjs.com/package/bunshine)
+[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.9.2)](https://opensource.org/licenses/ISC)
 
 # Bunshine
 
@@ -41,12 +41,12 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 ## Basic example
 
 ```ts
-import Router from 'bunshine';
+import { HttpRouter } from 'bunshine';
 
-const app = new Router();
+const app = new HttpRouter();
 
-app.get('/', () => {
-  return new Response('Hello World!');
+app.get('/', c => {
+  return new Response('Hello at ' + c.url.pathname);
 });
 
 app.listen({ port: 3100 });
@@ -55,9 +55,9 @@ app.listen({ port: 3100 });
 ## Full example
 
 ```ts
-import Router, { json, redirect } from 'bunshine';
+import { HttpRouter, json, redirect } from 'bunshine';
 
-const app = new Router();
+const app = new HttpRouter();
 
 app.patch('/users/:id', async ({ request, params, url }) => {
   await authorize(request.headers.get('Authorization'));
@@ -102,9 +102,9 @@ function authorize(authHeader: string) {
 ## Serving static files
 
 ```ts
-import Router, { serveFiles } from 'bunshine';
+import { HttpRouter, serveFiles } from 'bunshine';
 
-const app = new Router();
+const app = new HttpRouter();
 
 app.use(serveFiles(`${import.meta.dir}/public`));
 
@@ -114,9 +114,9 @@ app.listen({ port: 3100 });
 ## Middleware
 
 ```ts
-import Router from 'bunshine';
+import { HttpRouter } from 'bunshine';
 
-const app = new Router();
+const app = new HttpRouter();
 
 // Run before each request
 app.use(c => {
@@ -182,9 +182,9 @@ app.get('/users/:id', handler2);
 ## WebSockets
 
 ```ts
-import Router from 'bunshine';
+import { HttpRouter } from 'bunshine';
 
-const app = new Router();
+const app = new HttpRouter();
 
 // regular routes
 app.get('/', c => c.text('Hello World!'));
@@ -247,9 +247,9 @@ gameRoom.send(JSON.stringify({ type: 'GameMove', move: 'rock' }));
 ## WebSocket pub-sub
 
 ```ts
-import Router from 'bunshine';
+import { HttpRouter } from 'bunshine';
 
-const app = new Router();
+const app = new HttpRouter();
 
 app.get('/', c => c.text('Hello World!'));
 
@@ -279,9 +279,9 @@ app.socket.at('/chat/:room', {
 ## Server Sent Events
 
 ```ts
-import Router from 'bunshine';
+import { HttpRouter } from 'bunshine';
 
-const app = new Router();
+const app = new HttpRouter();
 
 app.get('/stock/:symbol', c => {
   const symbol = c.params.symbol;
@@ -336,9 +336,9 @@ info, checkout the [path-to-regexp docs](https://www.npmjs.com/package/path-to-r
 Serve static files from a directory.
 
 ```ts
-import Router, { serveFiles } from 'bunshine';
+import { HttpRouter, serveFiles } from 'bunshine';
 
-const app = new Router();
+const app = new HttpRouter();
 
 app.get('/public', serveFiles(`${import.meta.dir}/public`));
 

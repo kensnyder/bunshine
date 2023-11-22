@@ -1,4 +1,5 @@
 import type { Server, ServerWebSocket } from 'bun';
+import type { Merge } from 'type-fest';
 import type Context from '../Context/Context';
 import type HttpRouter from '../HttpRouter/HttpRouter';
 import PathMatcher from '../PathMatcher/PathMatcher';
@@ -57,7 +58,7 @@ export type SocketEventName =
   | 'ping'
   | 'pong';
 
-export default class WsRouter {
+export default class SocketRouter {
   httpRouter: HttpRouter;
   pathMatcher: PathMatcher<Partial<Handlers<any>>>;
   handlers: Handlers<any>;
@@ -76,7 +77,7 @@ export default class WsRouter {
   }
   at = <UpgradeDataShape extends Record<string, any>>(
     path: string,
-    handlers: Handlers<UpgradeDataShape & DefaultDataShape>
+    handlers: Handlers<Merge<DefaultDataShape, UpgradeDataShape>>
   ) => {
     // capture the matcher details
     this.pathMatcher.add(path, handlers);
@@ -93,7 +94,7 @@ export default class WsRouter {
               url: c.url,
               params: c.params,
               ...upgradeData,
-            } as DefaultDataShape & UpgradeDataShape,
+            },
           })
         ) {
           // See https://bun.sh/guides/websocket/upgrade
