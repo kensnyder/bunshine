@@ -1,5 +1,5 @@
-import Router from '../index';
+import { HttpRouter } from '../index';
 
-const app = new Router();
+const app = new HttpRouter();
 
 app.get('/', c => c.text('Hello World'));

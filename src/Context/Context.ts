@@ -35,12 +35,17 @@ export default class Context {
   redirect = redirect;
   file = async (
     filenameOrBunFile: string | BunFile,
-    responseOptions: FileResponseOptions = {}
+    fileOptions: FileResponseOptions = {},
+    responseInit: ResponseInit = {}
   ) => {
-    return file(filenameOrBunFile, {
-      range: this.request.headers.get('Range') || undefined,
-      ...responseOptions,
-    });
+    return file(
+      filenameOrBunFile,
+      {
+        range: this.request.headers.get('Range') || undefined,
+        ...fileOptions,
+      },
+      responseInit
+    );
   };
   sse = (setup: SseSetupFunction, init: ResponseInit = {}) => {
     return sse(this.request.signal, setup, init);

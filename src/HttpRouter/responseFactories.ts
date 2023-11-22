@@ -29,7 +29,8 @@ export type FileResponseOptions = {
 };
 export const file = async (
   filenameOrBunFile: string | BunFile,
-  responseOptions: FileResponseOptions = {}
+  fileOptions: FileResponseOptions = {},
+  responseInit: ResponseInit = {}
 ) => {
   let file =
     typeof filenameOrBunFile === 'string'
@@ -40,14 +41,14 @@ export const file = async (
     return new Response('File not found', { status: 404 });
   }
   let resp: Response;
-  const rangeMatch = responseOptions.range?.match(/^bytes=(\d*)-(\d*)$/);
+  const rangeMatch = fileOptions.range?.match(/^bytes=(\d*)-(\d*)$/);
   if (rangeMatch) {
     const start = parseInt(rangeMatch[1]) || 0;
     let end = parseInt(rangeMatch[2]);
     if (isNaN(end)) {
       // Initial request: some browsers use "Range: bytes=0-"
       end = Math.min(
-        start + (responseOptions.chunkSize || 3 * 1024 ** 2),
+        start + (fileOptions.chunkSize || 3 * 1024 ** 2),
         totalFileSize - 1
       );
     }
@@ -61,7 +62,7 @@ export const file = async (
     // Bun has a bug when setting content-length and content-range automatically
     // so convert file to buffer
     const buffer = await file.arrayBuffer();
-    resp = new Response(buffer, { status: 206 });
+    resp = new Response(buffer, { ...responseInit, status: 206 });
     if (!resp.headers.has('Content-Type')) {
       resp.headers.set('Content-Type', 'application/octet-stream');
     }

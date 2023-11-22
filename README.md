@@ -1,7 +1,7 @@
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.9.2" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.9.3" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.9.2)](https://npmjs.com/package/bunshine)
-[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.9.2)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.9.3)](https://npmjs.com/package/bunshine)
+[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.9.3)](https://opensource.org/licenses/ISC)
 
 # Bunshine
 
