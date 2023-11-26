@@ -50,6 +50,10 @@ export function securityHeaders(options: SecurityHeaderOptions): Middleware {
   });
   return async (context, next) => {
     const resp = await next();
+    if (!resp.headers.get('content-type')?.startsWith('text/html')) {
+      // no need to set security headers for non-html responses
+      return resp;
+    }
     for (const [name, value] of headers) {
       const finalValue = typeof value === 'function' ? value(context) : value;
       if (finalValue) {

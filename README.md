@@ -21,6 +21,7 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 8. Provide common middleware out of the box
 9. Make specifically for Bun
 10. Comprehensive unit tests
+11. Support for `X-HTTP-Method-Override` header
 
 ## Table of Contents
 
@@ -74,13 +75,12 @@ app.patch('/users/:id', async ({ request, params, url }) => {
 
 app.on404(c => {
   // called when no handlers match the requested path
-  console.log('404');
-  return c.json({ error: 'Not found' }, { status: 404 });
+  return c.text('Page Not found', { status: 404 });
 });
 
 app.on500(c => {
   // called when a handler throws an error
-  console.log('500');
+  console.error('500', c.error);
   return c.json({ error: 'Internal server error' }, { status: 500 });
 });
 
@@ -97,7 +97,11 @@ function authorize(authHeader: string) {
 
 ### What is `c` here?
 
+TODO
+
 ### What does it mean that "every handler is treated like middleware"?
+
+TODO
 
 ## Serving static files
 
@@ -177,6 +181,7 @@ you must register handlers in order of specificity. For example:
 // This order matters
 app.get('/users/me', handler1);
 app.get('/users/:id', handler2);
+app.get('*', http404Handler);
 ```
 
 ## WebSockets
@@ -274,6 +279,11 @@ app.socket.at('/chat/:room', {
     ws.unsubscribe('the-group-chat');
   },
 });
+
+const server = app.listen({ port: 3100 });
+
+// at a later time, publish a message from another source
+server.publish(channel, message);
 ```
 
 ## Server Sent Events
@@ -347,13 +357,23 @@ app.listen({ port: 3100 });
 
 ### cors
 
+To Document
+
 ### devLogger
+
+To Document
 
 ### performanceLogger
 
+To Document
+
 ### prodLogger
 
+To Document
+
 ### securityHeaders
+
+To Document
 
 ## Roadmap
 
