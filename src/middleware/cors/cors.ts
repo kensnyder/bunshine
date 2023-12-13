@@ -1,8 +1,15 @@
-import type {Middleware} from '../../HttpRouter/HttpRouter';
 import type Context from '../../Context/Context';
+import type { Middleware } from '../../HttpRouter/HttpRouter';
 
 export type CorsOptions = {
-  origin: string | string[] | ((origin: string) => string | undefined | null);
+  origin:
+    | string
+    | RegExp
+    | Array<string | RegExp>
+    | boolean
+    | ((
+        incomingOrigin: string
+      ) => string | string[] | boolean | undefined | null);
   allowMethods?: string[];
   allowHeaders?: string[];
   maxAge?: number;
@@ -25,11 +32,42 @@ export function cors(options: CorsOptions): Middleware {
   const findAllowOrigin = (optsOrigin => {
     if (typeof optsOrigin === 'string') {
       return () => optsOrigin;
+    } else if (optsOrigin instanceof RegExp) {
+      return (incoming: string) =>
+        optsOrigin.test(incoming) ? incoming : null;
+    } else if (Array.isArray(optsOrigin)) {
+      return (incoming: string) => {
+        for (const origin of optsOrigin) {
+          if (
+            (typeof origin === 'string' && origin === incoming) ||
+            (origin instanceof RegExp && origin.test(incoming))
+          ) {
+            return incoming;
+          }
+        }
+        return null;
+      };
+    } else if (optsOrigin === true) {
+      return (incoming: string) => incoming;
+    } else if (optsOrigin === false) {
+      return () => null;
     } else if (typeof optsOrigin === 'function') {
-      return optsOrigin;
+      return (incoming: string, c: Context) => {
+        const origins = optsOrigin(incoming, c);
+        if (origins === true) {
+          return incoming;
+        } else if (origins === false) {
+          return null;
+        } else if (Array.isArray(origins)) {
+          return origins.includes(incoming) ? incoming : null;
+        } else if (typeof origins === 'string') {
+          return origins;
+        } else {
+          return null;
+        }
+      };
     } else {
-      return (origin: string) =>
-        optsOrigin.includes(origin) ? origin : optsOrigin[0];
+      throw new Error('Invalid cors origin option');
     }
   })(opts.origin);
   function handleOptionsRequest(c: Context) {
@@ -65,7 +103,10 @@ export function cors(options: CorsOptions): Middleware {
     });
   }
   function addAccessHeaders(c: Context, response: Response) {
-    const allowOrigin = findAllowOrigin(c.request.headers.get('origin') || '');
+    const incomingOrigin = c.request.headers.get('origin');
+    const allowOrigin = incomingOrigin
+      ? findAllowOrigin(incomingOrigin, c)
+      : null;
     if (allowOrigin) {
       response.headers.set('Access-Control-Allow-Origin', allowOrigin);
     }

@@ -7,20 +7,18 @@ export function prodLogger(): Middleware {
   return async (c, next) => {
     const start = performance.now();
     const { pathname, host, protocol } = c.url;
-    const base = `${protocol}//${host}`;
     const date = new Date().toISOString();
     const id = crypto.randomUUID();
     // write request
     process.stdout.write(
       JSON.stringify({
+        date,
+        method: c.request.method,
+        pathname,
         runtime,
         machine,
         pid: process.pid,
-        date,
         id,
-        method: c.request.method,
-        base,
-        pathname,
       }) + '\n'
     );
     // get response
@@ -29,16 +27,15 @@ export function prodLogger(): Middleware {
     const took = performance.now() - start;
     process.stdout.write(
       JSON.stringify({
+        date,
+        method: c.request.method,
+        pathname,
+        status: resp.status,
         runtime,
         machine,
         pid: process.pid,
-        date,
         id,
-        method: c.request.method,
-        base,
-        pathname,
         took,
-        status: resp.status,
       }) + '\n'
     );
     // return response

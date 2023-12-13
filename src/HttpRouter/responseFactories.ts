@@ -103,7 +103,7 @@ export const sse = (
       // define the send and close functions
       function send(
         eventName: string,
-        data?: string,
+        data?: string | any,
         id?: string,
         retry?: number
       ) {
@@ -111,6 +111,9 @@ export const sse = (
         if (arguments.length === 1) {
           encoded = encoder.encode(`data: ${eventName}\n\n`);
         } else {
+          if (typeof data !== 'string') {
+            data = JSON.stringify(data);
+          }
           let message = `event: ${eventName}\ndata:${data}`;
           if (id) {
             message += `\nid: ${id}`;
@@ -122,6 +125,7 @@ export const sse = (
           encoded = encoder.encode(message);
         }
         if (signal.aborted) {
+          // client disconnected already
           close();
         } else {
           controller.enqueue(encoded);

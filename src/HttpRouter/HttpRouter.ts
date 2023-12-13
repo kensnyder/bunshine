@@ -1,5 +1,13 @@
 import type { ServeOptions, Server } from 'bun';
 import Context from '../Context/Context';
+import {
+  html,
+  js,
+  json,
+  redirect,
+  text,
+  xml,
+} from '../HttpRouter/responseFactories';
 import PathMatcher from '../PathMatcher/PathMatcher';
 import SocketRouter from '../SocketRouter/SocketRouter.ts';
 import { fallback404 } from './fallback404';
@@ -161,6 +169,7 @@ export default class HttpRouter {
     };
     const errorHandler = (e: Error | Response) => {
       if (e instanceof Response) {
+        // a response has been thrown; respond to client with it
         return e;
       }
       context.error = e as Error;
@@ -189,5 +198,178 @@ export default class HttpRouter {
       return nextError();
     };
     return next();
+  };
+  fetch2 = async (request: Request, server: Server) => {
+    const context = new Context(request, server, this);
+    const pathname = context.url.pathname;
+    const method = (
+      request.headers.get('X-HTTP-Method-Override') || request.method
+    ).toUpperCase();
+    // @ts-expect-error
+    const filter = filters[method] || getPathMatchFilter(method);
+    const matched = this.pathMatcher.match(pathname, filter, this._on404s);
+    const runner = new Runner(context, matched, this._onErrors);
+    return runner.next();
+  };
+  fetch3 = async (request: Request, server: Server) => {
+    const context = {
+      request,
+      server,
+      app: this,
+      params: {},
+      locals: {},
+      error: undefined,
+      url: new URL(request.url),
+      text,
+      js,
+      html,
+      xml,
+      json,
+      redirect,
+    };
+    const pathname = context.url.pathname;
+    const method = (
+      request.headers.get('X-HTTP-Method-Override') || request.method
+    ).toUpperCase();
+    // @ts-expect-error
+    const filter = filters[method] || getPathMatchFilter(method);
+    const matched = this.pathMatcher.match(pathname, filter, this._on404s);
+    const next: NextFunction = async () => {
+      const generated = matched.next();
+      if (generated.done) {
+        return fallback404(context);
+      }
+      const match = generated.value;
+      context.params = match!.params;
+      const handler = match!.target.handler as SingleHandler;
+
+      try {
+        let result = handler(context, next);
+        if (result instanceof Response) {
+          return result;
+        }
+        if (typeof result?.then === 'function') {
+          result = await result;
+          if (result instanceof Response) {
+            return result;
+          }
+        }
+        return next();
+      } catch (e) {
+        // @ts-expect-error
+        return errorHandler(e);
+      }
+    };
+    const errorHandler = (e: Error | Response) => {
+      if (e instanceof Response) {
+        // a response has been thrown; respond to client with it
+        return e;
+      }
+      context.error = e as Error;
+      let idx = 0;
+      const nextError: NextFunction = async () => {
+        const handler = this._onErrors[idx++];
+        if (!handler) {
+          return fallback500(context);
+        }
+        try {
+          let result = handler(context, nextError);
+          if (result instanceof Response) {
+            return result;
+          }
+          if (typeof result?.then === 'function') {
+            result = await result;
+            if (result instanceof Response) {
+              return result;
+            }
+          }
+        } catch (e) {
+          context.error = e as Error;
+        }
+        return nextError();
+      };
+      return nextError();
+    };
+    return next();
+  };
+}
+
+class Runner {
+  context: Context;
+  matched: Generator<
+    | { target: RouteInfo; params: Record<string, string> }
+    | { target: { params: {}; handler: Function }; params: {} },
+    void,
+    unknown
+  >;
+  _onErrors: Function[];
+  constructor(
+    context: Context,
+    matched: Generator<
+      | { target: RouteInfo; params: Record<string, string> }
+      | { target: { params: {}; handler: Function }; params: {} },
+      void,
+      unknown
+    >,
+    onErrors: Function[]
+  ) {
+    this.context = context;
+    this.matched = matched;
+    this._onErrors = onErrors;
+  }
+  next: NextFunction = async () => {
+    const generated = this.matched.next();
+    if (generated.done) {
+      return fallback404(this.context);
+    }
+    const match = generated.value;
+    this.context.params = match!.params;
+    const handler = match!.target.handler as SingleHandler;
+
+    try {
+      let result = handler(this.context, this.next);
+      if (result instanceof Response) {
+        return result;
+      }
+      if (typeof result?.then === 'function') {
+        result = await result;
+        if (result instanceof Response) {
+          return result;
+        }
+      }
+      return this.next();
+    } catch (e) {
+      // @ts-expect-error
+      return this.errorHandler(e);
+    }
+  };
+  errorHandler = (e: Error | Response) => {
+    if (e instanceof Response) {
+      return e;
+    }
+    this.context.error = e as Error;
+    let idx = 0;
+    const nextError: NextFunction = async () => {
+      const handler = this._onErrors[idx++];
+      if (!handler) {
+        return fallback500(this.context);
+      }
+      try {
+        let result = handler(this.context, nextError);
+        if (result instanceof Response) {
+          return result;
+        }
+        if (typeof result?.then === 'function') {
+          result = await result;
+          if (result instanceof Response) {
+            return result;
+          }
+        }
+      } catch (e) {
+        this.context.error = e as Error;
+      }
+      return nextError();
+    };
+    return nextError();
   };
 }

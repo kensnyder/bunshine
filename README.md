@@ -97,13 +97,106 @@ function authorize(authHeader: string) {
 
 ### What is `c` here?
 
-TODO
+`c` is a `Context` object that contains the request and params.
+
+```ts
+import { HttpRouter, type Context, type NextFunction } from 'bunshine';
+
+const app = new HttpRouter();
+
+app.get('/hello', (c: Context, next: NextFunction) => {
+  c.request; // The raw request object
+  c.params; // The request params from URL placeholders
+  c.server; // The Bun server instance (useful for pub-sub)
+  c.app; // The HttpRouter instance
+  c.locals; // A place to persist data between handlers for the duration of the request
+  c.error; // Handlers registered with app.on500() can see this Error object
+});
+```
 
 ### What does it mean that "every handler is treated like middleware"?
 
-TODO
+If a handler does not return a `Response` object or return a promise that does
+not resolve to a `Response` object, then the next matching handler will be
+called. Consider the following:
+
+```ts
+import { HttpRouter, type Context, type NextFunction } from 'bunshine';
+
+const app = new HttpRouter();
+
+// ❌ Incorrect asynchronous handler
+app.get('/hello', (c: Context, next: NextFunction) => {
+  setTimeout(() => {
+    next(new Response('Hello World!'));
+  }, 1000);
+});
+
+// ✅ Correct asynchronous handler
+app.get('/hello', async (c: Context) => {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve(new Response('Hello World!'));
+    }, 1000);
+  });
+});
+```
+
+It also means that the `next()` function is async. Consider the following:
+
+```ts
+import { HttpRouter, type Context, type NextFunction } from 'bunshine';
+
+const app = new HttpRouter();
+
+// ❌ Incorrect use of next
+app.get('/hello', (c: Context, next: NextFunction) => {
+  const resp = next();
+  // do stuff with response
+});
+
+// ✅ Correct use of next
+app.get('/hello', async (c: Context, next: NextFunction) => {
+  const resp = await next();
+  // do stuff with response
+});
+```
+
+And finally, it means that `.use()` is just a convenience function for
+registering middleware. Consider the following:
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+
+// The following 2 are the same
+app.use(middlewareHandler);
+app.all('*', middlewareHandler);
+```
+
+This all-handlers-are-middleware behavior compliements the way that handlers
+and middleware can be registered. Consider the following:
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+
+// middleware can be inserted with parameters
+app.get('/admin', getAuthMiddleware('admin'), middleware2, handler);
+
+// Bunshine accepts any number of middleware functions in parameters or arrays
+app.get('/posts', middleware1, middleware2, handler);
+app.get('/users', [middleware1, middleware2, handler]);
+app.get('/visitors', [[middleware1, [middleware2, handler]]]);
+```
 
 ## Serving static files
+
+Serving static files is easy with the `serveFiles` middleware. Note that ranged
+requests are supported, so you can use this for video streaming or partial
+downloads.
 
 ```ts
 import { HttpRouter, serveFiles } from 'bunshine';
@@ -116,6 +209,8 @@ app.listen({ port: 3100 });
 ```
 
 ## Middleware
+
+Here are more examples of attaching middleware.
 
 ```ts
 import { HttpRouter } from 'bunshine';
@@ -186,6 +281,8 @@ app.get('*', http404Handler);
 
 ## WebSockets
 
+Setting up websockets at various paths is easy with the `socket` property.
+
 ```ts
 import { HttpRouter } from 'bunshine';
 
@@ -200,7 +297,7 @@ app.socket.at<{ user: string }>('/games/rooms/:room', {
   upgrade: ({ request, params, url }) => {
     const cookies = req.headers.get('cookie');
     const user = getUserFromCookies(cookies);
-    return { user };
+    return { user }; // this is where the `{ user: string }` type comes from
   },
   // Optional. Allows you to deal with errors thrown by handlers.
   error: (ws, error) => {
@@ -251,6 +348,9 @@ gameRoom.send(JSON.stringify({ type: 'GameMove', move: 'rock' }));
 
 ## WebSocket pub-sub
 
+And WebSockets make it super easy to create a pub-sub system with no external
+dependencies.
+
 ```ts
 import { HttpRouter } from 'bunshine';
 
@@ -286,7 +386,11 @@ const server = app.listen({ port: 3100 });
 server.publish(channel, message);
 ```
 
-## Server Sent Events
+## Server-Sent Events
+
+Server-Sent Events (SSE) are similar to WebSockets, but one way. The server can
+send messages, but the client cannot. This is useful for streaming data to the
+browser.
 
 ```ts
 import { HttpRouter } from 'bunshine';
@@ -318,6 +422,72 @@ livePrice.addEventListener('price', e => {
 });
 ```
 
+Note that with SSE, the client must ultimately decide when to stop listening.
+Creating an `EventSource` object will open a connection to the server, and if
+the server closes the connection, the browser will automatically reconnect.
+
+So if you want to tell the browser you are done sending events, send a
+message that the browser will understand to mean "stop listening". Here is an
+example:
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+
+app.get('/convert-video/:videoId', c => {
+  const { videoId } = c.params;
+  return c.sse(send => {
+    const onProgress = percent => {
+      send('progress', percent);
+    };
+    const onComplete = () => {
+      send('progress', 'complete');
+    };
+    startVideoConversion(videoId, onProgress, onComplete);
+  });
+});
+
+// start the server
+app.listen({ port: 3100 });
+
+//
+// Browser side:
+//
+const conversionProgress = new EventSource('/convert-video/123');
+
+conversionProgress.addEventListener('progress', e => {
+  if (e.data === 'complete') {
+    conversionProgress.close();
+  } else {
+    document.querySelector('#progress').innerText = e.data;
+  }
+});
+```
+
+You may have noticed that you can attach multiple listeners to an `EventSource`
+object to react to multiple event types. Here is a minimal example:
+
+```ts
+//
+// Server side
+//
+app.get('/hello', c => {
+  const { videoId } = c.params;
+  return c.sse(send => {
+    send('event1', 'data1');
+    send('event2', 'data2');
+  });
+});
+
+//
+// Browser side:
+//
+const events = new EventSource('/hello');
+events.addEventListener('event1', listener1);
+events.addEventListener('event2', listener2);
+```
+
 ## Routing examples
 
 Bunshine uses the `path-to-regexp` package for processing path routes. For more
@@ -343,7 +513,9 @@ info, checkout the [path-to-regexp docs](https://www.npmjs.com/package/path-to-r
 
 ### serveFiles
 
-Serve static files from a directory.
+Serve static files from a directory. As shown above, serving static files is
+easy with the `serveFiles` middleware. Note that ranged requests are
+supported, so you can use this for video streaming or partial downloads.
 
 ```ts
 import { HttpRouter, serveFiles } from 'bunshine';
@@ -357,23 +529,199 @@ app.listen({ port: 3100 });
 
 ### cors
 
-To Document
+To add CORS headers to some/all responses, use the `cors` middleware.
 
-### devLogger
+```ts
+import { HttpRouter, cors } from 'bunshine';
 
-To Document
+const app = new HttpRouter();
 
-### performanceLogger
+// most basic cors examples
+app.use(cors({ origin: '*' }));
+app.use(cors({ origin: true }));
+app.use(cors({ origin: 'https://example.com' }));
+app.use(cors({ origin: /^https:\/\// }));
+app.use(cors({ origin: ['https://example.com', 'https://stuff.com'] }));
+app.use(cors({ origin: ['https://example.com', /https:\/\/stuff.[a-z]+/i] }));
+app.use(cors({ origin: incomingOrigin => getOrigin(incomingOrigin) }));
 
-To Document
+// All options
+app.use(
+  cors({
+    origin: 'https://example.com',
+    allowMethods: ['GET', 'POST'],
+    allowHeaders: ['X-HTTP-Method-Override', 'Authorization'],
+    maxAge: 86400,
+    credentials: true,
+    exposeHeaders: ['X-Response-Id'],
+  })
+);
 
-### prodLogger
+// and of course, cors can be attached at a specific path
+app.all('/api', cors({ origin: '*' }));
 
-To Document
+app.listen({ port: 3100 });
+```
+
+### devLogger & prodLogger
+
+`devLogger` outputs colorful logs in the form
+`[timestamp] METHOD PATHNAME STATUS_CODE (RESPONSE_TIME)`.
+
+For example: `[19:10:50.276Z] GET / 200 (5ms)`.
+
+`prodLogger` outputs logs in JSON with the following shape:
+
+Request log:
+
+```json
+{
+  "date": "2021-08-01T19:10:50.276Z",
+  "method": "GET",
+  "pathname": "/",
+  "runtime": "Bun 1.0.16",
+  "machine": "server1",
+  "pid": 1,
+  "id": "ea98fe2e-45e0-47d1-9344-2e3af680d6a7"
+}
+```
+
+Response log:
+
+```json
+{
+  "date": "2021-08-01T19:10:50.276Z",
+  "method": "GET",
+  "pathname": "/",
+  "status": 200,
+  "runtime": "Bun 1.0.16",
+  "machine": "server1",
+  "pid": 1,
+  "id": "ea98fe2e-45e0-47d1-9344-2e3af680d6a7",
+  "took": 5
+}
+```
+
+To use these loggers, simply attach them as middleware.
+
+```ts
+import { HttpRouter, devLogger, prodLogger } from 'bunshine';
+
+const app = new HttpRouter();
+
+const logger = process.env.NODE_ENV === 'development' ? devLogger : prodLogger;
+app.use(logger());
+
+app.listen({ port: 3100 });
+```
+
+### performanceHeader
+
+You can add an X-Took header with the number of milliseconds it took to respond.
+
+```ts
+import { HttpRouter, performanceHeader } from 'bunshine';
+
+const app = new HttpRouter();
+
+// Add X-Took header
+app.use(performanceHeader());
+// Or use a custom header name
+app.use(performanceHeader('X-Time-Milliseconds'));
+
+app.listen({ port: 3100 });
+```
 
 ### securityHeaders
 
-To Document
+You can add security-related headers to responses with the `securityHeaders`
+middleware. For more information about security headers, checkout these
+resources:
+
+- [securityheaders.com](https://securityheaders.com)
+- [MDN Security on the Web](https://developer.mozilla.org/en-US/docs/Web/Security)
+- [MDN Content-Security-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy)
+
+```ts
+import { HttpRouter, securityHeaders } from 'bunshine';
+
+const app = new HttpRouter();
+
+app.use(securityHeaders());
+// The following are defaults that you can override
+app.use(
+  securityHeaders({
+    contentSecurityPolicy: {
+      frameSrc: ["'self'"],
+      workerSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      defaultSrc: ["'self'"],
+      fontSrc: ['*'],
+      imgSrc: ['*'],
+      manifestSrc: ["'self'"],
+      mediaSrc: ["'self' data:"],
+      objectSrc: ["'self' data:"],
+      prefetchSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      scriptSrcElem: ["'self' 'unsafe-inline'"],
+      scriptSrcAttr: ["'none'"],
+      styleSrcAttr: ["'self' 'unsafe-inline'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"],
+      sandbox: {},
+    },
+    crossOriginEmbedderPolicy: 'unsafe-none',
+    crossOriginOpenerPolicy: 'same-origin',
+    crossOriginResourcePolicy: 'same-origin',
+    permissionsPolicy: {
+      // only include special APIs that you use
+      accelerometer: [],
+      ambientLightSensor: [],
+      autoplay: ['self'],
+      battery: [],
+      camera: [],
+      displayCapture: [],
+      documentDomain: [],
+      encryptedMedia: [],
+      executionWhileNotRendered: [],
+      executionWhileOutOfViewport: [],
+      fullscreen: [],
+      gamepad: [],
+      geolocation: [],
+      gyroscope: [],
+      hid: [],
+      identityCredentialsGet: [],
+      idleDetection: [],
+      localFonts: [],
+      magnetometer: [],
+      midi: [],
+      otpCredentials: [],
+      payment: [],
+      pictureInPicture: [],
+      publickeyCredentialsCreate: [],
+      publickeyCredentialsGet: [],
+      screenWakeLock: [],
+      serial: [],
+      speakerSelection: [],
+      storageAccess: [],
+      usb: [],
+      webShare: ['self'],
+      windowManagement: [],
+      xrSpacialTracking: [],
+    },
+    referrerPolicy: 'strict-origin',
+    server: false,
+    strictTransportSecurity: 'max-age=86400; includeSubDomains; preload',
+    xContentTypeOptions: 'nosniff',
+    xFrameOptions: 'SAMEORIGIN',
+    xPoweredBy: false,
+    xXssProtection: '1; mode=block',
+  })
+);
+
+app.listen({ port: 3100 });
+```
 
 ## Roadmap
 
@@ -384,7 +732,7 @@ To Document
 - ✅ middleware > cors
 - ✅ middleware > devLogger
 - ✅ middleware > prodLogger
-- 🔲 middleware > performanceLogger
+- ✅ middleware > performanceHeader
 - 🔲 middleware > securityHeaders
 - 🔲 examples/server.ts
 - 🔲 GitHub Actions to run tests and coverage
