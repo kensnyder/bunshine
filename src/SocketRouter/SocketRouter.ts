@@ -9,46 +9,54 @@ export type DefaultDataShape = {
   params: Record<string, string>;
   server: Server;
 };
-export type SocketUpgradeHandler = (
-  context: Context
-) => Record<string, any> | Promise<Record<string, any>>;
-export type SocketErrorHandler<WsDataShape> = (
+
+export type FinalWsDataShape<ParamsShape, UpgradeShape> = Merge<
+  Merge<DefaultDataShape, { params: ParamsShape }>,
+  UpgradeShape
+>;
+
+export type SocketUpgradeHandler<
+  ParamsShape extends Record<string, string> = Record<string, string>,
+  UpgradeShape extends Record<string, any> = Record<string, any>,
+> = (context: Context<ParamsShape>) => UpgradeShape | Promise<UpgradeShape>;
+export type SocketErrorHandler<
+  WsDataShape extends Record<string, any> = Record<string, any>,
+> = (
   ws: ServerWebSocket<WsDataShape>,
   eventName: SocketEventName,
   error: Error
 ) => void;
-export type SocketOpenHandler<WsDataShape> = (
-  ws: ServerWebSocket<WsDataShape>
-) => void;
-export type SocketMessageHandler<WsDataShape> = (
-  ws: ServerWebSocket<WsDataShape>,
-  message: string | Buffer
-) => void;
-export type SocketCloseHandler<WsDataShape> = (
-  ws: ServerWebSocket<WsDataShape>,
-  status: number,
-  reason: string
-) => void;
-export type SocketDrainHandler<WsDataShape> = (
-  ws: ServerWebSocket<WsDataShape>
-) => void;
-export type SocketPingHandler<WsDataShape> = (
-  ws: ServerWebSocket<WsDataShape>,
-  message: Buffer
-) => void;
-export type SocketPongHandler<WsDataShape> = (
-  ws: ServerWebSocket<WsDataShape>,
-  message: Buffer
-) => void;
-export type Handlers<WsDataShape> = {
-  upgrade?: SocketUpgradeHandler;
-  error?: SocketErrorHandler<WsDataShape>;
-  open?: SocketOpenHandler<WsDataShape>;
-  message?: SocketMessageHandler<WsDataShape>;
-  close?: SocketCloseHandler<WsDataShape>;
-  drain?: SocketDrainHandler<WsDataShape>;
-  ping?: SocketPingHandler<WsDataShape>;
-  pong?: SocketPongHandler<WsDataShape>;
+export type SocketOpenHandler<
+  WsDataShape extends Record<string, any> = Record<string, any>,
+> = (ws: ServerWebSocket<WsDataShape>) => void;
+export type SocketMessageHandler<
+  WsDataShape extends Record<string, any> = Record<string, any>,
+> = (ws: ServerWebSocket<WsDataShape>, message: string | Buffer) => void;
+export type SocketCloseHandler<
+  WsDataShape extends Record<string, any> = Record<string, any>,
+> = (ws: ServerWebSocket<WsDataShape>, status: number, reason: string) => void;
+export type SocketDrainHandler<
+  WsDataShape extends Record<string, any> = Record<string, any>,
+> = (ws: ServerWebSocket<WsDataShape>) => void;
+export type SocketPingHandler<
+  WsDataShape extends Record<string, any> = Record<string, any>,
+> = (ws: ServerWebSocket<WsDataShape>, message: Buffer) => void;
+export type SocketPongHandler<
+  WsDataShape extends Record<string, any> = Record<string, any>,
+> = (ws: ServerWebSocket<WsDataShape>, message: Buffer) => void;
+
+export type WsHandlers<
+  ParamsShape extends Record<string, string> = Record<string, string>,
+  UpgradeShape extends Record<string, any> = Record<string, any>,
+> = {
+  upgrade?: SocketUpgradeHandler<ParamsShape, UpgradeShape>;
+  error?: SocketErrorHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
+  open?: SocketOpenHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
+  message?: SocketMessageHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
+  close?: SocketCloseHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
+  drain?: SocketDrainHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
+  ping?: SocketPingHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
+  pong?: SocketPongHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
 };
 export type SocketEventName =
   | 'open'
@@ -60,30 +68,34 @@ export type SocketEventName =
 
 export default class SocketRouter {
   httpRouter: HttpRouter;
-  pathMatcher: PathMatcher<Partial<Handlers<any>>>;
-  handlers: Handlers<any>;
+  pathMatcher: PathMatcher<WsHandlers>;
+  handlers: WsHandlers;
   constructor(router: HttpRouter) {
     this.httpRouter = router;
     this.httpRouter._wsRouter = this;
-    this.pathMatcher = new PathMatcher<Handlers<any>>();
+    this.pathMatcher = new PathMatcher<WsHandlers>();
     this.handlers = {
-      open: this._createHandler('open') as SocketOpenHandler<any>,
-      message: this._createHandler('message') as SocketMessageHandler<any>,
-      close: this._createHandler('close') as SocketCloseHandler<any>,
-      drain: this._createHandler('drain') as SocketDrainHandler<any>,
-      ping: this._createHandler('ping') as SocketPingHandler<any>,
-      pong: this._createHandler('pong') as SocketPongHandler<any>,
+      open: this._createHandler('open'),
+      message: this._createHandler('message'),
+      close: this._createHandler('close'),
+      drain: this._createHandler('drain'),
+      ping: this._createHandler('ping'),
+      pong: this._createHandler('pong'),
     };
   }
-  at = <UpgradeDataShape extends Record<string, any>>(
+  at = <
+    ParamsShape extends Record<string, string> = Record<string, string>,
+    UpgradeShape extends Record<string, any> = Record<string, any>,
+  >(
     path: string,
-    handlers: Handlers<Merge<DefaultDataShape, UpgradeDataShape>>
+    handlers: WsHandlers<ParamsShape, UpgradeShape>
   ) => {
     // capture the matcher details
+    // @ts-expect-error
     this.pathMatcher.add(path, handlers);
     // console.log('ws handlers registered!', path);
     // create a router path that upgrades to a socket
-    this.httpRouter.get(path, (c: Context) => {
+    this.httpRouter.get<ParamsShape>(path, c => {
       const upgradeData = handlers.upgrade?.(c) || {};
       try {
         // upgrade the request to a WebSocket
@@ -98,7 +110,7 @@ export default class SocketRouter {
           })
         ) {
           // See https://bun.sh/guides/websocket/upgrade
-          return new Response(null, { status: 101 });
+          return undefined;
         }
       } catch (e) {
         const error = e as Error;
@@ -111,14 +123,14 @@ export default class SocketRouter {
         'WebSocket upgrade failed: Client does not support WebSocket'
       );
       return c.text('Client does not support WebSocket', {
-        status: 400,
+        status: 426, // 426 Upgrade Required
       });
     });
     // allow chaining
     return this;
   };
-  fallbackError = <WsDataShape extends DefaultDataShape>(
-    ws: ServerWebSocket<WsDataShape>,
+  _fallbackError = (
+    ws: ServerWebSocket<Record<string, any>>,
     eventName: string,
     error: Error
   ) => {
@@ -128,7 +140,7 @@ export default class SocketRouter {
     );
   };
   _createHandler = (eventName: SocketEventName) => {
-    return async (ws: ServerWebSocket<any>, ...args: any) => {
+    return async (ws: ServerWebSocket<Record<string, any>>, ...args: any) => {
       const pathname = ws.data.url.pathname;
       const matched = this.pathMatcher.match(pathname);
       for (const { target } of matched) {
@@ -144,10 +156,10 @@ export default class SocketRouter {
               target.error(ws, eventName, error);
             } catch (e) {
               const error = e as Error;
-              this.fallbackError(ws, eventName, error);
+              this._fallbackError(ws, eventName, error);
             }
           } else {
-            this.fallbackError(ws, eventName, error);
+            this._fallbackError(ws, eventName, error);
           }
         }
       }

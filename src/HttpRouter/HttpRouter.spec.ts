@@ -1,5 +1,5 @@
 import type { Server } from 'bun';
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import EventSource from 'eventsource';
 import HttpRouter from './HttpRouter';
 
@@ -471,8 +471,9 @@ describe('HttpRouter', () => {
         messages.push(String(evt.data));
       });
       expect(stream).toBeInstanceOf(EventSource);
-      await new Promise(r => setTimeout(r, 40));
+      await new Promise(r => setTimeout(r, 100));
       expect(messages).toEqual(['open', 'hello', 'hello2']);
+      stream.close();
     });
     it('should enable named EventSource', async () => {
       app.get('/home', c => {
@@ -498,7 +499,7 @@ describe('HttpRouter', () => {
           origin: evt.origin,
         });
       });
-      await new Promise(r => setTimeout(r, 40));
+      await new Promise(r => setTimeout(r, 100));
       expect(messages).toEqual([
         {
           name: 'myEvent',
@@ -531,6 +532,85 @@ describe('HttpRouter', () => {
       stream.close();
       await new Promise(r => setTimeout(r, 20));
       expect(messages).toEqual([]);
+    });
+    it('should JSON encode data if needed', async () => {
+      app.get('/home', c => {
+        return c.sse(send => {
+          setTimeout(() => send('myEvent', { hello: 'world' }, 'id1'), 20);
+        });
+      });
+      server = app.listen({ port: 7772 });
+      const stream = new EventSource('http://localhost:7772/home');
+      let messages: Array<{
+        name: string;
+        payload: string;
+        id: string;
+        origin: string;
+      }> = [];
+      stream.addEventListener('myEvent', evt => {
+        messages.push({
+          name: evt.type,
+          payload: evt.data,
+          id: evt.lastEventId,
+          origin: evt.origin,
+        });
+      });
+      await new Promise(r => setTimeout(r, 40));
+      expect(messages).toEqual([
+        {
+          name: 'myEvent',
+          payload: '{"hello":"world"}',
+          id: 'id1',
+          origin: 'http://localhost:7772',
+        },
+      ]);
+      stream.close();
+    });
+    it('should warn when overriding some headers', async () => {
+      spyOn(console, 'warn').mockImplementation(() => {});
+      app.get('/home', c => {
+        return c.sse(send => send('data'), {
+          headers: {
+            'Content-Type': 'text/plain',
+            'Cache-Control': 'foo',
+            Connection: 'whatever',
+          },
+        });
+      });
+      app.onError(c => {
+        console.log('app.onError', c.error);
+      });
+      server = app.listen({ port: 7772 });
+      const stream = new EventSource('http://localhost:7772/home');
+      stream.addEventListener('myEvent', () => {});
+      await new Promise(r => setTimeout(r, 100));
+      stream.close();
+      expect(console.warn).toHaveBeenCalledTimes(3);
+      // @ts-expect-error
+      console.warn.mockRestore();
+    });
+    it('should not warn if those headers are correct', async () => {
+      spyOn(console, 'warn').mockImplementation(() => {});
+      app.get('/home', c => {
+        return c.sse(send => send('data'), {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          },
+        });
+      });
+      app.onError(c => {
+        console.log('app.onError', c.error);
+      });
+      server = app.listen({ port: 7772 });
+      const stream = new EventSource('http://localhost:7772/home');
+      stream.addEventListener('myEvent', () => {});
+      await new Promise(r => setTimeout(r, 100));
+      stream.close();
+      expect(console.warn).toHaveBeenCalledTimes(0);
+      // @ts-expect-error
+      console.warn.mockRestore();
     });
   });
 });

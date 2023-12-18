@@ -55,13 +55,13 @@ export const file = async (
     if (end > totalFileSize - 1) {
       return new Response('416 Range not satisfiable', { status: 416 });
     }
-    // the range is less than the entire file
-    if (end - 1 < totalFileSize) {
-      file = file.slice(start, end + 1);
-    }
     // Bun has a bug when setting content-length and content-range automatically
     // so convert file to buffer
-    const buffer = await file.arrayBuffer();
+    let buffer = await file.arrayBuffer();
+    // the range is less than the entire file
+    if (end - 1 < totalFileSize) {
+      buffer = buffer.slice(start, end + 1);
+    }
     resp = new Response(buffer, { ...responseInit, status: 206 });
     if (!resp.headers.has('Content-Type')) {
       resp.headers.set('Content-Type', 'application/octet-stream');
@@ -72,16 +72,14 @@ export const file = async (
     // Bun will automatically set content-type and length
     resp = new Response(file);
   }
-  if (!resp.headers.has('Accept-Ranges')) {
-    // tell the client that we are capable of handling range requests
-    resp.headers.set('Accept-Ranges', 'bytes');
-  }
+  // tell the client that we are capable of handling range requests
+  resp.headers.set('Accept-Ranges', 'bytes');
   return resp;
 };
 
 export type SseSend = (
   eventName: string,
-  data?: string,
+  data?: string | object,
   id?: string,
   retry?: number
 ) => void;
@@ -98,12 +96,13 @@ export const sse = (
 ) => {
   const stream = new ReadableStream({
     async start(controller: ReadableStreamDefaultController) {
-      // create encoder to handle utf8
+      // Step 1: create encoder to handle utf8
       const encoder = new TextEncoder();
-      // define the send and close functions
+
+      // Step 2: define the send and close functions
       function send(
         eventName: string,
-        data?: string | any,
+        data?: string | object,
         id?: string,
         retry?: number
       ) {
@@ -111,10 +110,10 @@ export const sse = (
         if (arguments.length === 1) {
           encoded = encoder.encode(`data: ${eventName}\n\n`);
         } else {
-          if (typeof data !== 'string') {
+          if (data && typeof data !== 'string') {
             data = JSON.stringify(data);
           }
-          let message = `event: ${eventName}\ndata:${data}`;
+          let message = `event: ${eventName}\ndata:${String(data)}`;
           if (id) {
             message += `\nid: ${id}`;
           }
@@ -140,24 +139,33 @@ export const sse = (
         signal.removeEventListener('abort', close);
         controller.close();
       }
+
       // setup and listen for abort signal
       const cleanup = setup(send, close);
       let closed = false;
       signal.addEventListener('abort', close);
       // close now if somehow it is already aborted
       if (signal.aborted) {
+        /* c8 ignore next */
         close();
       }
     },
   });
+
   let headers = new Headers(init.headers);
-  if (headers.has('Content-Type')) {
+  if (
+    headers.has('Content-Type') &&
+    headers.get('Content-Type') !== 'text/event-stream'
+  ) {
     console.warn('Overriding Content-Type header to `text/event-stream`');
   }
-  if (headers.has('Cache-Control')) {
+  if (
+    headers.has('Cache-Control') &&
+    headers.get('Cache-Control') !== 'no-cache'
+  ) {
     console.warn('Overriding Cache-Control header to `no-cache`');
   }
-  if (headers.has('Connection')) {
+  if (headers.has('Connection') && headers.get('Connection') !== 'keep-alive') {
     console.warn('Overriding Connection header to `keep-alive`');
   }
   headers.set('Content-Type', 'text/event-stream');

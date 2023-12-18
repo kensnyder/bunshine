@@ -13,7 +13,9 @@ import {
   type SseSetupFunction,
 } from '../HttpRouter/responseFactories';
 
-export default class Context {
+export default class Context<
+  ParamsShape extends Record<string, string> = Record<string, string>,
+> {
   /** The raw request object */
   request: Request;
   /** The Bun server instance */
@@ -21,7 +23,7 @@ export default class Context {
   /** The HttpRouter instance */
   app: HttpRouter;
   /** The request params from URL placeholders */
-  params: Record<string, string> = {};
+  params: ParamsShape = {} as ParamsShape;
   /** A place to persist data between handlers for the duration of the request */
   locals: Record<string, any> = {};
   /** Handlers registered with app.on500() can see this Error object */
@@ -34,19 +36,19 @@ export default class Context {
     this.app = app;
     this.url = new URL(request.url);
   }
-  /** A shorthand for `new Response({ body: text, headers: { 'Content-type': 'text/plain' } })` */
+  /** A shorthand for `new Response(text, { headers: { 'Content-type': 'text/plain' } })` */
   text = text;
-  /** A shorthand for `new Response({ body: js, headers: { 'Content-type': 'text/javascript' } })` */
+  /** A shorthand for `new Response(js, { headers: { 'Content-type': 'text/javascript' } })` */
   js = js;
-  /** A shorthand for `new Response({ body: html, headers: { 'Content-type': 'text/html' } })` */
+  /** A shorthand for `new Response(html, { headers: { 'Content-type': 'text/html' } })` */
   html = html;
-  /** A shorthand for `new Response({ body: xml, headers: { 'Content-type': 'text/xml' } })` */
+  /** A shorthand for `new Response(xml, { headers: { 'Content-type': 'text/xml' } })` */
   xml = xml;
-  /** A shorthand for `new Response({ body: JSON.stringify(data), headers: { 'Content-type': 'application/json' } })` */
+  /** A shorthand for `new Response(JSON.stringify(data), { headers: { 'Content-type': 'application/json' } })` */
   json = json;
-  /** A shorthand for `new Response({ headers: { Location: url }, status: 301 })` */
+  /** A shorthand for `new Response(null, { headers: { Location: url }, status: 301 })` */
   redirect = redirect;
-  /** A shorthand for `new Response(fileInfo)` */
+  /** A shorthand for `new Response(fileBody, fileHeaders)` */
   file = async (
     filenameOrBunFile: string | BunFile,
     fileOptions: FileResponseOptions = {},

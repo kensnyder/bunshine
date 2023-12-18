@@ -1,13 +1,5 @@
 import type { ServeOptions, Server } from 'bun';
 import Context from '../Context/Context';
-import {
-  html,
-  js,
-  json,
-  redirect,
-  text,
-  xml,
-} from '../HttpRouter/responseFactories';
 import PathMatcher from '../PathMatcher/PathMatcher';
 import SocketRouter from '../SocketRouter/SocketRouter.ts';
 import { fallback404 } from './fallback404';
@@ -15,18 +7,24 @@ import { fallback500 } from './fallback500';
 
 export type NextFunction = () => Promise<Response>;
 
-export type SingleHandler = (
-  context: Context,
+export type SingleHandler<
+  ParamsShape extends Record<string, string> = Record<string, string>,
+> = (
+  context: Context<ParamsShape>,
   next: NextFunction
 ) => Response | void | Promise<Response | void>;
 
-export type Middleware = SingleHandler;
+export type Middleware<
+  ParamsShape extends Record<string, string> = Record<string, string>,
+> = SingleHandler<ParamsShape>;
 
-export type Handler = SingleHandler | Handler[];
+export type Handler<
+  ParamsShape extends Record<string, string> = Record<string, string>,
+> = SingleHandler<ParamsShape> | Handler<ParamsShape>[];
 
 type RouteInfo = {
   verb: string;
-  handler: Handler;
+  handler: Handler<any>;
 };
 
 export type HttpMethods =
@@ -83,10 +81,10 @@ export default class HttpRouter {
     }
     return this._wsRouter;
   }
-  on = (
+  on = <ParamsShape extends Record<string, string> = Record<string, string>>(
     verbOrVerbs: HttpMethods | HttpMethods[],
     path: string | RegExp,
-    ...handlers: Handler[]
+    ...handlers: Handler<ParamsShape>[]
   ) => {
     if (Array.isArray(verbOrVerbs)) {
       for (const verb of verbOrVerbs) {
@@ -97,38 +95,60 @@ export default class HttpRouter {
     for (const handler of handlers.flat(9)) {
       this.pathMatcher.add(path, {
         verb: verbOrVerbs as string,
-        handler: handler as SingleHandler,
+        handler: handler as SingleHandler<ParamsShape>,
       });
     }
     return this;
   };
-  all = (path: string | RegExp, ...handlers: Handler[]) =>
-    this.on('ALL', path, handlers);
-  get = (path: string | RegExp, ...handlers: Handler[]) =>
-    this.on('GET', path, handlers);
-  put = (path: string | RegExp, ...handlers: Handler[]) =>
-    this.on('PUT', path, handlers);
-  head = (path: string | RegExp, ...handlers: Handler[]) =>
-    this.on('HEAD', path, handlers);
-  post = (path: string | RegExp, ...handlers: Handler[]) =>
-    this.on('POST', path, handlers);
-  patch = (path: string | RegExp, ...handlers: Handler[]) =>
-    this.on('PATCH', path, handlers);
-  trace = (path: string | RegExp, ...handlers: Handler[]) =>
-    this.on('TRACE', path, handlers);
-  delete = (path: string | RegExp, ...handlers: Handler[]) =>
-    this.on('DELETE', path, handlers);
-  options = (path: string | RegExp, ...handlers: Handler[]) =>
-    this.on('OPTIONS', path, handlers);
-  use = (...handlers: Handler[]) => {
+  all = <ParamsShape extends Record<string, string> = Record<string, string>>(
+    path: string | RegExp,
+    ...handlers: Handler<ParamsShape>[]
+  ) => this.on<ParamsShape>('ALL', path, handlers);
+  get = <ParamsShape extends Record<string, string> = Record<string, string>>(
+    path: string | RegExp,
+    ...handlers: Handler<ParamsShape>[]
+  ) => this.on<ParamsShape>('GET', path, handlers);
+  put = <ParamsShape extends Record<string, string> = Record<string, string>>(
+    path: string | RegExp,
+    ...handlers: Handler<ParamsShape>[]
+  ) => this.on<ParamsShape>('PUT', path, handlers);
+  head = <ParamsShape extends Record<string, string> = Record<string, string>>(
+    path: string | RegExp,
+    ...handlers: Handler<ParamsShape>[]
+  ) => this.on<ParamsShape>('HEAD', path, handlers);
+  post = <ParamsShape extends Record<string, string> = Record<string, string>>(
+    path: string | RegExp,
+    ...handlers: Handler<ParamsShape>[]
+  ) => this.on<ParamsShape>('POST', path, handlers);
+  patch = <ParamsShape extends Record<string, string> = Record<string, string>>(
+    path: string | RegExp,
+    ...handlers: Handler<ParamsShape>[]
+  ) => this.on<ParamsShape>('PATCH', path, handlers);
+  trace = <ParamsShape extends Record<string, string> = Record<string, string>>(
+    path: string | RegExp,
+    ...handlers: Handler<ParamsShape>[]
+  ) => this.on<ParamsShape>('TRACE', path, handlers);
+  delete = <
+    ParamsShape extends Record<string, string> = Record<string, string>,
+  >(
+    path: string | RegExp,
+    ...handlers: Handler<ParamsShape>[]
+  ) => this.on<ParamsShape>('DELETE', path, handlers);
+  options = <
+    ParamsShape extends Record<string, string> = Record<string, string>,
+  >(
+    path: string | RegExp,
+    ...handlers: Handler<ParamsShape>[]
+  ) => this.on<ParamsShape>('OPTIONS', path, handlers);
+  use = (...handlers: Handler<{}>[]) => {
     this.all('*', handlers);
     return this;
   };
-  onError = (...handlers: Handler[]) => {
+  onError = (...handlers: Handler<Record<string, string>>[]) => {
     this._onErrors.push(...handlers.flat(9));
     return this;
   };
-  on404 = (...handlers: Handler[]) => {
+  on404 = (...handlers: Handler<Record<string, string>>[]) => {
     this._on404s.push(...handlers.flat(9));
     return this;
   };
@@ -148,7 +168,9 @@ export default class HttpRouter {
       }
       const match = generated.value;
       context.params = match!.params;
-      const handler = match!.target.handler as SingleHandler;
+      const handler = match!.target.handler as SingleHandler<
+        Record<string, string>
+      >;
 
       try {
         let result = handler(context, next);
@@ -198,178 +220,5 @@ export default class HttpRouter {
       return nextError();
     };
     return next();
-  };
-  fetch2 = async (request: Request, server: Server) => {
-    const context = new Context(request, server, this);
-    const pathname = context.url.pathname;
-    const method = (
-      request.headers.get('X-HTTP-Method-Override') || request.method
-    ).toUpperCase();
-    // @ts-expect-error
-    const filter = filters[method] || getPathMatchFilter(method);
-    const matched = this.pathMatcher.match(pathname, filter, this._on404s);
-    const runner = new Runner(context, matched, this._onErrors);
-    return runner.next();
-  };
-  fetch3 = async (request: Request, server: Server) => {
-    const context = {
-      request,
-      server,
-      app: this,
-      params: {},
-      locals: {},
-      error: undefined,
-      url: new URL(request.url),
-      text,
-      js,
-      html,
-      xml,
-      json,
-      redirect,
-    };
-    const pathname = context.url.pathname;
-    const method = (
-      request.headers.get('X-HTTP-Method-Override') || request.method
-    ).toUpperCase();
-    // @ts-expect-error
-    const filter = filters[method] || getPathMatchFilter(method);
-    const matched = this.pathMatcher.match(pathname, filter, this._on404s);
-    const next: NextFunction = async () => {
-      const generated = matched.next();
-      if (generated.done) {
-        return fallback404(context);
-      }
-      const match = generated.value;
-      context.params = match!.params;
-      const handler = match!.target.handler as SingleHandler;
-
-      try {
-        let result = handler(context, next);
-        if (result instanceof Response) {
-          return result;
-        }
-        if (typeof result?.then === 'function') {
-          result = await result;
-          if (result instanceof Response) {
-            return result;
-          }
-        }
-        return next();
-      } catch (e) {
-        // @ts-expect-error
-        return errorHandler(e);
-      }
-    };
-    const errorHandler = (e: Error | Response) => {
-      if (e instanceof Response) {
-        // a response has been thrown; respond to client with it
-        return e;
-      }
-      context.error = e as Error;
-      let idx = 0;
-      const nextError: NextFunction = async () => {
-        const handler = this._onErrors[idx++];
-        if (!handler) {
-          return fallback500(context);
-        }
-        try {
-          let result = handler(context, nextError);
-          if (result instanceof Response) {
-            return result;
-          }
-          if (typeof result?.then === 'function') {
-            result = await result;
-            if (result instanceof Response) {
-              return result;
-            }
-          }
-        } catch (e) {
-          context.error = e as Error;
-        }
-        return nextError();
-      };
-      return nextError();
-    };
-    return next();
-  };
-}
-
-class Runner {
-  context: Context;
-  matched: Generator<
-    | { target: RouteInfo; params: Record<string, string> }
-    | { target: { params: {}; handler: Function }; params: {} },
-    void,
-    unknown
-  >;
-  _onErrors: Function[];
-  constructor(
-    context: Context,
-    matched: Generator<
-      | { target: RouteInfo; params: Record<string, string> }
-      | { target: { params: {}; handler: Function }; params: {} },
-      void,
-      unknown
-    >,
-    onErrors: Function[]
-  ) {
-    this.context = context;
-    this.matched = matched;
-    this._onErrors = onErrors;
-  }
-  next: NextFunction = async () => {
-    const generated = this.matched.next();
-    if (generated.done) {
-      return fallback404(this.context);
-    }
-    const match = generated.value;
-    this.context.params = match!.params;
-    const handler = match!.target.handler as SingleHandler;
-
-    try {
-      let result = handler(this.context, this.next);
-      if (result instanceof Response) {
-        return result;
-      }
-      if (typeof result?.then === 'function') {
-        result = await result;
-        if (result instanceof Response) {
-          return result;
-        }
-      }
-      return this.next();
-    } catch (e) {
-      // @ts-expect-error
-      return this.errorHandler(e);
-    }
-  };
-  errorHandler = (e: Error | Response) => {
-    if (e instanceof Response) {
-      return e;
-    }
-    this.context.error = e as Error;
-    let idx = 0;
-    const nextError: NextFunction = async () => {
-      const handler = this._onErrors[idx++];
-      if (!handler) {
-        return fallback500(this.context);
-      }
-      try {
-        let result = handler(this.context, nextError);
-        if (result instanceof Response) {
-          return result;
-        }
-        if (typeof result?.then === 'function') {
-          result = await result;
-          if (result instanceof Response) {
-            return result;
-          }
-        }
-      } catch (e) {
-        this.context.error = e as Error;
-      }
-      return nextError();
-    };
-    return nextError();
   };
 }

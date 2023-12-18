@@ -16,7 +16,7 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 3. Support for Server Sent Events
 4. Support ranged file downloads (e.g. for video streaming)
 5. Be very lightweight
-6. Treat every handler function like middleware
+6. Treat every handler like middleware
 7. Support async handlers
 8. Provide common middleware out of the box
 9. Make specifically for Bun
@@ -25,17 +25,19 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
 ## Table of Contents
 
-1. Basic example
-2. Full example
-3. Serving static files
-4. Middleware
-5. WebSockets
-6. WebSocket pub-sub
-7. Server Sent Events
-8. Routing examples
-9. Middleware
-10. Roadmap
-11. License
+1. [Basic example](#basic-example)
+2. [Full example](#full-example)
+3. [Serving static files](#serving-static-files)
+4. [Writing middleware](#writing-middleware)
+5. [Throwing responses](#throwing-responses)
+6. [WebSockets](#websockets)
+7. [WebSocket pub-sub](#websocket-pub-sub)
+8. [Server Sent Events](#server-sent-events)
+9. [Routing examples](#routing-examples)
+10. [Included middleware](#included-middleware)
+11. [TypeScript pro-tips](#typescript-pro-tips)
+12. [Roadmap](#roadmap)
+13. [License](./LICENSE.md)
 
 ## Usage
 
@@ -114,84 +116,6 @@ app.get('/hello', (c: Context, next: NextFunction) => {
 });
 ```
 
-### What does it mean that "every handler is treated like middleware"?
-
-If a handler does not return a `Response` object or return a promise that does
-not resolve to a `Response` object, then the next matching handler will be
-called. Consider the following:
-
-```ts
-import { HttpRouter, type Context, type NextFunction } from 'bunshine';
-
-const app = new HttpRouter();
-
-// ❌ Incorrect asynchronous handler
-app.get('/hello', (c: Context, next: NextFunction) => {
-  setTimeout(() => {
-    next(new Response('Hello World!'));
-  }, 1000);
-});
-
-// ✅ Correct asynchronous handler
-app.get('/hello', async (c: Context) => {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve(new Response('Hello World!'));
-    }, 1000);
-  });
-});
-```
-
-It also means that the `next()` function is async. Consider the following:
-
-```ts
-import { HttpRouter, type Context, type NextFunction } from 'bunshine';
-
-const app = new HttpRouter();
-
-// ❌ Incorrect use of next
-app.get('/hello', (c: Context, next: NextFunction) => {
-  const resp = next();
-  // do stuff with response
-});
-
-// ✅ Correct use of next
-app.get('/hello', async (c: Context, next: NextFunction) => {
-  const resp = await next();
-  // do stuff with response
-});
-```
-
-And finally, it means that `.use()` is just a convenience function for
-registering middleware. Consider the following:
-
-```ts
-import { HttpRouter } from 'bunshine';
-
-const app = new HttpRouter();
-
-// The following 2 are the same
-app.use(middlewareHandler);
-app.all('*', middlewareHandler);
-```
-
-This all-handlers-are-middleware behavior compliements the way that handlers
-and middleware can be registered. Consider the following:
-
-```ts
-import { HttpRouter } from 'bunshine';
-
-const app = new HttpRouter();
-
-// middleware can be inserted with parameters
-app.get('/admin', getAuthMiddleware('admin'), middleware2, handler);
-
-// Bunshine accepts any number of middleware functions in parameters or arrays
-app.get('/posts', middleware1, middleware2, handler);
-app.get('/users', [middleware1, middleware2, handler]);
-app.get('/visitors', [[middleware1, [middleware2, handler]]]);
-```
-
 ## Serving static files
 
 Serving static files is easy with the `serveFiles` middleware. Note that ranged
@@ -208,7 +132,7 @@ app.use(serveFiles(`${import.meta.dir}/public`));
 app.listen({ port: 3100 });
 ```
 
-## Middleware
+## Writing middleware
 
 Here are more examples of attaching middleware.
 
@@ -279,6 +203,112 @@ app.get('/users/:id', handler2);
 app.get('*', http404Handler);
 ```
 
+### What does it mean that "every handler is treated like middleware"?
+
+If a handler does not return a `Response` object or return a promise that does
+not resolve to a `Response` object, then the next matching handler will be
+called. Consider the following:
+
+```ts
+import { HttpRouter, type Context, type NextFunction } from 'bunshine';
+
+const app = new HttpRouter();
+
+// ❌ Incorrect asynchronous handler
+app.get('/hello', (c: Context, next: NextFunction) => {
+  setTimeout(() => {
+    next(new Response('Hello World!'));
+  }, 1000);
+});
+
+// ✅ Correct asynchronous handler
+app.get('/hello', async (c: Context) => {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve(new Response('Hello World!'));
+    }, 1000);
+  });
+});
+```
+
+It also means that the `next()` function is async. Consider the following:
+
+```ts
+import { HttpRouter, type Context, type NextFunction } from 'bunshine';
+
+const app = new HttpRouter();
+
+// ❌ Incorrect use of next
+app.get('/hello', (c: Context, next: NextFunction) => {
+  const resp = next();
+  // do stuff with response
+});
+
+// ✅ Correct use of next
+app.get('/hello', async (c: Context, next: NextFunction) => {
+  const resp = await next();
+  // do stuff with response
+});
+```
+
+And finally, it means that `.use()` is just a convenience function for
+registering middleware. Consider the following:
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+
+// The following 2 are the same
+app.use(middlewareHandler);
+app.all('*', middlewareHandler);
+```
+
+This all-handlers-are-middleware behavior complements the way that handlers
+and middleware can be registered. Consider the following:
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+
+// middleware can be inserted with parameters
+app.get('/admin', getAuthMiddleware('admin'), middleware2, handler);
+
+// Bunshine accepts any number of middleware functions in parameters or arrays
+app.get('/posts', middleware1, middleware2, handler);
+app.get('/users', [middleware1, middleware2, handler]);
+app.get('/visitors', [[middleware1, [middleware2, handler]]]);
+```
+
+## Throwing responses
+
+You can throw a `Response` object from anywhere in your code to send a response.
+Here is an example:
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+
+async function checkPermission(request: Request, action: string) {
+  const authHeader = request.headers.get('Authorization');
+  if (!(await hasPermission(authHeader, action))) {
+    throw c.redirect('/home');
+  } else if (hasTooManyRequests(authHeader)) {
+    throw c.json({ error: 'Too many requests' }, { status: 429 });
+  }
+}
+
+app.post('/posts', async c => {
+  await checkPermissions(c.request, 'create-post');
+  // code here will only run if checkPermission hasn't thrown a Response
+});
+
+// start the server
+app.listen({ port: 3100 });
+```
+
 ## WebSockets
 
 Setting up websockets at various paths is easy with the `socket` property.
@@ -292,12 +322,12 @@ const app = new HttpRouter();
 app.get('/', c => c.text('Hello World!'));
 
 // WebSocket routes
-app.socket.at<{ user: string }>('/games/rooms/:room', {
+app.socket.at('/games/rooms/:room', {
   // Optional. Allows you to specify arbitrary data to attach to ws.data.
   upgrade: ({ request, params, url }) => {
     const cookies = req.headers.get('cookie');
     const user = getUserFromCookies(cookies);
-    return { user }; // this is where the `{ user: string }` type comes from
+    return { user };
   },
   // Optional. Allows you to deal with errors thrown by handlers.
   error: (ws, error) => {
@@ -509,7 +539,7 @@ info, checkout the [path-to-regexp docs](https://www.npmjs.com/package/path-to-r
 | `'/:a/:b?'`            | `'/123'`              | `{ a: '123' }`           |
 | `'/:a/:b?'`            | `'/123/abc'`          | `{ a: '123', b: 'abc' }` |
 
-## Middleware
+## Included middleware
 
 ### serveFiles
 
@@ -720,6 +750,75 @@ app.use(
   })
 );
 
+app.listen({ port: 3100 });
+```
+
+## TypeScript pro-tips
+
+Bun embraces TypeScript and so does Bunshine. Here are some tips for getting
+the most out of TypeScript.
+
+### Typing URL params
+
+You can type URL params by passing a type to any of the route methods:
+
+```ts
+import { HttpRouter, serveFiles } from 'bunshine';
+
+const app = new HttpRouter();
+
+app.post<{ id: string }>('/users/:id', async c => {
+  // TypeScript now knows that c.params.id is a string
+});
+
+app.get<{ 0: string }>('/auth/*', async c => {
+  // TypeScript now knows that c['0'] is a string
+});
+
+app.listen({ port: 3100 });
+```
+
+### Typing WebSocket data
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+
+// regular routes
+app.get('/', c => c.text('Hello World!'));
+
+type User = {
+  nickname: string;
+  email: string;
+  first: string;
+  last: string;
+};
+
+// WebSocket routes
+app.socket.at<{ room: string }, { user: User }>('/games/rooms/:room', {
+  upgrade: ({ request, params, url }) => {
+    // Typescript knows that ws.data.params.room is a string
+    const cookies = req.headers.get('cookie');
+    const user = getUserFromCookies(cookies);
+    // here user is typed as User
+    return { user };
+  },
+  open(ws) {
+    // TypeScript knows that ws.data.params.room is a string
+    // TypeScript knows that ws.data.user is a User
+  },
+  message(ws, message) {
+    // TypeScript knows that ws.data.params.room is a string
+    // TypeScript knows that ws.data.user is a User
+  },
+  close(ws, code, message) {
+    // TypeScript knows that ws.data.params.room is a string
+    // TypeScript knows that ws.data.user is a User
+  },
+});
+
+// start the server
 app.listen({ port: 3100 });
 ```
 

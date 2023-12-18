@@ -1,54 +1,29 @@
 import Context from '../../Context/Context.ts';
-import type { Middleware } from '../../HttpRouter/HttpRouter.ts';
+import type { Middleware, NextFunction } from '../../HttpRouter/HttpRouter.ts';
+// @ts-ignore
+import bunshine from '../../../package.json';
 
+export type SecurityHeaderValue = string | null | undefined | boolean;
 export type SecurityHeader =
-  | string
-  | null
-  | false
-  | undefined
-  | number
-  | ((context: Context) => string | null | false | undefined | number);
+  | SecurityHeaderValue
+  | ((context: Context) => SecurityHeaderValue)
+  | ((context: Context) => Promise<SecurityHeaderValue>);
 
 export type SecurityHeaderOptions = {
-  server?: SecurityHeader;
-  xPoweredBy?: SecurityHeader;
-  strictTransportSecurity?: SecurityHeader;
-  xXssProtection?: SecurityHeader;
-  xContentTypeOptions?: SecurityHeader;
-  xFrameOptions?: SecurityHeader;
-  referrerPolicy?: SecurityHeader;
-  contentSecurityPolicy?: SecurityHeader;
-  accessControlAllowOrigin?: SecurityHeader;
-  permissionsPolicy?: SecurityHeader;
-  crossOriginEmbedderPolicy?: SecurityHeader;
-  crossOriginOpenerPolicy?: SecurityHeader;
-  crossOriginResourcePolicy?: SecurityHeader;
+  accessControlAllowOrigin?: SecurityHeader | true;
+  contentSecurityPolicy?: CSPDirectives | true;
+  crossOriginEmbedderPolicy?: SecurityHeader | true;
+  crossOriginOpenerPolicy?: SecurityHeader | true;
+  crossOriginResourcePolicy?: SecurityHeader | true;
+  permissionsPolicy?: AllowedApis | true;
+  referrerPolicy?: SecurityHeader | true;
+  server?: SecurityHeader | true;
+  strictTransportSecurity?: SecurityHeader | true;
+  xContentTypeOptions?: SecurityHeader | true;
+  xFrameOptions?: SecurityHeader | true;
+  xPoweredBy?: SecurityHeader | true;
+  xXssProtection?: SecurityHeader | true;
 };
-
-type CSPSource =
-  | '*'
-  | 'data:'
-  | 'mediastream:'
-  | 'blob:'
-  | 'filesystem:'
-  | "'self'"
-  | "'unsafe-eval'"
-  | "'wasm-unsafe-eval'"
-  | "'unsafe-hashes'"
-  | "'unsafe-inline'"
-  | "'none'"
-  | {
-      urls: string[];
-    }
-  | {
-      nonces: string[];
-    }
-  | {
-      hashes: string[];
-    }
-  | "'strict-dynamic'"
-  | "'report-sample'"
-  | "'inline-speculation-rules'";
 
 type SandboxOptions = {
   allowForms?: boolean;
@@ -61,6 +36,11 @@ type SandboxOptions = {
   allowSameOrigin?: boolean;
   allowScripts?: boolean;
   allowTopNavigation?: boolean;
+};
+
+type ReportOptions = {
+  uri?: string;
+  to?: string;
 };
 
 type CSPDirectives = {
@@ -81,7 +61,8 @@ type CSPDirectives = {
   baseUri?: CSPSource[];
   formAction?: CSPSource[];
   frameAncestors?: CSPSource[];
-  sandbox?: SandboxOptions;
+  sandbox?: SandboxOptions | true;
+  report?: ReportOptions | true;
 };
 
 type ApiSource =
@@ -142,40 +123,74 @@ type AllowedApis = {
   xrSpacialTracking?: ApiSource[];
 };
 
-const defaultOptions: SecurityHeaderOptions = {
-  contentSecurityPolicy: '',
-  crossOriginEmbedderPolicy: '',
-  crossOriginOpenerPolicy: '',
-  crossOriginResourcePolicy: '',
-  permissionsPolicy: '',
-  referrerPolicy: '',
-  server: null,
-  strictTransportSecurity: '',
-  xContentTypeOptions: '',
-  xFrameOptions: '',
-  xPoweredBy: null,
-  xXssProtection: '',
-};
-
-const contentSecurityPolicyDefaults: CSPDirectives = {
-  frameSrc: ["'self'"],
-  workerSrc: ["'self'"],
-  connectSrc: ["'self'"],
-  defaultSrc: ["'self'"],
-  fontSrc: ['*'],
-  imgSrc: ['*'],
-  manifestSrc: ["'self'"],
-  mediaSrc: ["'self'", 'data:'],
-  objectSrc: ["'self'", 'data:'],
-  prefetchSrc: ["'self'"],
-  scriptSrc: ["'self'"],
-  scriptSrcElem: ["'self'", "'unsafe-inline'"],
-  scriptSrcAttr: ["'none'"],
-  styleSrcAttr: ["'self'", "'unsafe-inline'"],
-  baseUri: ["'self'"],
-  formAction: ["'self'"],
-  frameAncestors: ["'self'"],
-  sandbox: {},
+const defaultValues: SecurityHeaderOptions = {
+  accessControlAllowOrigin: '*',
+  contentSecurityPolicy: {
+    frameSrc: ["'self'"],
+    workerSrc: ["'self'"],
+    connectSrc: ["'self'"],
+    defaultSrc: ["'self'"],
+    fontSrc: ['*'],
+    imgSrc: ['*'],
+    manifestSrc: ["'self'"],
+    mediaSrc: ["'self'", 'data:'],
+    objectSrc: ["'self'", 'data:'],
+    prefetchSrc: ["'self'"],
+    scriptSrc: ["'self'"],
+    scriptSrcElem: ["'self'", "'unsafe-inline'"],
+    scriptSrcAttr: ["'none'"],
+    styleSrcAttr: ["'self'", "'unsafe-inline'"],
+    baseUri: ["'self'"],
+    formAction: ["'self'"],
+    frameAncestors: ["'self'"],
+    sandbox: {},
+    report: {},
+  },
+  crossOriginEmbedderPolicy: 'unsafe-none',
+  crossOriginOpenerPolicy: 'same-origin',
+  crossOriginResourcePolicy: 'same-origin',
+  permissionsPolicy: {
+    // only include special APIs that you use
+    accelerometer: [],
+    ambientLightSensor: [],
+    autoplay: ['self'],
+    battery: [],
+    camera: [],
+    displayCapture: [],
+    documentDomain: [],
+    encryptedMedia: [],
+    executionWhileNotRendered: [],
+    executionWhileOutOfViewport: [],
+    fullscreen: [],
+    gamepad: [],
+    geolocation: [],
+    gyroscope: [],
+    hid: [],
+    identityCredentialsGet: [],
+    idleDetection: [],
+    localFonts: [],
+    magnetometer: [],
+    midi: [],
+    otpCredentials: [],
+    payment: [],
+    pictureInPicture: [],
+    publickeyCredentialsCreate: [],
+    publickeyCredentialsGet: [],
+    screenWakeLock: [],
+    serial: [],
+    speakerSelection: [],
+    storageAccess: [],
+    usb: [],
+    webShare: ['self'],
+    windowManagement: [],
+    xrSpacialTracking: [],
+  },
+  referrerPolicy: 'strict-origin',
+  strictTransportSecurity: 'max-age=86400; includeSubDomains; preload',
+  xContentTypeOptions: 'nosniff',
+  xFrameOptions: 'SAMEORIGIN',
+  xPoweredBy: false,
+  xXssProtection: '1; mode=block',
 };
 
 const permissionsPolicyDefaults: AllowedApis = {
@@ -214,27 +229,68 @@ const permissionsPolicyDefaults: AllowedApis = {
   xrSpacialTracking: [],
 };
 
-export function securityHeaders(options: SecurityHeaderOptions): Middleware {
-  const headers: Array<[string, SecurityHeader]> = Object.entries({
-    ...defaultOptions,
+function resolveHeaderValue(
+  name: string,
+  value: SecurityHeaderValue | AllowedApis | CSPDirectives
+) {
+  if (value === false || value === null || value === undefined) {
+    return;
+  }
+  if (name === 'xPoweredBy' && value === true) {
+    return `Bunshine v${bunshine.version}`;
+  } else if (value === true) {
+    // @ts-expect-error
+    value = defaultValues[name];
+  }
+  if (name === 'contentSecurityPolicy') {
+    return getCspHeader(value as CSPDirectives);
+  } else if (name === 'permissionsPolicy') {
+    return getPpHeader(value as AllowedApis);
+  }
+  return value;
+}
+
+export function securityHeaders(
+  options: SecurityHeaderOptions = {}
+): Middleware {
+  const headers: Record<string, any> = {
+    values: [],
+    functions: [],
+  };
+  const resolved = {
+    ...defaultValues,
     ...options,
-  }).map(([name, value]) => {
-    return [dasherize(name), value];
-  });
-  return async (context, next) => {
+  };
+  for (const [name, value] of Object.entries(resolved)) {
+    if (typeof value === 'function') {
+      headers.functions.push([name, value]);
+    } else {
+      const resolved = resolveHeaderValue(name, value);
+      if (resolved) {
+        headers.values.push([dasherize(name), resolved]);
+      }
+    }
+  }
+  return async (context: Context, next: NextFunction) => {
     const resp = await next();
-    if (!resp.headers.get('content-type')?.startsWith('text/html')) {
+    if (!resp.headers.get('content-type')?.includes('text/html')) {
       // no need to set security headers for non-html responses
       return resp;
     }
-    for (const [name, value] of headers) {
-      if (name === 'content-security-policy') {
-        resp.headers.set(name, getCspHeader(value));
-      } else if (name === 'permissions-policy') {
-        resp.headers.set(name, getPpHeader(value));
-      } else if (typeof value === 'string') {
-        resp.headers.set(name, value);
-      }
+    for (let [dasherizedName, value] of headers.values) {
+      resp.headers.set(dasherizedName, value);
+    }
+    for (let [rawName, value] of headers.functions) {
+      try {
+        let resolved = resolveHeaderValue(rawName, value(context));
+        // @ts-expect-error
+        if (resolved && typeof resolved.then === 'function') {
+          resolved = await resolved;
+        }
+        if (typeof resolved === 'string' && resolved !== '') {
+          resp.headers.set(dasherize(rawName), resolved);
+        }
+      } catch (e) {}
     }
     return resp;
   };
@@ -245,23 +301,87 @@ function dasherize(str: string): string {
 }
 
 function getCspHeader(directives: CSPDirectives) {
-  const final = { ...contentSecurityPolicyDefaults, ...directives };
   const items = [];
-  for (const [key, value] of Object.entries(final)) {
-    if (key === 'sandbox') {
-      items.push(getSandboxString(value));
-    } else {
-      items.push(`${key} ${value.join(' ')}`);
+  for (let [key, originalValue] of Object.entries(directives)) {
+    let value:
+      | true
+      | CSPSource[]
+      | SandboxOptions
+      | ReportOptions
+      | string
+      | undefined = originalValue;
+    if (key === 'sandbox' && typeof value === 'object') {
+      value = getSandboxString(value as SandboxOptions);
+    } else if (key === 'report' && typeof value === 'object') {
+      value = getReportString(value as ReportOptions);
+    } else if (Array.isArray(value) && value.length > 0) {
+      items.push(`${dasherize(key)} ${value.map(getCspItem).join(' ')}`);
+    }
+    if (typeof value === 'string' && value !== '') {
+      items.push(value);
     }
   }
   return items.join('; ');
+}
+
+type CSPSource =
+  | '*'
+  | 'data:'
+  | 'mediastream:'
+  | 'blob:'
+  | 'filesystem:'
+  | "'self'"
+  | "'unsafe-eval'"
+  | "'wasm-unsafe-eval'"
+  | "'unsafe-hashes'"
+  | "'unsafe-inline'"
+  | "'none'"
+  | {
+      uri: string;
+    }
+  | {
+      uris: string[];
+    }
+  | {
+      nonce: string;
+    }
+  | {
+      nonces: string[];
+    }
+  | {
+      hash: string;
+    }
+  | {
+      hashes: string[];
+    }
+  | "'strict-dynamic'"
+  | "'report-sample'"
+  | "'inline-speculation-rules'"
+  | string;
+
+function getCspItem(source: CSPSource) {
+  if (typeof source === 'string') {
+    return source;
+  } else if ('uris' in source) {
+    return source.uris.join(' ');
+  } else if ('uri' in source) {
+    return source.uri;
+  } else if ('nonce' in source) {
+    return `nonce-${source.nonce}`;
+  } else if ('nonces' in source) {
+    return source.nonces.map(n => `nonce-${n}`).join(' ');
+  } else if ('hash' in source) {
+    return source.hash;
+  } else if ('hashes' in source) {
+    return source.hashes.join(' ');
+  }
 }
 
 function getPpHeader(apis: AllowedApis) {
   const final = { ...permissionsPolicyDefaults, ...apis };
   const items = [];
   for (const [name, value] of Object.entries(final)) {
-    items.push(`${name}=(${value.join(' ')})`);
+    items.push(`${dasherize(name)}=(${value.join(' ')})`);
   }
   return items.join(', ');
 }
@@ -269,9 +389,22 @@ function getPpHeader(apis: AllowedApis) {
 function getSandboxString(options: SandboxOptions) {
   const items = [];
   for (const [name, value] of Object.entries(options)) {
-    if (value === true) {
-      items.push(name);
+    if (value) {
+      items.push(dasherize(name));
     }
   }
+  if (items.length === 0) {
+    return '';
+  }
+  items.unshift('sandbox');
   return items.join(' ');
+}
+
+function getReportString(reportOption: ReportOptions) {
+  if (reportOption.uri) {
+    return `report-uri ${reportOption.uri}`;
+  }
+  if (reportOption.to) {
+    return `report-to ${reportOption.to}`;
+  }
 }
