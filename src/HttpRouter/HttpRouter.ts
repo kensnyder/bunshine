@@ -161,14 +161,14 @@ export default class HttpRouter {
     // @ts-expect-error
     const filter = filters[method] || getPathMatchFilter(method);
     const matched = this.pathMatcher.match(pathname, filter, this._on404s);
+    let i = 0;
     const next: NextFunction = async () => {
-      const generated = matched.next();
-      if (generated.done) {
+      const match = matched[i++];
+      if (!match) {
         return fallback404(context);
       }
-      const match = generated.value;
-      context.params = match!.params;
-      const handler = match!.target.handler as SingleHandler<
+      context.params = match.params;
+      const handler = match.target.handler as SingleHandler<
         Record<string, string>
       >;
 

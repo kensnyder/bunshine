@@ -536,7 +536,7 @@ describe('HttpRouter', () => {
     it('should JSON encode data if needed', async () => {
       app.get('/home', c => {
         return c.sse(send => {
-          setTimeout(() => send('myEvent', { hello: 'world' }, 'id1'), 20);
+          setTimeout(() => send('myEvent', { hello: 'world' }, 'id1'), 40);
         });
       });
       server = app.listen({ port: 7772 });
@@ -555,7 +555,7 @@ describe('HttpRouter', () => {
           origin: evt.origin,
         });
       });
-      await new Promise(r => setTimeout(r, 40));
+      await new Promise(r => setTimeout(r, 80));
       expect(messages).toEqual([
         {
           name: 'myEvent',

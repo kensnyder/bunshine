@@ -37,28 +37,26 @@ export default class PathMatcher<Target extends any> {
       target,
     });
   }
-  *match(
+  match(
     path: string,
     filter?: (target: Target) => boolean,
     fallbacks?: Function[]
   ) {
+    const matched = [];
     for (const reg of this.registered) {
       const result = reg.matcher(path);
       if (result && (!filter || filter(reg.target))) {
-        yield {
+        matched.push({
           target: reg.target,
           params: result.params,
-        };
+        });
       }
     }
-    if (!fallbacks) {
-      return;
+    if (fallbacks) {
+      for (const fb of fallbacks) {
+        matched.push({ target: { handler: fb }, params: {} });
+      }
     }
-    for (const fallback of fallbacks) {
-      yield {
-        target: { params: {}, handler: fallback },
-        params: {},
-      };
-    }
+    return matched;
   }
 }
