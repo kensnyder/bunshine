@@ -9,14 +9,18 @@ export function devLogger(): Middleware {
     // get response
     const resp = await next();
     const range = c.request.headers.get('Range');
-    let maybeRange = range ? ` \x1b[37m${range}\x1b[0m` : '';
+    let maybeRange = range ? ` ${gray(range)}` : '';
     // log response status
     const ms = (performance.now() - start).toFixed(1);
     process.stdout.write(
-      `\x1b[0m\x1b[37m[${time}]\x1b[0m ${c.request.method} \x1b[92m${pathname}\x1b[0m `
+      `${gray(`[${time}]`)} ${c.request.method} ${green(pathname)} `
     );
-    console.log(`\x1b[0m\x1b[96m${resp.status}\x1b[0m${maybeRange} (${ms}ms)`);
+    console.log(`${cyan(String(resp.status))}${maybeRange} (${ms}ms)`);
     // return response
     return resp;
   };
 }
+
+const gray = (s: string) => `\x1b[37m${s}\x1b[0m`;
+const green = (s: string) => `\x1b[92m${s}\x1b[0m`;
+const cyan = (s: string) => `\x1b[96m${s}\x1b[0m`;
