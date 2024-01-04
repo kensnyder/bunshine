@@ -1,127 +1,15 @@
+import bunshine from '../../../package.json';
 import Context from '../../Context/Context.ts';
 import type { Middleware, NextFunction } from '../../HttpRouter/HttpRouter.ts';
-// @ts-ignore
-import bunshine from '../../../package.json';
-
-export type SecurityHeaderValue = string | null | undefined | boolean;
-export type SecurityHeader =
-  | SecurityHeaderValue
-  | ((context: Context) => SecurityHeaderValue)
-  | ((context: Context) => Promise<SecurityHeaderValue>);
-
-export type SecurityHeaderOptions = {
-  accessControlAllowOrigin?: SecurityHeader | true;
-  contentSecurityPolicy?: CSPDirectives | true;
-  crossOriginEmbedderPolicy?: SecurityHeader | true;
-  crossOriginOpenerPolicy?: SecurityHeader | true;
-  crossOriginResourcePolicy?: SecurityHeader | true;
-  permissionsPolicy?: AllowedApis | true;
-  referrerPolicy?: SecurityHeader | true;
-  server?: SecurityHeader | true;
-  strictTransportSecurity?: SecurityHeader | true;
-  xContentTypeOptions?: SecurityHeader | true;
-  xFrameOptions?: SecurityHeader | true;
-  xPoweredBy?: SecurityHeader | true;
-  xXssProtection?: SecurityHeader | true;
-};
-
-type SandboxOptions = {
-  allowForms?: boolean;
-  allowModals?: boolean;
-  allowOrientationLock?: boolean;
-  allowPointerLock?: boolean;
-  allowPopups?: boolean;
-  allowPopupsToEscapeSandbox?: boolean;
-  allowPresentation?: boolean;
-  allowSameOrigin?: boolean;
-  allowScripts?: boolean;
-  allowTopNavigation?: boolean;
-};
-
-type ReportOptions = {
-  uri?: string;
-  to?: string;
-};
-
-type CSPDirectives = {
-  frameSrc?: CSPSource[];
-  workerSrc?: CSPSource[];
-  connectSrc?: CSPSource[];
-  defaultSrc?: CSPSource[];
-  fontSrc?: CSPSource[];
-  imgSrc?: CSPSource[];
-  manifestSrc?: CSPSource[];
-  mediaSrc?: CSPSource[];
-  objectSrc?: CSPSource[];
-  prefetchSrc?: CSPSource[];
-  scriptSrc?: CSPSource[];
-  scriptSrcElem?: CSPSource[];
-  scriptSrcAttr?: CSPSource[];
-  styleSrcAttr?: CSPSource[];
-  baseUri?: CSPSource[];
-  formAction?: CSPSource[];
-  frameAncestors?: CSPSource[];
-  sandbox?: SandboxOptions | true;
-  report?: ReportOptions | true;
-};
-
-type ApiSource =
-  | '*'
-  | '"data:*"'
-  | '"mediastream:*"'
-  | '"blob:*"'
-  | '"filesystem:*"'
-  | 'self'
-  | 'unsafe-eval'
-  | 'wasm-unsafe-eval'
-  | 'unsafe-hashes'
-  | 'unsafe-inline'
-  | 'none'
-  | {
-      urls: string[];
-    }
-  | {
-      nonces: string[];
-    }
-  | {
-      hashes: string[];
-    };
-
-type AllowedApis = {
-  accelerometer?: ApiSource[];
-  ambientLightSensor?: ApiSource[];
-  autoplay?: ApiSource[];
-  battery?: ApiSource[];
-  camera?: ApiSource[];
-  displayCapture?: ApiSource[];
-  documentDomain?: ApiSource[];
-  encryptedMedia?: ApiSource[];
-  executionWhileNotRendered?: ApiSource[];
-  executionWhileOutOfViewport?: ApiSource[];
-  fullscreen?: ApiSource[];
-  gamepad?: ApiSource[];
-  geolocation?: ApiSource[];
-  gyroscope?: ApiSource[];
-  hid?: ApiSource[];
-  identityCredentialsGet?: ApiSource[];
-  idleDetection?: ApiSource[];
-  localFonts?: ApiSource[];
-  magnetometer?: ApiSource[];
-  midi?: ApiSource[];
-  otpCredentials?: ApiSource[];
-  payment?: ApiSource[];
-  pictureInPicture?: ApiSource[];
-  publickeyCredentialsCreate?: ApiSource[];
-  publickeyCredentialsGet?: ApiSource[];
-  screenWakeLock?: ApiSource[];
-  serial?: ApiSource[];
-  speakerSelection?: ApiSource[];
-  storageAccess?: ApiSource[];
-  usb?: ApiSource[];
-  webShare?: ApiSource[];
-  windowManagement?: ApiSource[];
-  xrSpacialTracking?: ApiSource[];
-};
+import type {
+  AllowedApis,
+  CSPDirectives,
+  CSPSource,
+  ReportOptions,
+  SandboxOptions,
+  SecurityHeaderOptions,
+  SecurityHeaderValue,
+} from './securityHeaders.types.ts';
 
 const defaultValues: SecurityHeaderOptions = {
   accessControlAllowOrigin: '*',
@@ -229,27 +117,6 @@ const permissionsPolicyDefaults: AllowedApis = {
   xrSpacialTracking: [],
 };
 
-function resolveHeaderValue(
-  name: string,
-  value: SecurityHeaderValue | AllowedApis | CSPDirectives
-) {
-  if (value === false || value === null || value === undefined) {
-    return;
-  }
-  if (name === 'xPoweredBy' && value === true) {
-    return `Bunshine v${bunshine.version}`;
-  } else if (value === true) {
-    // @ts-expect-error
-    value = defaultValues[name];
-  }
-  if (name === 'contentSecurityPolicy') {
-    return getCspHeader(value as CSPDirectives);
-  } else if (name === 'permissionsPolicy') {
-    return getPpHeader(value as AllowedApis);
-  }
-  return value;
-}
-
 export function securityHeaders(
   options: SecurityHeaderOptions = {}
 ): Middleware {
@@ -265,9 +132,9 @@ export function securityHeaders(
     if (typeof value === 'function') {
       headers.functions.push([name, value]);
     } else {
-      const resolved = resolveHeaderValue(name, value);
+      const resolved = _resolveHeaderValue(name, value);
       if (resolved) {
-        headers.values.push([dasherize(name), resolved]);
+        headers.values.push([_dasherize(name), resolved]);
       }
     }
   }
@@ -282,13 +149,13 @@ export function securityHeaders(
     }
     for (let [rawName, value] of headers.functions) {
       try {
-        let resolved = resolveHeaderValue(rawName, value(context));
+        let resolved = _resolveHeaderValue(rawName, value(context));
         // @ts-expect-error
         if (resolved && typeof resolved.then === 'function') {
           resolved = await resolved;
         }
         if (typeof resolved === 'string' && resolved !== '') {
-          resp.headers.set(dasherize(rawName), resolved);
+          resp.headers.set(_dasherize(rawName), resolved);
         }
       } catch (e) {}
     }
@@ -296,11 +163,32 @@ export function securityHeaders(
   };
 }
 
-function dasherize(str: string): string {
+function _resolveHeaderValue(
+  name: string,
+  value: SecurityHeaderValue | AllowedApis | CSPDirectives
+) {
+  if (value === false || value === null || value === undefined) {
+    return;
+  }
+  if (name === 'xPoweredBy' && value === true) {
+    return `Bunshine v${bunshine.version}`;
+  } else if (value === true) {
+    // @ts-expect-error
+    value = defaultValues[name];
+  }
+  if (name === 'contentSecurityPolicy') {
+    return _getCspHeader(value as CSPDirectives);
+  } else if (name === 'permissionsPolicy') {
+    return _getPpHeader(value as AllowedApis);
+  }
+  return value;
+}
+
+function _dasherize(str: string): string {
   return str.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
 }
 
-function getCspHeader(directives: CSPDirectives) {
+function _getCspHeader(directives: CSPDirectives) {
   const items = [];
   for (let [key, originalValue] of Object.entries(directives)) {
     let value:
@@ -311,11 +199,11 @@ function getCspHeader(directives: CSPDirectives) {
       | string
       | undefined = originalValue;
     if (key === 'sandbox' && typeof value === 'object') {
-      value = getSandboxString(value as SandboxOptions);
+      value = _getSandboxString(value as SandboxOptions);
     } else if (key === 'report' && typeof value === 'object') {
-      value = getReportString(value as ReportOptions);
+      value = _getReportString(value as ReportOptions);
     } else if (Array.isArray(value) && value.length > 0) {
-      items.push(`${dasherize(key)} ${value.map(getCspItem).join(' ')}`);
+      items.push(`${_dasherize(key)} ${value.map(_getCspItem).join(' ')}`);
     }
     if (typeof value === 'string' && value !== '') {
       items.push(value);
@@ -324,42 +212,7 @@ function getCspHeader(directives: CSPDirectives) {
   return items.join('; ');
 }
 
-type CSPSource =
-  | '*'
-  | 'data:'
-  | 'mediastream:'
-  | 'blob:'
-  | 'filesystem:'
-  | "'self'"
-  | "'unsafe-eval'"
-  | "'wasm-unsafe-eval'"
-  | "'unsafe-hashes'"
-  | "'unsafe-inline'"
-  | "'none'"
-  | {
-      uri: string;
-    }
-  | {
-      uris: string[];
-    }
-  | {
-      nonce: string;
-    }
-  | {
-      nonces: string[];
-    }
-  | {
-      hash: string;
-    }
-  | {
-      hashes: string[];
-    }
-  | "'strict-dynamic'"
-  | "'report-sample'"
-  | "'inline-speculation-rules'"
-  | string;
-
-function getCspItem(source: CSPSource) {
+function _getCspItem(source: CSPSource) {
   if (typeof source === 'string') {
     return source;
   } else if ('uris' in source) {
@@ -377,20 +230,20 @@ function getCspItem(source: CSPSource) {
   }
 }
 
-function getPpHeader(apis: AllowedApis) {
+function _getPpHeader(apis: AllowedApis) {
   const final = { ...permissionsPolicyDefaults, ...apis };
   const items = [];
   for (const [name, value] of Object.entries(final)) {
-    items.push(`${dasherize(name)}=(${value.join(' ')})`);
+    items.push(`${_dasherize(name)}=(${value.join(' ')})`);
   }
   return items.join(', ');
 }
 
-function getSandboxString(options: SandboxOptions) {
+function _getSandboxString(options: SandboxOptions) {
   const items = [];
   for (const [name, value] of Object.entries(options)) {
     if (value) {
-      items.push(dasherize(name));
+      items.push(_dasherize(name));
     }
   }
   if (items.length === 0) {
@@ -400,7 +253,7 @@ function getSandboxString(options: SandboxOptions) {
   return items.join(' ');
 }
 
-function getReportString(reportOption: ReportOptions) {
+function _getReportString(reportOption: ReportOptions) {
   if (reportOption.uri) {
     return `report-uri ${reportOption.uri}`;
   }

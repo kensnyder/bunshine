@@ -286,8 +286,8 @@ describe('HttpRouter', () => {
     });
     it('should handle GET', async () => {
       app.get('/', () => new Response('Hi'));
-      server = app.listen({ port: 7772 });
-      const resp = await fetch('http://localhost:7772/');
+      server = app.listen({ port: 7773 });
+      const resp = await fetch('http://localhost:7773/');
       expect(resp.status).toBe(200);
       expect(await resp.text()).toBe('Hi');
     });
@@ -297,8 +297,8 @@ describe('HttpRouter', () => {
         body = await request.json();
         return new Response('Hi');
       });
-      server = app.listen({ port: 7772 });
-      const resp = await fetch('http://localhost:7772/', {
+      server = app.listen({ port: 7774 });
+      const resp = await fetch('http://localhost:7774/', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -319,8 +319,8 @@ describe('HttpRouter', () => {
           },
         });
       });
-      server = app.listen({ port: 7772 });
-      const resp = await fetch('http://localhost:7772/hi?name=Bob', {
+      server = app.listen({ port: 7775 });
+      const resp = await fetch('http://localhost:7775/hi?name=Bob', {
         method: 'HEAD',
       });
       expect(resp.status).toBe(204);
@@ -337,10 +337,10 @@ describe('HttpRouter', () => {
           },
         });
       });
-      server = app.listen({ port: 7772 });
+      server = app.listen({ port: 7776 });
       const formData = new URLSearchParams();
       formData.append('key', 'secret');
-      const resp = await fetch('http://localhost:7772/parrot', {
+      const resp = await fetch('http://localhost:7776/parrot', {
         method: 'POST',
         headers: {
           'Content-type': 'application/x-www-form-urlencoded',
@@ -362,10 +362,10 @@ describe('HttpRouter', () => {
           },
         });
       });
-      server = app.listen({ port: 7772 });
+      server = app.listen({ port: 7777 });
       const formData = new FormData();
       formData.append('key2', 'secret2');
-      const resp = await fetch('http://localhost:7772/parrot', {
+      const resp = await fetch('http://localhost:7777/parrot', {
         method: 'POST',
         body: formData,
       });
@@ -379,8 +379,8 @@ describe('HttpRouter', () => {
         body = await request.json();
         return new Response('Hi');
       });
-      server = app.listen({ port: 7772 });
-      const resp = await fetch('http://localhost:7772/', {
+      server = app.listen({ port: 7778 });
+      const resp = await fetch('http://localhost:7778/', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -399,8 +399,8 @@ describe('HttpRouter', () => {
           },
         });
       });
-      server = app.listen({ port: 7772 });
-      const resp = await fetch('http://localhost:7772/', {
+      server = app.listen({ port: 7779 });
+      const resp = await fetch('http://localhost:7779/', {
         method: 'TRACE',
         headers: {
           'Max-Forwards': '0',
@@ -420,8 +420,8 @@ describe('HttpRouter', () => {
           },
         });
       });
-      server = app.listen({ port: 7772 });
-      const resp = await fetch('http://localhost:7772/users/42', {
+      server = app.listen({ port: 7780 });
+      const resp = await fetch('http://localhost:7780/users/42', {
         method: 'DELETE',
       });
       expect(resp.status).toBe(204);
@@ -436,8 +436,8 @@ describe('HttpRouter', () => {
           },
         });
       });
-      server = app.listen({ port: 7772 });
-      const resp = await fetch('http://localhost:7772/users/42', {
+      server = app.listen({ port: 7781 });
+      const resp = await fetch('http://localhost:7781/users/42', {
         method: 'OPTIONS',
       });
       expect(resp.status).toBe(204);
@@ -447,9 +447,9 @@ describe('HttpRouter', () => {
       app.get('/home', ({ app }) => {
         return new Response(app.locals.foo);
       });
-      server = app.listen({ port: 7772 });
+      server = app.listen({ port: 7782 });
       app.locals.foo = 'bar';
-      const resp = await fetch('http://localhost:7772/home');
+      const resp = await fetch('http://localhost:7782/home');
       expect(resp.status).toBe(200);
       expect(await resp.text()).toBe('bar');
     });
@@ -461,8 +461,8 @@ describe('HttpRouter', () => {
           setTimeout(close, 30);
         });
       });
-      server = app.listen({ port: 7772 });
-      const stream = new EventSource('http://localhost:7772/home');
+      server = app.listen({ port: 7783 });
+      const stream = new EventSource('http://localhost:7783/home');
       let messages: string[] = [];
       stream.addEventListener('open', () => {
         messages.push('open');
@@ -476,6 +476,7 @@ describe('HttpRouter', () => {
       stream.close();
     });
     it('should enable named EventSource', async () => {
+      // TODO: change EventSource tests to use Promises instead of timeouts
       app.get('/home', c => {
         return c.sse((send, close) => {
           setTimeout(() => send('myEvent', 'hi', 'id1', 2000), 10);
@@ -483,8 +484,8 @@ describe('HttpRouter', () => {
           setTimeout(close, 30);
         });
       });
-      server = app.listen({ port: 7772 });
-      const stream = new EventSource('http://localhost:7772/home');
+      server = app.listen({ port: 7784 });
+      const stream = new EventSource('http://localhost:7784/home');
       let messages: Array<{
         name: string;
         payload: string;
@@ -505,13 +506,13 @@ describe('HttpRouter', () => {
           name: 'myEvent',
           payload: 'hi',
           id: 'id1',
-          origin: 'http://localhost:7772',
+          origin: 'http://localhost:7784',
         },
         {
           name: 'myEvent',
           payload: 'hi2',
           id: 'id2',
-          origin: 'http://localhost:7772',
+          origin: 'http://localhost:7784',
         },
       ]);
       stream.close();
@@ -522,8 +523,8 @@ describe('HttpRouter', () => {
           setTimeout(() => send('myEvent', 'hi'), 20);
         });
       });
-      server = app.listen({ port: 7772 });
-      const stream = new EventSource('http://localhost:7772/home');
+      server = app.listen({ port: 7785 });
+      const stream = new EventSource('http://localhost:7785/home');
       let messages: any[] = [];
       stream.addEventListener('myEvent', evt => {
         messages.push(evt);
@@ -533,38 +534,39 @@ describe('HttpRouter', () => {
       await new Promise(r => setTimeout(r, 20));
       expect(messages).toEqual([]);
     });
-    it('should JSON encode data if needed', async () => {
-      app.get('/home', c => {
-        return c.sse(send => {
-          setTimeout(() => send('myEvent', { hello: 'world' }, 'id1'), 40);
+    it('should JSON encode data if needed', done => {
+      const readyToSend = new Promise((resolve, reject) => {
+        app.get('/home', c => {
+          return c.sse(send => {
+            resolve(() => {
+              send('myEvent', { hello: '7786' }, 'id1');
+            });
+          });
         });
-      });
-      server = app.listen({ port: 7772 });
-      const stream = new EventSource('http://localhost:7772/home');
-      let messages: Array<{
-        name: string;
-        payload: string;
-        id: string;
-        origin: string;
-      }> = [];
-      stream.addEventListener('myEvent', evt => {
-        messages.push({
-          name: evt.type,
-          payload: evt.data,
-          id: evt.lastEventId,
-          origin: evt.origin,
+        app.onError(c => reject(c.error));
+        server = app.listen({ port: 7786 });
+      }) as Promise<() => void>;
+      const readyToListen = new Promise((resolve, reject) => {
+        const stream = new EventSource('http://localhost:7786/home');
+        stream.addEventListener('error', evt => {
+          reject();
+          console.log('-------------------------------');
+          console.log('Stream at 7786 got error event:', evt);
+          expect(false).toBe(true);
+          done();
+          stream.close();
         });
-      });
-      await new Promise(r => setTimeout(r, 80));
-      expect(messages).toEqual([
-        {
-          name: 'myEvent',
-          payload: '{"hello":"world"}',
-          id: 'id1',
-          origin: 'http://localhost:7772',
-        },
-      ]);
-      stream.close();
+        stream.addEventListener('myEvent', evt => {
+          expect(evt.type).toBe('myEvent');
+          expect(evt.data).toBe('{"hello":"7786"}');
+          expect(evt.lastEventId).toBe('id1');
+          expect(evt.origin).toBe('http://localhost:7786');
+          done();
+          stream.close();
+        });
+        resolve(7786);
+      }) as Promise<number>;
+      Promise.all([readyToSend, readyToListen]).then(([doSend]) => doSend());
     });
     it('should warn when overriding some headers', async () => {
       spyOn(console, 'warn').mockImplementation(() => {});
@@ -580,8 +582,8 @@ describe('HttpRouter', () => {
       app.onError(c => {
         console.log('app.onError', c.error);
       });
-      server = app.listen({ port: 7772 });
-      const stream = new EventSource('http://localhost:7772/home');
+      server = app.listen({ port: 7787 });
+      const stream = new EventSource('http://localhost:7787/home');
       stream.addEventListener('myEvent', () => {});
       await new Promise(r => setTimeout(r, 100));
       stream.close();
@@ -603,8 +605,8 @@ describe('HttpRouter', () => {
       app.onError(c => {
         console.log('app.onError', c.error);
       });
-      server = app.listen({ port: 7772 });
-      const stream = new EventSource('http://localhost:7772/home');
+      server = app.listen({ port: 7788 });
+      const stream = new EventSource('http://localhost:7788/home');
       stream.addEventListener('myEvent', () => {});
       await new Promise(r => setTimeout(r, 100));
       stream.close();

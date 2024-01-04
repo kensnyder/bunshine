@@ -1,5 +1,6 @@
 import type { ServeOptions, Server } from 'bun';
 import Context from '../Context/Context';
+import MatcherWithCache from '../MatcherWithCache/MatcherWithCache.ts';
 import PathMatcher from '../PathMatcher/PathMatcher';
 import SocketRouter from '../SocketRouter/SocketRouter.ts';
 import { fallback404 } from './fallback404';
@@ -54,12 +55,22 @@ const filters = {
   TRACE: getPathMatchFilter('TRACE'),
 };
 
+export type HttpRouterOptions = {
+  cacheSize?: number;
+};
+
 export default class HttpRouter {
   locals: Record<string, any> = {};
-  pathMatcher: PathMatcher<RouteInfo> = new PathMatcher<RouteInfo>();
+  pathMatcher: MatcherWithCache<RouteInfo>;
   _wsRouter?: SocketRouter;
   _onErrors: any[] = [];
   _on404s: any[] = [];
+  constructor(options: HttpRouterOptions = {}) {
+    this.pathMatcher = new MatcherWithCache<RouteInfo>(
+      new PathMatcher(),
+      options.cacheSize || 4000
+    );
+  }
   listen = (options: Omit<ServeOptions, 'fetch'> = {}) => {
     return Bun.serve(this.getExport(options));
   };
