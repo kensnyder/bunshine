@@ -1,7 +1,8 @@
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.9.3" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.10.0" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.9.3)](https://npmjs.com/package/bunshine)
-[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.9.3)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.10.0)](https://npmjs.com/package/bunshine)
+[![Dependencies](https://badgen.net/static/dependencies/2/green?v=0.10.0)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
+[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.10.0)](https://opensource.org/licenses/ISC)
 
 # Bunshine
 
@@ -127,7 +128,7 @@ import { HttpRouter, serveFiles } from 'bunshine';
 
 const app = new HttpRouter();
 
-app.use(serveFiles(`${import.meta.dir}/public`));
+app.get('/public/*', serveFiles(`${import.meta.dir}/public`));
 
 app.listen({ port: 3100 });
 ```
@@ -552,7 +553,7 @@ import { HttpRouter, serveFiles } from 'bunshine';
 
 const app = new HttpRouter();
 
-app.get('/public', serveFiles(`${import.meta.dir}/public`));
+app.get('/public/*', serveFiles(`${import.meta.dir}/public`));
 
 app.listen({ port: 3100 });
 ```
@@ -763,7 +764,7 @@ the most out of TypeScript.
 You can type URL params by passing a type to any of the route methods:
 
 ```ts
-import { HttpRouter, serveFiles } from 'bunshine';
+import { HttpRouter } from 'bunshine';
 
 const app = new HttpRouter();
 
@@ -827,13 +828,21 @@ app.listen({ port: 3100 });
 - ✅ HttpRouter
 - ✅ SocketRouter
 - ✅ Context
+- ✅ examples/server.ts
 - ✅ middleware > serveFiles
 - ✅ middleware > cors
 - ✅ middleware > devLogger
 - ✅ middleware > prodLogger
 - ✅ middleware > performanceHeader
-- 🔲 middleware > securityHeaders
-- 🔲 examples/server.ts
+- ✅ middleware > securityHeaders
+- ✅ middleware > trailingSlashes
+- 🔲 middleware > compression
+- 🔲 options for serveFiles
+- 🔲 tests for cors
+- 🔲 tests for devLogger
+- 🔲 tests for prodLogger
+- 🔲 tests for serveFiles
+- 🔲 more examples
 - 🔲 GitHub Actions to run tests and coverage
 
 ## License

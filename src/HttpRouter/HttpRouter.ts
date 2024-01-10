@@ -1,4 +1,6 @@
 import type { ServeOptions, Server } from 'bun';
+// @ts-ignore
+import bunshine from '../../package.json';
 import Context from '../Context/Context';
 import MatcherWithCache from '../MatcherWithCache/MatcherWithCache.ts';
 import PathMatcher from '../PathMatcher/PathMatcher';
@@ -59,8 +61,14 @@ export type HttpRouterOptions = {
   cacheSize?: number;
 };
 
+export type EmitUrlOptions = {
+  verbose?: boolean;
+};
+
 export default class HttpRouter {
+  version: string = bunshine.version;
   locals: Record<string, any> = {};
+  server: Server | undefined;
   pathMatcher: MatcherWithCache<RouteInfo>;
   _wsRouter?: SocketRouter;
   _onErrors: any[] = [];
@@ -71,8 +79,36 @@ export default class HttpRouter {
       options.cacheSize || 4000
     );
   }
+  respectSigTerm = ({ closeActiveConnections = true } = {}) => {
+    ['SIGTERM', 'SIGINT'].forEach(signal => {
+      process.once(signal, () => {
+        console.log(`☀️ Received ${signal}, shutting down.`);
+        this.server?.stop(closeActiveConnections);
+      });
+    });
+  };
   listen = (options: Omit<ServeOptions, 'fetch'> = {}) => {
-    return Bun.serve(this.getExport(options));
+    const server = Bun.serve(this.getExport(options));
+    this.server = server;
+    return server;
+  };
+  emitUrl = (options: EmitUrlOptions = { verbose: false }) => {
+    if (!this.server) {
+      throw new Error(
+        'Cannot emit URL before server has been started. Call .listen() first.'
+      );
+    }
+    const servingAt = String(this.server.url);
+    if (options.verbose) {
+      const server = Bun.env.COMPUTERNAME || Bun.env.HOSTNAME;
+      const mode = Bun.env.NODE_ENV || 'production';
+      const took = Math.round(performance.now());
+      console.log(
+        `☀️ Bunshine v${bunshine.version} on Bun v${Bun.version} running at ${servingAt} on server "${server}" in ${mode} (${took}ms)`
+      );
+    } else {
+      console.log(`☀️ Serving ${servingAt}`);
+    }
   };
   getExport = (options: Omit<ServeOptions, 'fetch' | 'websocket'> = {}) => {
     const config = {

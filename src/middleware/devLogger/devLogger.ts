@@ -21,6 +21,6 @@ export function devLogger(): Middleware {
   };
 }
 
-const gray = (s: string) => `\x1b[37m${s}\x1b[0m`;
+const gray = (s: string) => `\x1b[90m${s}\x1b[0m`;
 const green = (s: string) => `\x1b[92m${s}\x1b[0m`;
 const cyan = (s: string) => `\x1b[96m${s}\x1b[0m`;

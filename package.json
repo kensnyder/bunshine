@@ -1,26 +1,25 @@
 {
   "name": "bunshine",
-  "version": "0.9.3",
+  "version": "0.10.0",
   "module": "server/server.ts",
   "type": "module",
   "scripts": {
     "test-watch": "bun test --watch",
     "coverage": "bun test --coverage",
-    "start": "bun ./examples/server.ts"
+    "example": "bun --watch ./examples/server.ts"
   },
   "dependencies": {
     "lru-cache": "^10.1.0",
-    "path-to-regexp": "^6.2.1",
-    "pretty-var-export": "^1.1.7"
+    "path-to-regexp": "^6.2.1"
   },
   "devDependencies": {
     "@types/eventsource": "^1.1.15",
-    "bun-types": "^1.0.13",
+    "bun-types": "^1.0.21",
     "eventsource": "^2.0.2",
     "mitata": "^0.1.6",
-    "prettier": "^3.1.0",
+    "prettier": "^3.1.1",
     "prettier-plugin-organize-imports": "^3.2.4",
-    "type-fest": "^4.8.2",
-    "typescript": "^5.2.2"
+    "type-fest": "^4.9.0",
+    "typescript": "^5.3.3"
   }
 }

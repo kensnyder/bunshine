@@ -23,4 +23,7 @@ export { devLogger } from './src/middleware/devLogger/devLogger';
 export { performanceHeader } from './src/middleware/performanceHeader/performanceHeader.ts';
 export { prodLogger } from './src/middleware/prodLogger/prodLogger';
 export { securityHeaders } from './src/middleware/securityHeaders/securityHeaders';
-export { serveFiles } from './src/middleware/serveFiles/serveFiles';
+export {
+  serveFiles,
+  type StaticOptions,
+} from './src/middleware/serveFiles/serveFiles';

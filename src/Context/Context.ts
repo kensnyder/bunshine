@@ -36,6 +36,9 @@ export default class Context<
     this.app = app;
     this.url = new URL(request.url);
   }
+  getIp = () => {
+    return this.server.requestIP(this.request);
+  };
   /** A shorthand for `new Response(text, { headers: { 'Content-type': 'text/plain' } })` */
   text = text;
   /** A shorthand for `new Response(js, { headers: { 'Content-type': 'text/javascript' } })` */
