@@ -29,8 +29,7 @@ export type FileResponseOptions = {
 };
 export const file = async (
   filenameOrBunFile: string | BunFile,
-  fileOptions: FileResponseOptions = {},
-  responseInit: ResponseInit = {}
+  fileOptions: FileResponseOptions = {}
 ) => {
   let file =
     typeof filenameOrBunFile === 'string'
@@ -40,38 +39,13 @@ export const file = async (
   if (totalFileSize === 0) {
     return new Response('File not found', { status: 404 });
   }
-  let resp: Response;
-  const rangeMatch = fileOptions.range?.match(/^bytes=(\d*)-(\d*)$/);
-  if (rangeMatch) {
-    const start = parseInt(rangeMatch[1]) || 0;
-    let end = parseInt(rangeMatch[2]);
-    if (isNaN(end)) {
-      // Initial request: some browsers use "Range: bytes=0-"
-      end = Math.min(
-        start + (fileOptions.chunkSize || 3 * 1024 ** 2),
-        totalFileSize - 1
-      );
-    }
-    if (end > totalFileSize - 1) {
-      return new Response('416 Range not satisfiable', { status: 416 });
-    }
-    // Bun has a bug when setting content-length and content-range automatically
-    // so convert file to buffer
-    let buffer = await file.arrayBuffer();
-    // the range is less than the entire file
-    if (end - 1 < totalFileSize) {
-      buffer = buffer.slice(start, end + 1);
-    }
-    resp = new Response(buffer, { ...responseInit, status: 206 });
-    if (!resp.headers.has('Content-Type')) {
-      resp.headers.set('Content-Type', 'application/octet-stream');
-    }
-    resp.headers.set('Content-Length', String(buffer.byteLength));
-    resp.headers.set('Content-Range', `bytes ${start}-${end}/${totalFileSize}`);
-  } else {
-    // Bun will automatically set content-type and length
-    resp = new Response(file);
-  }
+  const resp = await buildFileResponse({
+    file,
+    acceptRanges: true,
+    chunkSize: fileOptions.chunkSize,
+    rangeHeader: fileOptions.range,
+    method: 'GET',
+  });
   // tell the client that we are capable of handling range requests
   resp.headers.set('Accept-Ranges', 'bytes');
   return resp;
@@ -171,6 +145,7 @@ export const sse = (
   headers.set('Content-Type', 'text/event-stream');
   headers.set('Cache-Control', 'no-cache');
   headers.set('Connection', 'keep-alive');
+  // @ts-ignore
   return new Response(stream, { ...init, headers });
 };
 
@@ -178,10 +153,65 @@ function getResponseFactory(contentType: string) {
   return function (content: any, init: ResponseInit = {}) {
     return new Response(content, {
       ...init,
+      // @ts-ignore
       headers: {
         ...(init.headers || {}),
         'Content-Type': contentType,
       },
     });
   };
+}
+
+export async function buildFileResponse({
+  file,
+  acceptRanges,
+  chunkSize,
+  rangeHeader,
+  method,
+}: {
+  file: BunFile;
+  acceptRanges: boolean;
+  chunkSize?: number;
+  rangeHeader?: string | null;
+  method: string;
+}) {
+  let response: Response;
+  const rangeMatch = String(rangeHeader).match(/^bytes=(\d*)-(\d*)$/);
+  if (acceptRanges && rangeMatch) {
+    const totalFileSize = file.size;
+    const start = parseInt(rangeMatch[1]) || 0;
+    let end = parseInt(rangeMatch[2]);
+    if (isNaN(end)) {
+      // Initial request: some browsers use "Range: bytes=0-"
+      end = Math.min(start + (chunkSize || 3 * 1024 ** 2), totalFileSize - 1);
+    }
+    if (end > totalFileSize - 1) {
+      return new Response('416 Range not satisfiable', { status: 416 });
+    }
+    // Bun has a bug when setting content-length and content-range automatically
+    // so convert file to buffer
+    let buffer = await file.arrayBuffer();
+    let status = 206;
+    // the range is less than the entire file
+    if (end - 1 < totalFileSize) {
+      buffer = buffer.slice(start, end + 1);
+      status = 200;
+    }
+    response = new Response(buffer, { status });
+    if (!response.headers.has('Content-Type')) {
+      response.headers.set('Content-Type', 'application/octet-stream');
+    }
+    response.headers.set('Content-Length', String(buffer.byteLength));
+    response.headers.set(
+      'Content-Range',
+      `bytes ${start}-${end}/${totalFileSize}`
+    );
+  } else {
+    // Bun will automatically set content-type and length
+    response = new Response(file, { status: method === 'HEAD' ? 204 : 200 });
+  }
+  if (acceptRanges) {
+    response.headers.set('Accept-Ranges', 'bytes');
+  }
+  return response;
 }

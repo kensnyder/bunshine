@@ -1,4 +1,4 @@
-ISC License (ISC) Copyright 2023 Ken Snyder
+ISC License (ISC) Copyright 2023-2024 Ken Snyder
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice

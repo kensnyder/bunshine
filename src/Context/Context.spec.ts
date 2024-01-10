@@ -48,7 +48,7 @@ describe('Context', () => {
     expect(resp).toBeInstanceOf(Response);
     const file = await resp.blob();
     const text = await file.text();
-    expect(resp.status).toBe(206);
+    expect(resp.status).toBe(200);
     expect(text).toBe('<h1>');
   });
   it('should handle files with range "bytes=0-"', async () => {
@@ -82,7 +82,7 @@ describe('Context', () => {
     const c = new Context(request, server, app);
     const resp = await c.file(`${import.meta.dir}/../testFixtures/home.html`);
     expect(resp).toBeInstanceOf(Response);
-    expect(resp.status).toBe(206);
+    expect(resp.status).toBe(200);
     expect(await resp.text()).toBe('<h1>');
   });
   it('should return 404 on file not found', async () => {

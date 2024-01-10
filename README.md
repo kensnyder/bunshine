@@ -1,8 +1,9 @@
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.10.0" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.11.0" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.10.0)](https://npmjs.com/package/bunshine)
-[![Dependencies](https://badgen.net/static/dependencies/2/green?v=0.10.0)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
-[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.10.0)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.11.0)](https://npmjs.com/package/bunshine)
+[![Dependencies](https://badgen.net/static/dependencies/3/green?v=0.11.0)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
+![Test Coverage: 96%](https://badgen.net/static/test%20coverage/96%25/green?v=0.11.0)
+[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.11.0)](https://opensource.org/licenses/ISC)
 
 # Bunshine
 
@@ -132,6 +133,8 @@ app.get('/public/*', serveFiles(`${import.meta.dir}/public`));
 
 app.listen({ port: 3100 });
 ```
+
+See the [serveFiles](#serveFiles) section for more info.
 
 ## Writing middleware
 
@@ -557,6 +560,70 @@ app.get('/public/*', serveFiles(`${import.meta.dir}/public`));
 
 app.listen({ port: 3100 });
 ```
+
+How to respond to both GET and HEAD requests:
+
+```ts
+import { HttpRouter, serveFiles } from 'bunshine';
+
+const app = new HttpRouter();
+
+app.on(['HEAD', 'GET'], '/public/*', serveFiles(`${import.meta.dir}/public`));
+
+app.listen({ port: 3100 });
+```
+
+How to alter the response:
+
+```ts
+import { HttpRouter, serveFiles } from 'bunshine';
+
+const app = new HttpRouter();
+
+const addFooHeader = async (_, next) => {
+  const response = await next();
+  response.headers.set('x-foo', 'bar');
+  return response;
+};
+
+app.get('/public/*', addFooHeader, serveFiles(`${import.meta.dir}/public`));
+
+app.listen({ port: 3100 });
+```
+
+serveFiles accepts an optional second parameter for options:
+
+```ts
+import { HttpRouter, serveFiles } from 'bunshine';
+
+const app = new HttpRouter();
+
+app.get(
+  '/public/*',
+  serveFiles(`${import.meta.dir}/public`, {
+    extensions: ['html', 'css', 'js', 'png', 'jpg', 'gif', 'svg', 'ico'],
+    index: true,
+  })
+);
+
+app.listen({ port: 3100 });
+```
+
+All options for serveFiles:
+
+| Option       | Default     | Description                                                                               |
+| ------------ | ----------- | ----------------------------------------------------------------------------------------- |
+| acceptRanges | `true`      | If true, accept ranged byte requests                                                      |
+| dotfiles     | `"ignore"`  | How to handle dotfiles; allow=>serve normally, deny=>return 403, ignore=>run next handler |
+| etag         | N/A         | Not yet implemented                                                                       |
+| extensions   | `[]`        | If given, a list of file extensions to allow                                              |
+| fallthrough  | `true`      | If false, issue a 404 when a file is not found, otherwise proceed to next handler         |
+| immutable    | `false`     | If true, add immutable directive to Cache-Control header; must also specify maxAge        |
+| index        | `[]`        | If given, a list of filenames (e.g. index.html) to look for when path is a folder         |
+| lastModified | `true`      | If true, set the Last-Modified header                                                     |
+| maxAge       | `undefined` | If given, add a Cache-Control header with max-age†                                        |
+
+† _A number in milliseconds or [ms](https://www.npmjs.com/package/ms) compatible expression such as '30m' or '1y'._
 
 ### cors
 
