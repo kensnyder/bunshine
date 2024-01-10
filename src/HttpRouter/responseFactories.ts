@@ -207,8 +207,16 @@ export async function buildFileResponse({
       `bytes ${start}-${end}/${totalFileSize}`
     );
   } else {
-    // Bun will automatically set content-type and length
-    response = new Response(file, { status: method === 'HEAD' ? 204 : 200 });
+    // Bun will automatically set content-type and content-length,
+    //   but delays until the response is actually sent, but middleware might
+    //   want to know the file details ahead of time
+    response = new Response(file, {
+      headers: {
+        'Content-Length': String(file.size),
+        'Content-Type': file.type || 'application/octet-stream',
+      },
+      status: method === 'HEAD' ? 204 : 200,
+    });
   }
   if (acceptRanges) {
     response.headers.set('Accept-Ranges', 'bytes');

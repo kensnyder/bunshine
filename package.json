@@ -1,6 +1,6 @@
 {
   "name": "bunshine",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "module": "server/server.ts",
   "type": "module",
   "scripts": {
@@ -16,7 +16,7 @@
   "devDependencies": {
     "@types/eventsource": "^1.1.15",
     "@types/ms": "^0.7.34",
-    "bun-types": "^1.0.21",
+    "bun-types": "^1.0.22",
     "eventsource": "^2.0.2",
     "mitata": "^0.1.6",
     "prettier": "^3.1.1",
