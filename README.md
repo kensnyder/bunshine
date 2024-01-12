@@ -24,6 +24,7 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 9. Make specifically for Bun
 10. Comprehensive unit tests
 11. Support for `X-HTTP-Method-Override` header
+12. Support for gzip compression
 
 ## Table of Contents
 
@@ -60,20 +61,20 @@ app.listen({ port: 3100 });
 ## Full example
 
 ```ts
-import { HttpRouter, json, redirect } from 'bunshine';
+import { HttpRouter, redirect } from 'bunshine';
 
 const app = new HttpRouter();
 
-app.patch('/users/:id', async ({ request, params, url }) => {
-  await authorize(request.headers.get('Authorization'));
-  const data = await request.json();
+app.patch('/users/:id', async c => {
+  await authorize(c.request.headers.get('Authorization'));
+  const data = await c.request.json();
   const result = await updateUser(params.id, data);
   if (result === 'not found') {
-    return json({ error: 'User not found' }, { status: 404 });
+    return c.json({ error: 'User not found' }, { status: 404 });
   } else if (result === 'error') {
-    return json({ error: 'Error updating user' }, { status: 500 });
+    return c.json({ error: 'Error updating user' }, { status: 500 });
   } else {
-    return json({ error: false });
+    return c.json({ error: false });
   }
 });
 
@@ -109,12 +110,28 @@ import { HttpRouter, type Context, type NextFunction } from 'bunshine';
 const app = new HttpRouter();
 
 app.get('/hello', (c: Context, next: NextFunction) => {
+  // Properties of the Context object
   c.request; // The raw request object
-  c.params; // The request params from URL placeholders
+  c.url; // The URL object
+  c.params; // The request params from route placeholders
   c.server; // The Bun server instance (useful for pub-sub)
   c.app; // The HttpRouter instance
   c.locals; // A place to persist data between handlers for the duration of the request
   c.error; // Handlers registered with app.on500() can see this Error object
+  c.ip; // The IP address of the client (not necessarily the end user)
+  c.date; // The date of the request
+  c.now; // The result of performance.now() at the start of the request
+  // Convenience methods for creating Response objects with various content types
+  // Note that responses are automatically gzipped if the client accepts gzip
+  c.json(data, init);
+  c.text(text, init);
+  c.js(jsText, init);
+  c.xml(xmlText, init);
+  c.html(htmlText, init);
+  c.css(cssText, init);
+  c.file(path, init);
+  // Create a redirect Response
+  c.redirect(url, status);
 });
 ```
 
@@ -151,14 +168,18 @@ app.use(c => {
     // redirect instead of running other middleware or handlers
     return c.redirect('/login', { status: 403 });
   }
+  // continue to other handlers
 });
 
 // Run after each request
 app.use(async (c, next) => {
+  // wait for response from other handlers
   const resp = await next();
+  // peek at status and log if 403
   if (resp.status === 403) {
     logThatUserWasForbidden(c.request.url);
   }
+  // return the response from the other handlers
   return resp;
 });
 
@@ -244,12 +265,14 @@ const app = new HttpRouter();
 
 // ❌ Incorrect use of next
 app.get('/hello', (c: Context, next: NextFunction) => {
+  // wait for other handlers to return a response
   const resp = next();
   // do stuff with response
 });
 
 // ✅ Correct use of next
 app.get('/hello', async (c: Context, next: NextFunction) => {
+  // wait for other handlers to return a response
   const resp = await next();
   // do stuff with response
 });
@@ -280,6 +303,7 @@ const app = new HttpRouter();
 app.get('/admin', getAuthMiddleware('admin'), middleware2, handler);
 
 // Bunshine accepts any number of middleware functions in parameters or arrays
+// so the following are equivalent
 app.get('/posts', middleware1, middleware2, handler);
 app.get('/users', [middleware1, middleware2, handler]);
 app.get('/visitors', [[middleware1, [middleware2, handler]]]);
@@ -376,7 +400,7 @@ gameRoom.onmessage = e => {
   }
 };
 gameRoom.onerror = handleGameError;
-// sending messages
+// send message to server
 gameRoom.send(JSON.stringify({ type: 'GameMove', move: 'rock' }));
 ```
 
@@ -549,7 +573,7 @@ info, checkout the [path-to-regexp docs](https://www.npmjs.com/package/path-to-r
 
 Serve static files from a directory. As shown above, serving static files is
 easy with the `serveFiles` middleware. Note that ranged requests are
-supported, so you can use this for video streaming or partial downloads.
+supported, so you can use it for video streaming or partial downloads.
 
 ```ts
 import { HttpRouter, serveFiles } from 'bunshine';

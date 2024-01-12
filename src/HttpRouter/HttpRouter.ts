@@ -63,6 +63,7 @@ export type HttpRouterOptions = {
 
 export type EmitUrlOptions = {
   verbose?: boolean;
+  to: (message: string) => void;
 };
 
 export default class HttpRouter {
@@ -79,20 +80,21 @@ export default class HttpRouter {
       options.cacheSize || 4000
     );
   }
-  respectSigTerm = ({ closeActiveConnections = true } = {}) => {
+  respectSigTerm({ closeActiveConnections = true } = {}) {
     ['SIGTERM', 'SIGINT'].forEach(signal => {
       process.once(signal, () => {
         console.log(`☀️ Received ${signal}, shutting down.`);
         this.server?.stop(closeActiveConnections);
       });
     });
-  };
-  listen = (options: Omit<ServeOptions, 'fetch'> = {}) => {
+    return this;
+  }
+  listen(options: Omit<ServeOptions, 'fetch'> = {}) {
     const server = Bun.serve(this.getExport(options));
     this.server = server;
     return server;
-  };
-  emitUrl = (options: EmitUrlOptions = { verbose: false }) => {
+  }
+  emitUrl(options: EmitUrlOptions = { verbose: false, to: console.log }) {
     if (!this.server) {
       throw new Error(
         'Cannot emit URL before server has been started. Use .listen() to start the server first.'
@@ -103,14 +105,14 @@ export default class HttpRouter {
       const server = Bun.env.COMPUTERNAME || Bun.env.HOSTNAME;
       const mode = Bun.env.NODE_ENV || 'production';
       const took = Math.round(performance.now());
-      console.log(
+      options.to(
         `☀️ Bunshine v${bunshine.version} on Bun v${Bun.version} running at ${servingAt} on server "${server}" in ${mode} (${took}ms)`
       );
     } else {
-      console.log(`☀️ Serving ${servingAt}`);
+      options.to(`☀️ Serving ${servingAt}`);
     }
-  };
-  getExport = (options: Omit<ServeOptions, 'fetch' | 'websocket'> = {}) => {
+  }
+  getExport(options: Omit<ServeOptions, 'fetch' | 'websocket'> = {}) {
     const config = {
       port: 0,
       ...options,
@@ -121,18 +123,18 @@ export default class HttpRouter {
       config.websocket = this._wsRouter.handlers;
     }
     return config;
-  };
+  }
   get socket() {
     if (!this._wsRouter) {
       this._wsRouter = new SocketRouter(this);
     }
     return this._wsRouter;
   }
-  on = <ParamsShape extends Record<string, string> = Record<string, string>>(
+  on<ParamsShape extends Record<string, string> = Record<string, string>>(
     verbOrVerbs: HttpMethods | HttpMethods[],
     path: string | RegExp,
     ...handlers: Handler<ParamsShape>[]
-  ) => {
+  ) {
     if (Array.isArray(verbOrVerbs)) {
       for (const verb of verbOrVerbs) {
         this.on(verb, path, handlers);
@@ -146,59 +148,72 @@ export default class HttpRouter {
       });
     }
     return this;
-  };
-  all = <ParamsShape extends Record<string, string> = Record<string, string>>(
+  }
+  all<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
     ...handlers: Handler<ParamsShape>[]
-  ) => this.on<ParamsShape>('ALL', path, handlers);
-  get = <ParamsShape extends Record<string, string> = Record<string, string>>(
+  ) {
+    return this.on<ParamsShape>('ALL', path, handlers);
+  }
+  get<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
     ...handlers: Handler<ParamsShape>[]
-  ) => this.on<ParamsShape>('GET', path, handlers);
-  put = <ParamsShape extends Record<string, string> = Record<string, string>>(
+  ) {
+    return this.on<ParamsShape>('GET', path, handlers);
+  }
+  put<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
     ...handlers: Handler<ParamsShape>[]
-  ) => this.on<ParamsShape>('PUT', path, handlers);
-  head = <ParamsShape extends Record<string, string> = Record<string, string>>(
+  ) {
+    return this.on<ParamsShape>('PUT', path, handlers);
+  }
+  head<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
     ...handlers: Handler<ParamsShape>[]
-  ) => this.on<ParamsShape>('HEAD', path, handlers);
-  post = <ParamsShape extends Record<string, string> = Record<string, string>>(
+  ) {
+    return this.on<ParamsShape>('HEAD', path, handlers);
+  }
+  post<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
     ...handlers: Handler<ParamsShape>[]
-  ) => this.on<ParamsShape>('POST', path, handlers);
-  patch = <ParamsShape extends Record<string, string> = Record<string, string>>(
+  ) {
+    return this.on<ParamsShape>('POST', path, handlers);
+  }
+  patch<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
     ...handlers: Handler<ParamsShape>[]
-  ) => this.on<ParamsShape>('PATCH', path, handlers);
-  trace = <ParamsShape extends Record<string, string> = Record<string, string>>(
+  ) {
+    return this.on<ParamsShape>('PATCH', path, handlers);
+  }
+  trace<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
     ...handlers: Handler<ParamsShape>[]
-  ) => this.on<ParamsShape>('TRACE', path, handlers);
-  delete = <
-    ParamsShape extends Record<string, string> = Record<string, string>,
-  >(
+  ) {
+    return this.on<ParamsShape>('TRACE', path, handlers);
+  }
+  delete<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
     ...handlers: Handler<ParamsShape>[]
-  ) => this.on<ParamsShape>('DELETE', path, handlers);
-  options = <
-    ParamsShape extends Record<string, string> = Record<string, string>,
-  >(
+  ) {
+    return this.on<ParamsShape>('DELETE', path, handlers);
+  }
+  options<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
     ...handlers: Handler<ParamsShape>[]
-  ) => this.on<ParamsShape>('OPTIONS', path, handlers);
-  use = (...handlers: Handler<{}>[]) => {
-    this.all('*', handlers);
-    return this;
-  };
-  onError = (...handlers: Handler<Record<string, string>>[]) => {
+  ) {
+    return this.on<ParamsShape>('OPTIONS', path, handlers);
+  }
+  use(...handlers: Handler<{}>[]) {
+    return this.all('*', handlers);
+  }
+  onError(...handlers: Handler<Record<string, string>>[]) {
     this._onErrors.push(...handlers.flat(9));
     return this;
-  };
-  on404 = (...handlers: Handler<Record<string, string>>[]) => {
+  }
+  on404(...handlers: Handler<Record<string, string>>[]) {
     this._on404s.push(...handlers.flat(9));
     return this;
-  };
+  }
   fetch = async (request: Request, server: Server) => {
     const context = new Context(request, server, this);
     const pathname = context.url.pathname;

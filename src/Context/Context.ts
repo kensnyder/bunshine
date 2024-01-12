@@ -1,17 +1,20 @@
 import type { BunFile, Server } from 'bun';
 import type HttpRouter from '../HttpRouter/HttpRouter';
 import {
+  factory,
   file,
-  html,
-  js,
   json,
   redirect,
   sse,
-  text,
-  xml,
   type FileResponseOptions,
   type SseSetupFunction,
 } from '../HttpRouter/responseFactories';
+
+const textPlain = factory('text/plain');
+const textJs = factory('text/javascript');
+const textHtml = factory('text/html');
+const textXml = factory('text/xml');
+const textCss = factory('text/css');
 
 export default class Context<
   ParamsShape extends Record<string, string> = Record<string, string>,
@@ -48,29 +51,45 @@ export default class Context<
     return this.server.requestIP(this.request);
   }
   /** A shorthand for `new Response(text, { headers: { 'Content-type': 'text/plain' } })` */
-  text = text;
+  text(text: string, init: ResponseInit = {}) {
+    return textPlain.call(this, text, init);
+  }
   /** A shorthand for `new Response(js, { headers: { 'Content-type': 'text/javascript' } })` */
-  js = js;
+  js(js: string, init: ResponseInit = {}) {
+    return textJs.call(this, js, init);
+  }
   /** A shorthand for `new Response(html, { headers: { 'Content-type': 'text/html' } })` */
-  html = html;
+  html(html: string, init: ResponseInit = {}) {
+    return textHtml.call(this, html, init);
+  }
+  /** A shorthand for `new Response(html, { headers: { 'Content-type': 'text/css' } })` */
+  css(css: string, init: ResponseInit = {}) {
+    return textCss.call(this, css, init);
+  }
   /** A shorthand for `new Response(xml, { headers: { 'Content-type': 'text/xml' } })` */
-  xml = xml;
+  xml(xml: string, init: ResponseInit = {}) {
+    return textXml.call(this, xml, init);
+  }
   /** A shorthand for `new Response(JSON.stringify(data), { headers: { 'Content-type': 'application/json' } })` */
-  json = json;
+  json(data: any, init: ResponseInit = {}) {
+    return json.call(this, data, init);
+  }
   /** A shorthand for `new Response(null, { headers: { Location: url }, status: 301 })` */
-  redirect = redirect;
+  redirect(url: string, status = 302) {
+    return redirect(url, status);
+  }
   /** A shorthand for `new Response(fileBody, fileHeaders)` */
-  file = async (
+  async file(
     filenameOrBunFile: string | BunFile,
     fileOptions: FileResponseOptions = {}
-  ) => {
+  ) {
     return file(filenameOrBunFile, {
       range: this.request.headers.get('Range') || undefined,
       ...fileOptions,
     });
-  };
+  }
   /** A shorthand for `new Response({ headers: { 'Content-type': 'text/event-stream' } })` */
-  sse = (setup: SseSetupFunction, init: ResponseInit = {}) => {
+  sse(setup: SseSetupFunction, init: ResponseInit = {}) {
     return sse(this.request.signal, setup, init);
-  };
+  }
 }

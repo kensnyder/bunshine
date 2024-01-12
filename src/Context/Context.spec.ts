@@ -1,15 +1,6 @@
 import type { Server } from 'bun';
-import { describe, expect, it } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
 import HttpRouter from '../HttpRouter/HttpRouter';
-import {
-  file,
-  html,
-  js,
-  json,
-  redirect,
-  text,
-  xml,
-} from '../HttpRouter/responseFactories.ts';
 import Context from './Context';
 
 // @ts-expect-error
@@ -87,56 +78,69 @@ describe('Context', () => {
     expect(resp.status).toBe(200);
     expect(await resp.text()).toBe('<h1>');
   });
-  it('should return 404 on file not found', async () => {
-    const resp = await file(`${import.meta.dir}/invalidfile`);
-    expect(resp.status).toBe(404);
-  });
-  it('should include text()', async () => {
-    const resp = text('Hi');
-    expect(await resp.text()).toBe('Hi');
-    expect(resp.headers.get('Content-type')).toStartWith('text/plain');
-  });
-  it('should include js()', async () => {
-    const resp = js('alert(42)');
-    expect(await resp.text()).toBe('alert(42)');
-    expect(resp.headers.get('Content-type')).toStartWith('text/javascript');
-  });
-  it('should include html()', async () => {
-    const resp = html('<h1>Hi</h1>');
-    expect(await resp.text()).toBe('<h1>Hi</h1>');
-    expect(resp.headers.get('Content-type')).toStartWith('text/html');
-  });
-  it('should include xml()', async () => {
-    const resp = xml('<greeting>Hi</greeting>');
-    expect(await resp.text()).toBe('<greeting>Hi</greeting>');
-    expect(resp.headers.get('Content-type')).toStartWith('text/xml');
-  });
-  it('should include json(data)', async () => {
-    const resp = json({ hello: 'world' });
-    expect(await resp.json()).toEqual({ hello: 'world' });
-    expect(resp.headers.get('Content-type')).toStartWith('application/json');
-  });
-  it('should include json(data, init)', async () => {
-    const resp = json(
-      { hello: 'world' },
-      {
-        headers: {
-          'X-Hello': 'World',
-        },
-      }
-    );
-    expect(await resp.json()).toEqual({ hello: 'world' });
-    expect(resp.headers.get('Content-type')).toStartWith('application/json');
-    expect(resp.headers.get('X-Hello')).toBe('World');
-  });
-  it('should include redirect(url)', () => {
-    const resp = redirect('/home');
-    expect(resp.headers.get('Location')).toBe('/home');
-    expect(resp.status).toBe(302);
-  });
-  it('should include redirect(url, status)', () => {
-    const resp = redirect('/home', 301);
-    expect(resp.headers.get('Location')).toBe('/home');
-    expect(resp.status).toBe(301);
+  describe('server', () => {
+    let c: Context;
+    beforeEach(() => {
+      const request = new Request('http://localhost/thing');
+      const app = new HttpRouter();
+      c = new Context(request, server, app);
+    });
+    it('should return 404 on file not found', async () => {
+      const resp = await c.file(`${import.meta.dir}/invalidfile`);
+      expect(resp.status).toBe(404);
+    });
+    it('should include text()', async () => {
+      const resp = c.text('Hi');
+      expect(await resp.text()).toBe('Hi');
+      expect(resp.headers.get('Content-type')).toStartWith('text/plain');
+    });
+    it('should include js()', async () => {
+      const resp = c.js('alert(42)');
+      expect(await resp.text()).toBe('alert(42)');
+      expect(resp.headers.get('Content-type')).toStartWith('text/javascript');
+    });
+    it('should include html()', async () => {
+      const resp = c.html('<h1>Hi</h1>');
+      expect(await resp.text()).toBe('<h1>Hi</h1>');
+      expect(resp.headers.get('Content-type')).toStartWith('text/html');
+    });
+    it('should include css()', async () => {
+      const resp = c.css('* { min-width: 0 }');
+      expect(await resp.text()).toBe('* { min-width: 0 }');
+      expect(resp.headers.get('Content-type')).toStartWith('text/css');
+    });
+    it('should include xml()', async () => {
+      const resp = c.xml('<greeting>Hi</greeting>');
+      expect(await resp.text()).toBe('<greeting>Hi</greeting>');
+      expect(resp.headers.get('Content-type')).toStartWith('text/xml');
+    });
+    it('should include json(data)', async () => {
+      const resp = c.json({ hello: 'world' });
+      expect(await resp.json()).toEqual({ hello: 'world' });
+      expect(resp.headers.get('Content-type')).toStartWith('application/json');
+    });
+    it('should include json(data, init)', async () => {
+      const resp = c.json(
+        { hello: 'world' },
+        {
+          headers: {
+            'X-Hello': 'World',
+          },
+        }
+      );
+      expect(await resp.json()).toEqual({ hello: 'world' });
+      expect(resp.headers.get('Content-type')).toStartWith('application/json');
+      expect(resp.headers.get('X-Hello')).toBe('World');
+    });
+    // it('should include redirect(url)', () => {
+    //   const resp = redirect('/home');
+    //   expect(resp.headers.get('Location')).toBe('/home');
+    //   expect(resp.status).toBe(302);
+    // });
+    // it('should include redirect(url, status)', () => {
+    //   const resp = redirect('/home', 301);
+    //   expect(resp.headers.get('Location')).toBe('/home');
+    //   expect(resp.status).toBe(301);
+    // });
   });
 });

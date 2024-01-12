@@ -1,19 +1,59 @@
 import { BunFile } from 'bun';
+import Context from '../Context/Context.ts';
 
-export const text = getResponseFactory('text/plain; charset=utf-8');
-export const js = getResponseFactory('text/javascript; charset=utf-8');
-export const html = getResponseFactory('text/html; charset=utf-8');
-export const xml = getResponseFactory('text/xml; charset=utf-8');
-export const json = (data: any, init: ResponseInit = {}) => {
-  return new Response(JSON.stringify(data), {
-    ...init,
+export type ResponseBody =
+  | null
+  | string
+  | Blob
+  | ArrayBuffer
+  | TypedArray
+  | DataView
+  | FormData
+  | ReadableStream
+  | URLSearchParams;
+
+export type Factory = (body: ResponseBody, init?: ResponseInit) => Response;
+
+type JsonFactory = (data: any, init?: ResponseInit) => Response;
+
+const textEncoder = new TextEncoder();
+
+export function json(this: Context, data: any, init: ResponseInit = {}) {
+  let body: string | Uint8Array = JSON.stringify(data);
+  // @ts-expect-error
+  init.headers = new Headers(init.headers || {});
+  init.headers.set('Content-type', `application/json; charset=utf-8`);
+  if (body.length >= 60) {
+    body = Bun.gzipSync(Buffer.from(textEncoder.encode(body)));
+    init.headers.set('Content-Encoding', 'gzip');
+  }
+  // @ts-expect-error
+  return new Response(body, init);
+}
+
+export function factory(contentType: string): Factory {
+  return function (this: Context, body: ResponseBody, init: ResponseInit = {}) {
     // @ts-expect-error
-    headers: {
-      ...(init.headers || {}),
-      'Content-Type': 'application/json; charset=utf-8',
-    },
-  });
-};
+    init.headers = new Headers(init.headers || {});
+    init.headers.set('Content-type', `${contentType}; charset=utf-8`);
+    if (
+      // client must expect gzip
+      this.request.headers.get('Accept-Encoding')?.includes('gzip') &&
+      // body must be compressible
+      (typeof body === 'string' ||
+        body instanceof ArrayBuffer ||
+        body instanceof Buffer) &&
+      // body must be large enough to be worth compressing
+      (typeof body !== 'string' || body.length >= 60)
+    ) {
+      // @ts-expect-error
+      body = Bun.gzipSync(Buffer.from(textEncoder.encode(body)));
+      init.headers.set('Content-Encoding', 'gzip');
+    }
+    // @ts-expect-error
+    return new Response(body, init);
+  };
+}
 
 export const redirect = (url: string, status = 302) => {
   return new Response('', {
@@ -152,33 +192,18 @@ export const sse = (
   return new Response(stream, { ...init, headers });
 };
 
-function getResponseFactory(contentType: string) {
-  return function (content: any, init: ResponseInit = {}) {
-    return new Response(content, {
-      ...init,
-      // @ts-ignore
-      headers: {
-        ...(init.headers || {}),
-        'Content-Type': contentType,
-      },
-    });
-  };
-}
-
 export async function buildFileResponse({
   file,
   acceptRanges,
   chunkSize,
   rangeHeader,
   method,
-  responseInit,
 }: {
   file: BunFile;
   acceptRanges: boolean;
   chunkSize?: number;
   rangeHeader?: string | null;
   method: string;
-  responseInit?: ResponseInit;
 }) {
   let response: Response;
   const rangeMatch = String(rangeHeader).match(/^bytes=(\d*)-(\d*)$/);

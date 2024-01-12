@@ -6,14 +6,7 @@ export {
   type NextFunction,
 } from './src/HttpRouter/HttpRouter';
 export {
-  file,
-  html,
-  js,
-  json,
   redirect,
-  sse,
-  text,
-  xml,
   type FileResponseOptions,
   type SseSetupFunction,
 } from './src/HttpRouter/responseFactories';

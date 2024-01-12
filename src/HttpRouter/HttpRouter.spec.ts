@@ -123,8 +123,8 @@ describe('HttpRouter', () => {
       expect(resp.headers.get('location')).toBe('/home');
     });
     it('should extract params', async () => {
-      app.get('/users/:id', ({ params }) => {
-        throw new Response(params.id, {
+      app.get('/users/:id', c => {
+        throw new Response(c.params.id, {
           status: 200,
           headers: {
             'Content-type': 'text/plain',
@@ -139,8 +139,8 @@ describe('HttpRouter', () => {
       expect(await resp.text()).toBe('1337');
     });
     it('should give params for * routes', async () => {
-      app.get('/abc/*', ({ params }) => {
-        throw new Response(params[0], {
+      app.get('/abc/*', c => {
+        throw new Response(c.params[0], {
           status: 200,
           headers: {
             'Content-type': 'text/plain',
@@ -155,8 +155,8 @@ describe('HttpRouter', () => {
       expect(await resp.text()).toBe('index.html');
     });
     it('should allow registering multiple methods', async () => {
-      app.on(['POST', 'PUT'], '/user', ({ request, text }) => {
-        return text('Method was ' + request.method);
+      app.on(['POST', 'PUT'], '/user', c => {
+        return new Response('Method was ' + c.request.method);
       });
       const resp = await app.fetch(
         new Request('http://localhost/user', { method: 'POST' }),
@@ -172,11 +172,18 @@ describe('HttpRouter', () => {
       expect(await resp2.text()).toBe('Method was PUT');
     });
     it('should allow RegExp paths', async () => {
-      app.get(/^\/user\/(.+)\/(.+)/, ({ params, url, json }) => {
-        return json({
-          pathname: url.pathname,
-          params,
-        });
+      app.get(/^\/user\/(.+)\/(.+)/, c => {
+        return new Response(
+          JSON.stringify({
+            pathname: c.url.pathname,
+            params: c.params,
+          }),
+          {
+            headers: {
+              'Content-type': 'application/json',
+            },
+          }
+        );
       });
       const resp = await app.fetch(
         new Request('http://localhost/user/123/account'),
@@ -289,6 +296,15 @@ describe('HttpRouter', () => {
       expect(info.family).toBe('IPv6');
       expect(info.port).toBeGreaterThan(0);
     });
+    it('should emit url', async () => {
+      app.all('/', () => new Response('Hi'));
+      server = app.listen({ port: 7772 });
+      let output: string;
+      const to = (message: string) => (output = message);
+      app.emitUrl({ to });
+      // @ts-expect-error
+      expect(output).toContain(String(server.url));
+    });
     it('should handle all', async () => {
       app.all('/', () => new Response('Hi'));
       server = app.listen({ port: 7772 });
@@ -304,10 +320,8 @@ describe('HttpRouter', () => {
       expect(await resp.text()).toBe('Hi');
     });
     it('should handle PUT', async () => {
-      let body: { name: string } = { name: '' };
-      app.put('/', async ({ request }) => {
-        body = await request.json();
-        return new Response('Hi');
+      app.put('/', async ({ request, json }) => {
+        return json(await request.json());
       });
       server = app.listen({ port: 7774 });
       const resp = await fetch('http://localhost:7774/', {
@@ -317,6 +331,7 @@ describe('HttpRouter', () => {
         },
         body: JSON.stringify({ name: 'Alice' }),
       });
+      const body = await resp.json();
       expect(resp.status).toBe(200);
       expect(body).toEqual({ name: 'Alice' });
     });
@@ -360,7 +375,6 @@ describe('HttpRouter', () => {
         body: formData,
       });
       expect(resp.status).toBe(200);
-      // @ts-expect-error
       expect(await resp.json()).toEqual({ key: 'secret' });
     });
     it('should handle POST', async () => {
@@ -382,14 +396,11 @@ describe('HttpRouter', () => {
         body: formData,
       });
       expect(resp.status).toBe(200);
-      // @ts-expect-error
       expect(await resp.json()).toEqual({ key2: 'secret2' });
     });
     it('should handle PATCH', async () => {
-      let body: { name: string } = { name: '' };
-      app.patch('/', async ({ request }) => {
-        body = await request.json();
-        return new Response('Hi');
+      app.patch('/', async ({ request, json }) => {
+        return json(await request.json());
       });
       server = app.listen({ port: 7778 });
       const resp = await fetch('http://localhost:7778/', {
@@ -399,6 +410,7 @@ describe('HttpRouter', () => {
         },
         body: JSON.stringify({ name: 'Charlie' }),
       });
+      const body = await resp.json();
       expect(resp.status).toBe(200);
       expect(body).toEqual({ name: 'Charlie' });
     });
