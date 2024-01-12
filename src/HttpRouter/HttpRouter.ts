@@ -95,7 +95,7 @@ export default class HttpRouter {
   emitUrl = (options: EmitUrlOptions = { verbose: false }) => {
     if (!this.server) {
       throw new Error(
-        'Cannot emit URL before server has been started. Call .listen() first.'
+        'Cannot emit URL before server has been started. Use .listen() to start the server first.'
       );
     }
     const servingAt = String(this.server.url);

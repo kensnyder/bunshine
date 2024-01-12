@@ -30,15 +30,23 @@ export default class Context<
   error: Error | undefined;
   /** A URL object constructed with `new URL(request.url)` */
   url: URL;
+  /** The date the request was received */
+  date: Date;
+  /** The milliseconds between server start and this request, as float (from performance.now()) */
+  now: number;
+  // construct this Context object
   constructor(request: Request, server: Server, app: HttpRouter) {
     this.request = request;
     this.server = server;
     this.app = app;
     this.url = new URL(request.url);
+    this.date = new Date();
+    this.now = performance.now();
   }
-  getIp = () => {
+  /** Get the IP address info of the client */
+  get ip(): { address: string; family: string; port: number } | null {
     return this.server.requestIP(this.request);
-  };
+  }
   /** A shorthand for `new Response(text, { headers: { 'Content-type': 'text/plain' } })` */
   text = text;
   /** A shorthand for `new Response(js, { headers: { 'Content-type': 'text/javascript' } })` */
@@ -54,17 +62,12 @@ export default class Context<
   /** A shorthand for `new Response(fileBody, fileHeaders)` */
   file = async (
     filenameOrBunFile: string | BunFile,
-    fileOptions: FileResponseOptions = {},
-    responseInit: ResponseInit = {}
+    fileOptions: FileResponseOptions = {}
   ) => {
-    return file(
-      filenameOrBunFile,
-      {
-        range: this.request.headers.get('Range') || undefined,
-        ...fileOptions,
-      },
-      responseInit
-    );
+    return file(filenameOrBunFile, {
+      range: this.request.headers.get('Range') || undefined,
+      ...fileOptions,
+    });
   };
   /** A shorthand for `new Response({ headers: { 'Content-type': 'text/event-stream' } })` */
   sse = (setup: SseSetupFunction, init: ResponseInit = {}) => {

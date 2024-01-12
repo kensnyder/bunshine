@@ -24,6 +24,8 @@ describe('Context', () => {
     expect(c.request).toBe(request);
     expect(c.server).toBe(server);
     expect(c.app).toBe(app);
+    expect(c.date).toBeInstanceOf(Date);
+    expect(c.now).toBeNumber();
     expect(c.url).toBeInstanceOf(URL);
     expect(c.url.pathname).toBe('/home');
   });
@@ -92,28 +94,27 @@ describe('Context', () => {
   it('should include text()', async () => {
     const resp = text('Hi');
     expect(await resp.text()).toBe('Hi');
-    expect(resp.headers.get('Content-type')).toBe('text/plain');
+    expect(resp.headers.get('Content-type')).toStartWith('text/plain');
   });
   it('should include js()', async () => {
     const resp = js('alert(42)');
     expect(await resp.text()).toBe('alert(42)');
-    expect(resp.headers.get('Content-type')).toBe('text/javascript');
+    expect(resp.headers.get('Content-type')).toStartWith('text/javascript');
   });
   it('should include html()', async () => {
     const resp = html('<h1>Hi</h1>');
     expect(await resp.text()).toBe('<h1>Hi</h1>');
-    expect(resp.headers.get('Content-type')).toBe('text/html');
+    expect(resp.headers.get('Content-type')).toStartWith('text/html');
   });
   it('should include xml()', async () => {
     const resp = xml('<greeting>Hi</greeting>');
     expect(await resp.text()).toBe('<greeting>Hi</greeting>');
-    expect(resp.headers.get('Content-type')).toBe('text/xml');
+    expect(resp.headers.get('Content-type')).toStartWith('text/xml');
   });
   it('should include json(data)', async () => {
     const resp = json({ hello: 'world' });
-    // @ts-expect-error
     expect(await resp.json()).toEqual({ hello: 'world' });
-    expect(resp.headers.get('Content-type')).toBe('application/json');
+    expect(resp.headers.get('Content-type')).toStartWith('application/json');
   });
   it('should include json(data, init)', async () => {
     const resp = json(
@@ -124,9 +125,8 @@ describe('Context', () => {
         },
       }
     );
-    // @ts-expect-error
     expect(await resp.json()).toEqual({ hello: 'world' });
-    expect(resp.headers.get('Content-type')).toBe('application/json');
+    expect(resp.headers.get('Content-type')).toStartWith('application/json');
     expect(resp.headers.get('X-Hello')).toBe('World');
   });
   it('should include redirect(url)', () => {

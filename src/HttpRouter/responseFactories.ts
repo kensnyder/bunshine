@@ -1,15 +1,16 @@
 import { BunFile } from 'bun';
 
-export const text = getResponseFactory('text/plain');
-export const js = getResponseFactory('text/javascript');
-export const html = getResponseFactory('text/html');
-export const xml = getResponseFactory('text/xml');
-export const json = (data: Record<string, any>, init: ResponseInit = {}) => {
+export const text = getResponseFactory('text/plain; charset=utf-8');
+export const js = getResponseFactory('text/javascript; charset=utf-8');
+export const html = getResponseFactory('text/html; charset=utf-8');
+export const xml = getResponseFactory('text/xml; charset=utf-8');
+export const json = (data: any, init: ResponseInit = {}) => {
   return new Response(JSON.stringify(data), {
     ...init,
+    // @ts-expect-error
     headers: {
       ...(init.headers || {}),
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=utf-8',
     },
   });
 };
@@ -129,9 +130,11 @@ export const sse = (
   let headers = new Headers(init.headers);
   if (
     headers.has('Content-Type') &&
-    headers.get('Content-Type') !== 'text/event-stream'
+    !/^text\/event-stream/.test(headers.get('Content-Type')!)
   ) {
-    console.warn('Overriding Content-Type header to `text/event-stream`');
+    console.warn(
+      'Overriding Content-Type header to `text/event-stream; charset=utf-8`'
+    );
   }
   if (
     headers.has('Cache-Control') &&
@@ -142,7 +145,7 @@ export const sse = (
   if (headers.has('Connection') && headers.get('Connection') !== 'keep-alive') {
     console.warn('Overriding Connection header to `keep-alive`');
   }
-  headers.set('Content-Type', 'text/event-stream');
+  headers.set('Content-Type', 'text/event-stream; charset=utf-8');
   headers.set('Cache-Control', 'no-cache');
   headers.set('Connection', 'keep-alive');
   // @ts-ignore
@@ -168,12 +171,14 @@ export async function buildFileResponse({
   chunkSize,
   rangeHeader,
   method,
+  responseInit,
 }: {
   file: BunFile;
   acceptRanges: boolean;
   chunkSize?: number;
   rangeHeader?: string | null;
   method: string;
+  responseInit?: ResponseInit;
 }) {
   let response: Response;
   const rangeMatch = String(rangeHeader).match(/^bytes=(\d*)-(\d*)$/);

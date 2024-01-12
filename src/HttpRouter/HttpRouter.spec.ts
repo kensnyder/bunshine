@@ -183,7 +183,6 @@ describe('HttpRouter', () => {
         server
       );
       expect(resp.status).toBe(200);
-      // @ts-expect-error
       expect(await resp.json()).toEqual({
         pathname: '/user/123/account',
         params: {
@@ -276,6 +275,19 @@ describe('HttpRouter', () => {
       expect(server.port).toBeGreaterThan(0);
       expect(resp.status).toBe(200);
       expect(await resp.text()).toBe('Hi');
+    });
+    it('should get client ip info', async () => {
+      app.get('/', c => c.json(c.ip));
+      server = app.listen();
+      const resp = await fetch(`http://localhost:${server.port}/`);
+      const info = (await resp.json()) as {
+        address: string;
+        family: string;
+        port: number;
+      };
+      expect(info.address).toBe('::1');
+      expect(info.family).toBe('IPv6');
+      expect(info.port).toBeGreaterThan(0);
     });
     it('should handle all', async () => {
       app.all('/', () => new Response('Hi'));
