@@ -1,20 +1,7 @@
 import { BunFile } from 'bun';
 import Context from '../Context/Context.ts';
 
-export type ResponseBody =
-  | null
-  | string
-  | Blob
-  | ArrayBuffer
-  | TypedArray
-  | DataView
-  | FormData
-  | ReadableStream
-  | URLSearchParams;
-
-export type Factory = (body: ResponseBody, init?: ResponseInit) => Response;
-
-type JsonFactory = (data: any, init?: ResponseInit) => Response;
+export type Factory = (body: string, init?: ResponseInit) => Response;
 
 const textEncoder = new TextEncoder();
 
@@ -32,19 +19,15 @@ export function json(this: Context, data: any, init: ResponseInit = {}) {
 }
 
 export function factory(contentType: string): Factory {
-  return function (this: Context, body: ResponseBody, init: ResponseInit = {}) {
+  return function (this: Context, body: string, init: ResponseInit = {}) {
     // @ts-expect-error
     init.headers = new Headers(init.headers || {});
     init.headers.set('Content-type', `${contentType}; charset=utf-8`);
     if (
       // client must expect gzip
       this.request.headers.get('Accept-Encoding')?.includes('gzip') &&
-      // body must be compressible
-      (typeof body === 'string' ||
-        body instanceof ArrayBuffer ||
-        body instanceof Buffer) &&
-      // body must be large enough to be worth compressing
-      (typeof body !== 'string' || body.length >= 60)
+      // body must be large enough to be worth compressing (54 is minimum size; 100 is arbitrary)
+      body.length >= 100
     ) {
       // @ts-expect-error
       body = Bun.gzipSync(Buffer.from(textEncoder.encode(body)));
@@ -111,10 +94,6 @@ export const sse = (
 ) => {
   const stream = new ReadableStream({
     async start(controller: ReadableStreamDefaultController) {
-      // Step 1: create encoder to handle utf8
-      const encoder = new TextEncoder();
-
-      // Step 2: define the send and close functions
       function send(
         eventName: string,
         data?: string | object,
@@ -123,7 +102,7 @@ export const sse = (
       ) {
         let encoded: Uint8Array;
         if (arguments.length === 1) {
-          encoded = encoder.encode(`data: ${eventName}\n\n`);
+          encoded = textEncoder.encode(`data: ${eventName}\n\n`);
         } else {
           if (data && typeof data !== 'string') {
             data = JSON.stringify(data);
@@ -136,7 +115,7 @@ export const sse = (
             message += `\nretry: ${retry}`;
           }
           message += '\n\n';
-          encoded = encoder.encode(message);
+          encoded = textEncoder.encode(message);
         }
         if (signal.aborted) {
           // client disconnected already
