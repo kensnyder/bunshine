@@ -1,5 +1,7 @@
 import { BunFile } from 'bun';
+import path from 'node:path';
 import Context from '../Context/Context.ts';
+import { gzipString } from '../gzip/gzip.ts';
 
 export type Factory = (body: string, init?: ResponseInit) => Response;
 
@@ -16,7 +18,7 @@ export function json(this: Context, data: any, init: ResponseInit = {}) {
   init.headers.set('Content-type', `application/json; charset=utf-8`);
   // body must be large enough to be worth compressing
   if (body.length >= minGzipSize) {
-    body = Bun.gzipSync(Buffer.from(textEncoder.encode(body)));
+    body = gzipString(body);
     init.headers.set('Content-Encoding', 'gzip');
     init.headers.set('Content-Length', String(body.length));
   }
@@ -36,7 +38,7 @@ export function factory(contentType: string): Factory {
       body.length >= minGzipSize
     ) {
       // @ts-expect-error
-      body = Bun.gzipSync(Buffer.from(textEncoder.encode(body)));
+      body = gzipString(body);
       init.headers.set('Content-Encoding', 'gzip');
     }
     init.headers.set('Content-Length', String(body.length));
@@ -57,6 +59,9 @@ export const redirect = (url: string, status = 302) => {
 export type FileResponseOptions = {
   range?: string;
   chunkSize?: number;
+  gzip?: boolean;
+  disposition?: 'inline' | 'attachment';
+  acceptRanges?: boolean;
 };
 export const file = async (
   filenameOrBunFile: string | BunFile,
@@ -66,8 +71,7 @@ export const file = async (
     typeof filenameOrBunFile === 'string'
       ? Bun.file(filenameOrBunFile)
       : filenameOrBunFile;
-  const totalFileSize = file.size;
-  if (totalFileSize === 0) {
+  if (!(await file.exists())) {
     return new Response('File not found', { status: 404 });
   }
   const resp = await buildFileResponse({
@@ -76,9 +80,21 @@ export const file = async (
     chunkSize: fileOptions.chunkSize,
     rangeHeader: fileOptions.range,
     method: 'GET',
+    gzip: fileOptions.gzip,
   });
-  // tell the client that we are capable of handling range requests
-  resp.headers.set('Accept-Ranges', 'bytes');
+  if (fileOptions.acceptRanges !== false) {
+    // tell the client that we are capable of handling range requests
+    resp.headers.set('Accept-Ranges', 'bytes');
+  }
+  if (fileOptions.disposition === 'attachment') {
+    const filename = path.basename(file.name!);
+    resp.headers.set(
+      'Content-Disposition',
+      `${fileOptions.disposition}; filename="${filename}"`
+    );
+  } else if (fileOptions.disposition === 'inline') {
+    resp.headers.set('Content-Disposition', 'inline');
+  }
   return resp;
 };
 
@@ -184,12 +200,14 @@ export async function buildFileResponse({
   chunkSize,
   rangeHeader,
   method,
+  gzip,
 }: {
   file: BunFile;
   acceptRanges: boolean;
   chunkSize?: number;
   rangeHeader?: string | null;
   method: string;
+  gzip?: boolean;
 }) {
   let response: Response;
   const rangeMatch = String(rangeHeader).match(/^bytes=(\d*)-(\d*)$/);

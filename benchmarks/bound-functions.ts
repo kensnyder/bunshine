@@ -1,4 +1,10 @@
-import { bench, group, run } from 'mitata';
+import { runBenchmarks } from './runBenchmarks.ts';
+
+/*
+Conclusion:
+Class functions are
+1.17x faster than bound functions
+*/
 
 class TheClass {
   max: number;
@@ -30,18 +36,18 @@ class TheClassBound {
   noop = () => {};
 }
 
-// These 2 approaches perform within 1% to 3% of each other
-group('2 functions', () => {
-  bench('bound class', () => {
-    const spec = { max: 10000 };
-    const theClass = new TheClassBound(spec);
-    theClass.addUp();
-  });
-  bench('class', () => {
-    const spec = { max: 10000 };
-    const theClass = new TheClass(spec);
-    theClass.addUp();
-  });
-});
-
-await run();
+await runBenchmarks(
+  {
+    'bound functions': () => {
+      const spec = { max: 10000 };
+      const theClass = new TheClassBound(spec);
+      theClass.addUp();
+    },
+    'class functions': () => {
+      const spec = { max: 10000 };
+      const theClass = new TheClass(spec);
+      theClass.addUp();
+    },
+  },
+  { time: 5000 }
+);

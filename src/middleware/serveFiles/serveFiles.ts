@@ -3,7 +3,7 @@ import ms from 'ms';
 import path from 'path';
 import type { Middleware } from '../../HttpRouter/HttpRouter.ts';
 import { buildFileResponse } from '../../HttpRouter/responseFactories.ts';
-import { FileGzipper } from './FileGzipper.ts';
+import { FileGzipper } from '../../gzip/FileGzipper.ts';
 
 // see https://expressjs.com/en/4x/api.html#express.static
 // and https://www.npmjs.com/package/send#dotfiles
@@ -124,6 +124,7 @@ export function serveFiles(
         chunkSize: 0,
         rangeHeader,
         method: c.request.method,
+        gzip: false,
       });
     } else {
       response = await gzipper.fetch(file);

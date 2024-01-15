@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { type FileGzipper } from './FileGzipper.ts';
 import { GzipCache } from './GzipCache.ts';
+import { gzipFile } from './gzip.ts';
 
 export default class PrecompressCache extends GzipCache {
   private _gzipper: FileGzipper;
@@ -36,7 +37,7 @@ export default class PrecompressCache extends GzipCache {
       if (size > this._gzipper.config!.cache.maxBytes!) {
         break;
       }
-      const data = await this._gzipper.compress(file);
+      const data = await gzipFile(file);
       const tildized = fullPath.replace(/\//g, '~');
       const cacheName = `${tildized}.${file.lastModified}.gz`;
       const cachePath = path.join(this._gzipper.config!.cache.path!, cacheName);

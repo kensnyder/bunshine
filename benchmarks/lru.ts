@@ -1,28 +1,32 @@
 import { LRUCache } from 'lru-cache';
-import { bench, group, run } from 'mitata';
 import { match } from 'path-to-regexp';
+import { runBenchmarks } from './runBenchmarks.ts';
+
+/*
+Conclusion:
+Cache sizes of 5000+ are all about 40x faster than no cache
+*/
 
 const { findAll, getLruFinder, urls } = setup();
 
-group('lru cache speed', () => {
-  function finder(find: (url: string) => void) {
-    return function () {
-      for (const url of urls) {
-        find(url);
-      }
-    };
-  }
-  // cache size of 5000 is best, averaging 40x faster than no cache
-  bench('no cache', finder(findAll));
-  bench('cache size 500', finder(getLruFinder(500)));
-  bench('cache size 5000', finder(getLruFinder(5000)));
-  bench('cache size 50000', finder(getLruFinder(50000)));
-  bench('cache size 500000', finder(getLruFinder(500000)));
-});
+function finder(find: (url: string) => void) {
+  return function () {
+    for (const url of urls) {
+      find(url);
+    }
+  };
+}
 
-// group('trie speed', () => { });
-
-await run();
+await runBenchmarks(
+  {
+    'no cache': finder(findAll),
+    'cache size 500': finder(getLruFinder(500)),
+    'cache size 5000': finder(getLruFinder(5000)),
+    'cache size 50000': finder(getLruFinder(50000)),
+    'cache size 500000': finder(getLruFinder(50000)),
+  },
+  { time: 5000 }
+);
 
 function setup() {
   const registry: Registration[] = [];
@@ -38,7 +42,7 @@ function setup() {
   }
 
   function findAll(urlPath: string) {
-    const found = [];
+    const found: Registration[] = [];
     for (const reg of registry) {
       if (reg.matcher(urlPath)) {
         found.push(reg);
@@ -53,7 +57,7 @@ function setup() {
       if (cache.has(urlPath)) {
         return cache.get(urlPath);
       }
-      const found = [];
+      const found: Registration[] = [];
       for (const reg of registry) {
         if (reg.matcher(urlPath)) {
           found.push(reg);

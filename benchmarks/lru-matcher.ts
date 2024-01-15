@@ -1,26 +1,32 @@
-import { bench, group, run } from 'mitata';
 import MatcherWithCache from '../src/MatcherWithCache/MatcherWithCache.ts';
 import PathMatcher from '../src/PathMatcher/PathMatcher.ts';
+import { runBenchmarks } from './runBenchmarks.ts';
 
-group('lru cache speed', () => {
-  function withCacheSize(size: number) {
-    const matcher =
-      size === 0
-        ? new PathMatcher()
-        : new MatcherWithCache(new PathMatcher(), size);
-    return setup(matcher);
-  }
-  // cache size of 5000 is best, averaging 40x faster than no cache
-  bench('no cache', withCacheSize(0));
-  bench('cache size 500', withCacheSize(500));
-  bench('cache size 2500', withCacheSize(2500));
-  bench('cache size 3000', withCacheSize(3000));
-  bench('cache size 4000', withCacheSize(4000));
-  bench('cache size 5000', withCacheSize(5000));
-  bench('cache size 10000', withCacheSize(8000));
-});
+/*
+Conclusion:
+Cache sizes of 4000+ are all about 41x faster than no cache
+*/
 
-await run();
+function withCacheSize(size: number) {
+  const matcher =
+    size === 0
+      ? new PathMatcher()
+      : new MatcherWithCache(new PathMatcher(), size);
+  return setup(matcher);
+}
+
+await runBenchmarks(
+  {
+    'no cache': withCacheSize(0),
+    'cache size 500': withCacheSize(500),
+    'cache size 2500': withCacheSize(2500),
+    'cache size 3000': withCacheSize(3000),
+    'cache size 4000': withCacheSize(4000),
+    'cache size 5000': withCacheSize(5000),
+    'cache size 10000': withCacheSize(10000),
+  },
+  { time: 5000 }
+);
 
 function setup(matcher: any) {
   const urls: string[] = [];

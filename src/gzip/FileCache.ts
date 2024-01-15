@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { type FileGzipper } from './FileGzipper.ts';
 import { GzipCache } from './GzipCache.ts';
+import { gzipFile } from './gzip.ts';
 
 export default class FileCache extends GzipCache {
   private _cache: LRUCache<
@@ -37,7 +38,7 @@ export default class FileCache extends GzipCache {
   async fetch(file: BunFile) {
     const key = `${file.name}@${file.lastModified}`;
     if (!this._cache.has(key)) {
-      const body = await this._gzipper.compress(file);
+      const body = await gzipFile(file);
       const tildized = file.name!.replace(/\//g, '~');
       const cacheName = `${tildized}.${file.lastModified}.gz`;
       const pathToGzipFile = path.join(

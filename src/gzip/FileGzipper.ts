@@ -1,10 +1,10 @@
 import { BunFile } from 'bun';
+import type { GzipOptions } from '../middleware/serveFiles/serveFiles.ts';
 import FileCache from './FileCache.ts';
 import { GzipCache } from './GzipCache.ts';
 import MemoryCache from './MemoryCache.ts';
 import NeverCache from './NeverCache.ts';
 import PrecompressCache from './PrecompressCache.ts';
-import type { GzipOptions } from './serveFiles.ts';
 
 export class FileGzipper {
   public setupPromise: Promise<void>;
@@ -59,9 +59,5 @@ export class FileGzipper {
       }
     }
     return false;
-  }
-  async compress(file: BunFile) {
-    const arr = new Uint8Array(await file.arrayBuffer());
-    return Bun.gzipSync(arr, this.config.zlibOptions);
   }
 }

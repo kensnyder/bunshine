@@ -1,6 +1,7 @@
 import type { BunFile } from 'bun';
 import { type FileGzipper } from './FileGzipper.ts';
 import { GzipCache } from './GzipCache.ts';
+import { gzipFile } from './gzip.ts';
 
 export default class NeverCache extends GzipCache {
   private _gzipper: FileGzipper;
@@ -9,7 +10,7 @@ export default class NeverCache extends GzipCache {
     this._gzipper = gzipper;
   }
   async fetch(file: BunFile) {
-    const body = await this._gzipper.compress(file);
+    const body = await gzipFile(file);
     return new Response(body, {
       status: 200,
       headers: {

@@ -929,14 +929,16 @@ app.listen({ port: 3100 });
 - ✅ middleware > performanceHeader
 - ✅ middleware > securityHeaders
 - ✅ middleware > trailingSlashes
-- 🔲 middleware > compression
-- 🔲 options for serveFiles
+- ✅ gzip compression
+- ✅ options for serveFiles
 - 🔲 tests for cors
 - 🔲 tests for devLogger
 - 🔲 tests for prodLogger
-- 🔲 tests for serveFiles
+- ✅ tests for serveFiles
 - 🔲 more examples
 - 🔲 GitHub Actions to run tests and coverage
+- 🔲 Export functions to gzip strings and files
+- 🔲 Gzip performance testing (to get min/max defaults)
 
 ## License
 

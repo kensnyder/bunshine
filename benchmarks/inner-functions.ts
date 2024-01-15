@@ -1,4 +1,10 @@
-import { bench, group, run } from 'mitata';
+import { runBenchmarks } from './runBenchmarks.ts';
+
+/*
+Conclusion:
+classes are
+1.03x faster than inner functions
+*/
 
 class TheClass {
   max: number;
@@ -15,25 +21,25 @@ class TheClass {
   noop() {}
 }
 
-// These 2 approaches perform within 1% to 3% of each other
-group('2 functions', () => {
-  bench('inner functions', () => {
-    const spec = { max: 10000 };
-    function addUp() {
-      let sum = 0;
-      for (let i = 0; i < spec.max; i++) {
-        sum += i;
+await runBenchmarks(
+  {
+    'inner functions': () => {
+      const spec = { max: 10000 };
+      function addUp() {
+        let sum = 0;
+        for (let i = 0; i < spec.max; i++) {
+          sum += i;
+        }
+        return sum;
       }
-      return sum;
-    }
-    function noop() {}
-    addUp();
-  });
-  bench('class', () => {
-    const spec = { max: 10000 };
-    const theClass = new TheClass(spec);
-    theClass.addUp();
-  });
-});
-
-await run();
+      function noop() {}
+      addUp();
+    },
+    classes: () => {
+      const spec = { max: 10000 };
+      const theClass = new TheClass(spec);
+      theClass.addUp();
+    },
+  },
+  { time: 15000 }
+);

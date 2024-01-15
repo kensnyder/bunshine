@@ -2,6 +2,7 @@ import type { BunFile } from 'bun';
 import { LRUCache } from 'lru-cache';
 import { type FileGzipper } from './FileGzipper.ts';
 import { GzipCache } from './GzipCache.ts';
+import { gzipFile } from './gzip.ts';
 
 export default class MemoryCache extends GzipCache {
   private _cache: LRUCache<string, Uint8Array>;
@@ -22,7 +23,7 @@ export default class MemoryCache extends GzipCache {
     if (this._cache.has(key)) {
       body = this._cache.get(key)!;
     } else {
-      body = await this._gzipper.compress(file);
+      body = await gzipFile(file);
       this._cache.set(key, body);
     }
     return new Response(body, {
