@@ -5,14 +5,20 @@ export type Factory = (body: string, init?: ResponseInit) => Response;
 
 const textEncoder = new TextEncoder();
 
+// body must be large enough to be worth compressing
+// (54 is minimum size of gzip after metadata; 100 is arbitrary choice)
+export let minGzipSize = 100;
+
 export function json(this: Context, data: any, init: ResponseInit = {}) {
   let body: string | Uint8Array = JSON.stringify(data);
   // @ts-expect-error
   init.headers = new Headers(init.headers || {});
   init.headers.set('Content-type', `application/json; charset=utf-8`);
-  if (body.length >= 60) {
+  // body must be large enough to be worth compressing
+  if (body.length >= minGzipSize) {
     body = Bun.gzipSync(Buffer.from(textEncoder.encode(body)));
     init.headers.set('Content-Encoding', 'gzip');
+    init.headers.set('Content-Length', String(body.length));
   }
   // @ts-expect-error
   return new Response(body, init);
@@ -26,13 +32,14 @@ export function factory(contentType: string): Factory {
     if (
       // client must expect gzip
       this.request.headers.get('Accept-Encoding')?.includes('gzip') &&
-      // body must be large enough to be worth compressing (54 is minimum size; 100 is arbitrary)
-      body.length >= 100
+      // body must be large enough to be worth compressing
+      body.length >= minGzipSize
     ) {
       // @ts-expect-error
       body = Bun.gzipSync(Buffer.from(textEncoder.encode(body)));
       init.headers.set('Content-Encoding', 'gzip');
     }
+    init.headers.set('Content-Length', String(body.length));
     // @ts-expect-error
     return new Response(body, init);
   };

@@ -1,5 +1,7 @@
 import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { globby } from 'globby';
+import fs from 'node:fs/promises';
 import path from 'path';
 import HttpRouter from '../../HttpRouter/HttpRouter.ts';
 import { serveFiles } from './serveFiles.ts';
@@ -294,6 +296,337 @@ describe('serveFiles middleware', () => {
       const resp = await fetch(`${server.url}files/noext`);
       const text = await resp.text();
       expect(text).toBe('noext\n');
+    });
+  });
+  describe('gzip', () => {
+    describe('NeverCache', () => {
+      it('should gzip file on demand', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 0,
+              maxFileSize: 100000,
+              cache: { type: 'never' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/1.js`);
+        const text = await resp.text();
+        expect(text).toBe('// This is file number one\n');
+        expect(resp.headers.get('content-encoding')).toBe('gzip');
+      });
+      it('should ignore if file is too small', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 1000,
+              maxFileSize: 100000,
+              cache: { type: 'never' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/1.js`);
+        const text = await resp.text();
+        expect(text).toBe('// This is file number one\n');
+        expect(resp.headers.get('content-encoding')).toBe(null);
+      });
+      it('should ignore if file is too big', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 0,
+              maxFileSize: 10,
+              cache: { type: 'never' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/1.js`);
+        const text = await resp.text();
+        expect(text).toBe('// This is file number one\n');
+        expect(resp.headers.get('content-encoding')).toBe(null);
+      });
+      it('should not gzip jpeg file', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 0,
+              maxFileSize: 1e6,
+              cache: { type: 'never' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/dream.jpg`);
+        expect(resp.headers.get('content-encoding')).toBe(null);
+      });
+    });
+    describe('MemoryCache', () => {
+      it('should gzip', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 0,
+              maxFileSize: 100000,
+              cache: { type: 'memory', maxBytes: 500 },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/2.css`);
+        const text = await resp.text();
+        expect(text).toBe('/* This is file number two */\n');
+        expect(resp.headers.get('content-encoding')).toBe('gzip');
+      });
+      it('should ignore if file is too small', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 1000,
+              maxFileSize: 100000,
+              cache: { type: 'memory', maxBytes: 500 },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/1.js`);
+        const text = await resp.text();
+        expect(text).toBe('// This is file number one\n');
+        expect(resp.headers.get('content-encoding')).toBe(null);
+      });
+      it('should ignore if file is too big', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 0,
+              maxFileSize: 10,
+              cache: { type: 'memory', maxBytes: 500 },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/1.js`);
+        const text = await resp.text();
+        expect(text).toBe('// This is file number one\n');
+        expect(resp.headers.get('content-encoding')).toBe(null);
+      });
+      it('should not gzip jpeg file', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 0,
+              maxFileSize: 1e6,
+              cache: { type: 'never' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/dream.jpg`);
+        expect(resp.headers.get('content-encoding')).toBe(null);
+      });
+    });
+    describe('FileCache', () => {
+      beforeEach(async () => {
+        const paths = await globby(['/tmp/*~src~testFixtures~toGzip~*.gz']);
+        for (const path of paths) {
+          await fs.unlink(path);
+        }
+      });
+      it('should gzip with file cache', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 0,
+              maxFileSize: 100000,
+              cache: { type: 'file', maxBytes: 500, path: '/tmp' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/1.js`);
+        const text = await resp.text();
+        expect(text).toBe('// This is file number one\n');
+        expect(resp.headers.get('content-encoding')).toBe('gzip');
+        // check if it properly disposes of the oldest accessed file (1.js)
+        await fetch(`${server.url}toGzip/2.css`);
+        await fetch(`${server.url}toGzip/3.html`);
+        const paths = await globby(['/tmp/*~src~testFixtures~toGzip~*.gz']);
+        expect(paths.some(p => p.includes('1.js'))).toBe(false);
+        expect(paths.some(p => p.includes('2.css'))).toBe(true);
+        expect(paths.some(p => p.includes('3.html'))).toBe(true);
+      });
+      it('should ignore if file is too small', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 1000,
+              maxFileSize: 100000,
+              cache: { type: 'file', maxBytes: 500, path: '/tmp' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/1.js`);
+        const text = await resp.text();
+        expect(text).toBe('// This is file number one\n');
+        expect(resp.headers.get('content-encoding')).toBe(null);
+      });
+      it('should ignore if file is too big', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 0,
+              maxFileSize: 10,
+              cache: { type: 'file', maxBytes: 500, path: '/tmp' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/1.js`);
+        const text = await resp.text();
+        expect(text).toBe('// This is file number one\n');
+        expect(resp.headers.get('content-encoding')).toBe(null);
+      });
+      it('should not gzip jpeg file', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 0,
+              maxFileSize: 1e6,
+              cache: { type: 'never' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/dream.jpg`);
+        expect(resp.headers.get('content-encoding')).toBe(null);
+      });
+    });
+    describe('PrecompressCache', () => {
+      beforeEach(async () => {
+        const paths = await globby(['/tmp/*~src~testFixtures~toGzip~**.gz']);
+        for (const path of paths) {
+          await fs.unlink(path);
+        }
+      });
+      it('should gzip with file cache', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 0,
+              maxFileSize: 100000,
+              cache: { type: 'precompress', maxBytes: 7500, path: '/tmp' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/1.js`);
+        const text = await resp.text();
+        expect(text).toBe('// This is file number one\n');
+        expect(resp.headers.get('content-encoding')).toBe('gzip');
+        // check if it properly pre-zipped all 4 files
+        const paths = await globby(['/tmp/*~src~testFixtures~toGzip~**.gz']);
+        expect(paths).toHaveLength(4);
+      });
+      it('should gzip some with file cache under limited maxBytes', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 0,
+              maxFileSize: 100000,
+              cache: { type: 'precompress', maxBytes: 75, path: '/tmp' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/1.js`);
+        const text = await resp.text();
+        // check if it properly pre-zipped the files
+        const paths = await globby(['/tmp/*~src~testFixtures~toGzip~*.gz']);
+        expect(paths).toHaveLength(2);
+      });
+      it('should ignore if file is too small', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 1000,
+              maxFileSize: 100000,
+              cache: { type: 'precompress', maxBytes: 500, path: '/tmp' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/1.js`);
+        const text = await resp.text();
+        expect(text).toBe('// This is file number one\n');
+        expect(resp.headers.get('content-encoding')).toBe(null);
+      });
+      it('should ignore if file is too big', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 0,
+              maxFileSize: 10,
+              cache: { type: 'precompress', maxBytes: 500, path: '/tmp' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/1.js`);
+        const text = await resp.text();
+        expect(text).toBe('// This is file number one\n');
+        expect(resp.headers.get('content-encoding')).toBe(null);
+      });
+      it('should not gzip jpeg file', async () => {
+        app.get(
+          '/toGzip/*',
+          serveFiles(`${fixturesPath}/toGzip`, {
+            gzip: {
+              minFileSize: 0,
+              maxFileSize: 1e6,
+              cache: { type: 'never' },
+            },
+          }),
+          c => c.text('Hello')
+        );
+        server = app.listen();
+        const resp = await fetch(`${server.url}toGzip/dream.jpg`);
+        expect(resp.headers.get('content-encoding')).toBe(null);
+      });
     });
   });
 });

@@ -9,7 +9,9 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-`bun install bunshine`
+```shell
+bun add bunshine
+```
 
 ## Motivation
 
@@ -21,10 +23,10 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 6. Treat every handler like middleware
 7. Support async handlers
 8. Provide common middleware out of the box
-9. Make specifically for Bun
-10. Comprehensive unit tests
-11. Support for `X-HTTP-Method-Override` header
-12. Support for gzip compression
+9. Built-in gzip compression
+10. Make specifically for Bun
+11. Comprehensive unit tests
+12. Support for `X-HTTP-Method-Override` header
 
 ## Table of Contents
 

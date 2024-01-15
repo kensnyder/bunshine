@@ -1,7 +1,9 @@
+import { ZlibCompressionOptions } from 'bun';
 import ms from 'ms';
 import path from 'path';
 import type { Middleware } from '../../HttpRouter/HttpRouter.ts';
 import { buildFileResponse } from '../../HttpRouter/responseFactories.ts';
+import { FileGzipper } from './FileGzipper.ts';
 
 // see https://expressjs.com/en/4x/api.html#express.static
 // and https://www.npmjs.com/package/send#dotfiles
@@ -15,6 +17,34 @@ export type StaticOptions = {
   index?: string[];
   lastModified?: boolean;
   maxAge?: number | string;
+  gzip?: GzipOptions;
+};
+
+export type GzipOptions = {
+  minFileSize?: number;
+  maxFileSize?: number;
+  mimeTypes?: Array<string | RegExp>;
+  zlibOptions?: ZlibCompressionOptions;
+  cache: {
+    type: 'file' | 'precompress' | 'memory' | 'never';
+    maxBytes?: number;
+    path?: string;
+  };
+};
+
+const defaultGzipOptions: GzipOptions = {
+  minFileSize: 1024,
+  maxFileSize: 1024 * 1024 * 25,
+  mimeTypes: [
+    /^text\/.*/,
+    /^application\/json/,
+    /^image\/svg/,
+    /^font\/(otf|ttf|eot)/,
+  ],
+  zlibOptions: {},
+  cache: {
+    type: 'never',
+  },
 };
 
 export function serveFiles(
@@ -29,11 +59,19 @@ export function serveFiles(
     index = [],
     lastModified = true,
     maxAge = undefined,
+    gzip = undefined,
   }: StaticOptions = {}
 ): Middleware {
   const cacheControlHeader =
     maxAge === undefined ? null : getCacheControl(maxAge, immutable);
+  const gzipper = gzip
+    ? new FileGzipper(directory, { ...defaultGzipOptions, ...gzip })
+    : undefined;
   return async c => {
+    if (gzipper) {
+      // wait for setup cache if not done already
+      await gzipper.setupPromise;
+    }
     const filename = c.params[0] || c.url.pathname;
     if (filename.startsWith('.')) {
       if (dotfiles === 'ignore') {
@@ -76,14 +114,20 @@ export function serveFiles(
       }
       return new Response('404 Not Found', { status: 404 });
     }
-    // get base response
-    const response = await buildFileResponse({
-      file,
-      acceptRanges,
-      chunkSize: 0,
-      rangeHeader: c.request.headers.get('range'),
-      method: c.request.method,
-    });
+    const rangeHeader = c.request.headers.get('range');
+    let response: Response;
+    if (rangeHeader || !gzipper) {
+      // get base response
+      response = await buildFileResponse({
+        file,
+        acceptRanges,
+        chunkSize: 0,
+        rangeHeader,
+        method: c.request.method,
+      });
+    } else {
+      response = await gzipper.fetch(file);
+    }
     // add current date
     response.headers.set('Date', new Date().toUTCString());
     // add last modified
