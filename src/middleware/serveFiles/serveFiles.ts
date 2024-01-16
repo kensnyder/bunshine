@@ -25,11 +25,13 @@ export type GzipOptions = {
   maxFileSize?: number;
   mimeTypes?: Array<string | RegExp>;
   zlibOptions?: ZlibCompressionOptions;
-  cache: {
-    type: 'file' | 'precompress' | 'memory' | 'never';
-    maxBytes?: number;
-    path?: string;
-  };
+  cache:
+    | false
+    | {
+        type: 'file' | 'precompress' | 'memory' | 'never';
+        maxBytes?: number;
+        path?: string;
+      };
 };
 
 const defaultGzipOptions: GzipOptions = {

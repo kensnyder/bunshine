@@ -14,7 +14,10 @@ export class FileGzipper {
   constructor(directory: string, config: GzipOptions) {
     this.directory = directory;
     this.config = config;
-    if (config.cache?.type === 'file') {
+    if (config.cache === false || config.cache.type === 'never') {
+      // never cache i.e. always compress on the fly
+      this._cache = new NeverCache(this);
+    } else if (config.cache?.type === 'file') {
       // cached zip files on disk with LRU cache
       this._cache = new FileCache(this);
     } else if (config.cache?.type === 'precompress') {
@@ -24,8 +27,7 @@ export class FileGzipper {
       // keep zipped file data in memory with LRUCache
       this._cache = new MemoryCache(this);
     } else {
-      // never cache i.e. always compress on the fly
-      this._cache = new NeverCache(this);
+      throw new Error(`Invalid cache type: ${config.cache?.type}`);
     }
     this.setupPromise = this._cache.setup();
   }
