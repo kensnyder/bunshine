@@ -553,6 +553,8 @@ events.addEventListener('event2', listener2);
 Bunshine uses the `path-to-regexp` package for processing path routes. For more
 info, checkout the [path-to-regexp docs](https://www.npmjs.com/package/path-to-regexp).
 
+### Path examples
+
 | Path                   | URL                   | params                   |
 | ---------------------- | --------------------- | ------------------------ |
 | `'/path'`              | `'/path'`             | `{}`                     |
@@ -568,6 +570,31 @@ info, checkout the [path-to-regexp docs](https://www.npmjs.com/package/path-to-r
 | `'/(users\|u)/:id'`    | `'/u/123'`            | `{ id: '123' }`          |
 | `'/:a/:b?'`            | `'/123'`              | `{ a: '123' }`           |
 | `'/:a/:b?'`            | `'/123/abc'`          | `{ a: '123', b: 'abc' }` |
+
+### HTTP methods
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+
+app.head('/posts/:id', doesPostExist);
+app.get('/posts/:id', getPost);
+app.post('/posts/:id', addPost);
+app.patch('/posts/:id', editPost);
+app.put('/posts/:id', upsertPost);
+app.trace('/posts/:id', tracePost);
+app.delete('/posts/:id', deletePost);
+app.options('/posts/:id', getPostCors);
+
+// special case for specifying both head and get
+app.headGet('/files/*', serveFiles(`${import.meta.dir}/files`));
+
+// any list of multiple verbs (must be uppercase)
+app.on(['POST', 'PATCH'], '/posts/:id', addEditPost);
+
+app.listen({ port: 3100 });
+```
 
 ## Included middleware
 

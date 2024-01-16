@@ -1,16 +1,22 @@
-import { Bench, type Options, type Task, type TaskResult } from 'tinybench';
+import {
+  Bench,
+  type Fn,
+  type Options,
+  type Task,
+  type TaskResult,
+} from 'tinybench';
 import type { Merge } from 'type-fest';
 
 type CompletedTask = Merge<Task, { result: TaskResult }>;
 
-export async function runBenchmarks(
-  tasks: Record<string, () => void>,
+export async function runBenchmarks<Signature extends Function = () => any>(
+  tasks: Record<string, Signature>,
   options: Options
 ) {
   const bench = new Bench(options);
   let count = 0;
   for (const [name, fn] of Object.entries(tasks)) {
-    bench.add(name, fn);
+    bench.add(name, fn as unknown as Fn);
     count++;
   }
 
@@ -19,11 +25,11 @@ export async function runBenchmarks(
   console.log('DONE');
   if (options.time) {
     process.stdout.write(
-      `Running each of ${count} tests for ${options.time}ms...`
+      `Running ${count} tests for ${options.time}ms each...`
     );
   } else if (options.iterations) {
     process.stdout.write(
-      `Running each of ${count} test ${options.iterations} times...`
+      `Running ${count} tests ${options.iterations} times each...`
     );
   }
   await bench.run();

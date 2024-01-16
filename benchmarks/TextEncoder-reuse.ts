@@ -4,6 +4,9 @@ import { runBenchmarks } from './runBenchmarks.ts';
 Conclusion:
 Reusing one TextEncoder instance is
 320x faster than instantiating a new TextEncoder every time
+
+Keep in mind, the numbers are VERY small.
+Instantiating takes about 100 nanoseconds.
 */
 
 const textEncoder = new TextEncoder();
@@ -47,4 +50,12 @@ await runBenchmarks(
     'instantiating every time': () => testWithFakeData(alwaysNew),
   },
   { time: 10000 }
+);
+
+await runBenchmarks(
+  {
+    instantiation: () => new TextEncoder(),
+    'empty function': () => {},
+  },
+  { time: 500 }
 );

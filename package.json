@@ -12,6 +12,9 @@
     "type": "git",
     "url": "git+https://github.com/kensnyder/bunshine.git"
   },
+  "bin": {
+    "serve": "bun ./bin/serve.ts"
+  },
   "keywords": [
     "Bun HTTP Server",
     "Bun Socket Server",

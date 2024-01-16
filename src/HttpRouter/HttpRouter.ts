@@ -63,7 +63,7 @@ export type HttpRouterOptions = {
 
 export type EmitUrlOptions = {
   verbose?: boolean;
-  to: (message: string) => void;
+  to?: (message: string) => void;
 };
 
 export default class HttpRouter {
@@ -94,22 +94,22 @@ export default class HttpRouter {
     this.server = server;
     return server;
   }
-  emitUrl(options: EmitUrlOptions = { verbose: false, to: console.log }) {
+  emitUrl({ verbose = false, to = console.log }: EmitUrlOptions = {}) {
     if (!this.server) {
       throw new Error(
         'Cannot emit URL before server has been started. Use .listen() to start the server first.'
       );
     }
     const servingAt = String(this.server.url);
-    if (options.verbose) {
+    if (verbose) {
       const server = Bun.env.COMPUTERNAME || Bun.env.HOSTNAME;
       const mode = Bun.env.NODE_ENV || 'production';
       const took = Math.round(performance.now());
-      options.to(
+      to(
         `☀️ Bunshine v${bunshine.version} on Bun v${Bun.version} running at ${servingAt} on server "${server}" in ${mode} (${took}ms)`
       );
     } else {
-      options.to(`☀️ Serving ${servingAt}`);
+      to(`☀️ Serving ${servingAt}`);
     }
   }
   getExport(options: Omit<ServeOptions, 'fetch' | 'websocket'> = {}) {
@@ -203,6 +203,12 @@ export default class HttpRouter {
   ) {
     return this.on<ParamsShape>('OPTIONS', path, handlers);
   }
+  headGet<ParamsShape extends Record<string, string> = Record<string, string>>(
+    path: string | RegExp,
+    ...handlers: Handler<ParamsShape>[]
+  ) {
+    return this.on<ParamsShape>(['HEAD', 'GET'], path, handlers);
+  }
   use(...handlers: Handler<{}>[]) {
     return this.all('*', handlers);
   }
@@ -220,7 +226,6 @@ export default class HttpRouter {
     const method = (
       request.headers.get('X-HTTP-Method-Override') || request.method
     ).toUpperCase();
-    // @ts-expect-error
     const filter = filters[method] || getPathMatchFilter(method);
     const matched = this.pathMatcher.match(pathname, filter, this._on404s);
     let i = 0;
