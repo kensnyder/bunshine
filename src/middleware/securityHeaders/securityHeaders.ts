@@ -173,7 +173,6 @@ function _resolveHeaderValue(
   if (name === 'xPoweredBy' && value === true) {
     return `Bunshine v${bunshine.version}`;
   } else if (value === true) {
-    // @ts-expect-error
     value = defaultValues[name];
   }
   if (name === 'contentSecurityPolicy') {
@@ -189,7 +188,7 @@ function _dasherize(str: string): string {
 }
 
 function _getCspHeader(directives: CSPDirectives) {
-  const items = [];
+  const items: string[] = [];
   for (let [key, originalValue] of Object.entries(directives)) {
     let value:
       | true
@@ -232,7 +231,7 @@ function _getCspItem(source: CSPSource) {
 
 function _getPpHeader(apis: AllowedApis) {
   const final = { ...permissionsPolicyDefaults, ...apis };
-  const items = [];
+  const items: string[] = [];
   for (const [name, value] of Object.entries(final)) {
     items.push(`${_dasherize(name)}=(${value.join(' ')})`);
   }
@@ -240,7 +239,7 @@ function _getPpHeader(apis: AllowedApis) {
 }
 
 function _getSandboxString(options: SandboxOptions) {
-  const items = [];
+  const items: string[] = [];
   for (const [name, value] of Object.entries(options)) {
     if (value) {
       items.push(_dasherize(name));

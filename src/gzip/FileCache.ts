@@ -2,6 +2,7 @@ import type { BunFile } from 'bun';
 import { LRUCache } from 'lru-cache';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import getMimeType from '../getMimeType/getMimeType.ts';
 import { type FileGzipper } from './FileGzipper.ts';
 import { GzipCache } from './GzipCache.ts';
 import { gzipFile } from './gzip.ts';
@@ -19,7 +20,8 @@ export default class FileCache extends GzipCache {
       string,
       { pathToGzipFile: string; zippedSize: number }
     >({
-      maxSize: this._gzipper.config!.cache.maxBytes!,
+      // @ts-expect-error
+      maxSize: this._gzipper.config.cache.maxBytes,
       sizeCalculation: (
         value: { pathToGzipFile: string; zippedSize: number },
         key: string
@@ -42,7 +44,8 @@ export default class FileCache extends GzipCache {
       const tildized = file.name!.replace(/\//g, '~');
       const cacheName = `${tildized}.${file.lastModified}.gz`;
       const pathToGzipFile = path.join(
-        this._gzipper.config!.cache.path!,
+        // @ts-expect-error
+        this._gzipper.config.cache.path,
         cacheName
       );
       await fs.writeFile(pathToGzipFile, body);
@@ -52,7 +55,7 @@ export default class FileCache extends GzipCache {
         status: 200,
         headers: {
           'Content-Encoding': 'gzip',
-          'Content-Type': file.type,
+          'Content-Type': getMimeType(file),
           'Content-Length': String(body.length),
           'Last-Modified': new Date(file.lastModified).toUTCString(),
         },
@@ -65,7 +68,7 @@ export default class FileCache extends GzipCache {
       status: 200,
       headers: {
         'Content-Encoding': 'gzip',
-        'Content-Type': file.type,
+        'Content-Type': getMimeType(file),
         'Content-Length': String(zippedSize),
         'Last-Modified': new Date(file.lastModified).toUTCString(),
       },

@@ -1,4 +1,5 @@
 import { BunFile } from 'bun';
+import getMimeType from '../getMimeType/getMimeType.ts';
 import type { GzipOptions } from '../middleware/serveFiles/serveFiles.ts';
 import FileCache from './FileCache.ts';
 import { GzipCache } from './GzipCache.ts';
@@ -32,18 +33,19 @@ export class FileGzipper {
     this.setupPromise = this._cache.setup();
   }
   async fetch(file: BunFile) {
+    const mimeType = getMimeType(file);
     if (
       // @ts-expect-error
       file.size < this.config.minFileSize ||
       // @ts-expect-error
       file.size > this.config.maxFileSize ||
-      !this.isAllowedMimeType(file.type)
+      !this.isAllowedMimeType(mimeType)
     ) {
       const body = process.versions.bun ? file : await file.arrayBuffer();
       return new Response(body, {
         status: 200,
         headers: {
-          'Content-Type': file.type,
+          'Content-Type': mimeType,
           'Content-Length': String(file.size),
           'Last-Modified': new Date(file.lastModified).toUTCString(),
         },

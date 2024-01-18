@@ -92,7 +92,7 @@ export default class HttpRouter {
     });
     return this;
   }
-  listen(portOrOptions: ListenOptions) {
+  listen(portOrOptions: ListenOptions = {}) {
     if (typeof portOrOptions === 'number') {
       portOrOptions = { port: portOrOptions };
     }

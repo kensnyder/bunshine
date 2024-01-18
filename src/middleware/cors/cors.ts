@@ -8,7 +8,8 @@ export type CorsOptions = {
     | Array<string | RegExp>
     | boolean
     | ((
-        incomingOrigin: string
+        incomingOrigin: string,
+        context: Context
       ) => string | string[] | boolean | undefined | null);
   allowMethods?: string[];
   allowHeaders?: string[];

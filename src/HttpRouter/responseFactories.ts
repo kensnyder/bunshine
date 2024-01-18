@@ -1,6 +1,7 @@
 import { BunFile } from 'bun';
 import path from 'node:path';
 import Context from '../Context/Context.ts';
+import getMimeType from '../getMimeType/getMimeType.ts';
 import { gzipString } from '../gzip/gzip.ts';
 
 export type Factory = (body: string, init?: ResponseInit) => Response;
@@ -13,7 +14,6 @@ export let minGzipSize = 100;
 
 export function json(this: Context, data: any, init: ResponseInit = {}) {
   let body: string | Uint8Array = JSON.stringify(data);
-  // @ts-expect-error
   init.headers = new Headers(init.headers || {});
   init.headers.set('Content-type', `application/json; charset=utf-8`);
   // body must be large enough to be worth compressing
@@ -22,13 +22,11 @@ export function json(this: Context, data: any, init: ResponseInit = {}) {
     init.headers.set('Content-Encoding', 'gzip');
     init.headers.set('Content-Length', String(body.length));
   }
-  // @ts-expect-error
   return new Response(body, init);
 }
 
 export function factory(contentType: string): Factory {
   return function (this: Context, body: string, init: ResponseInit = {}) {
-    // @ts-expect-error
     init.headers = new Headers(init.headers || {});
     init.headers.set('Content-type', `${contentType}; charset=utf-8`);
     if (
@@ -42,7 +40,6 @@ export function factory(contentType: string): Factory {
       init.headers.set('Content-Encoding', 'gzip');
     }
     init.headers.set('Content-Length', String(body.length));
-    // @ts-expect-error
     return new Response(body, init);
   };
 }
@@ -248,7 +245,7 @@ export async function buildFileResponse({
     response = new Response(body, {
       headers: {
         'Content-Length': String(file.size),
-        'Content-Type': file.type || 'application/octet-stream',
+        'Content-Type': getMimeType(file),
       },
       status: method === 'HEAD' ? 204 : 200,
     });

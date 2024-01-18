@@ -2,7 +2,7 @@
 
 [![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.12.3)](https://npmjs.com/package/bunshine)
 [![Dependencies](https://badgen.net/static/dependencies/3/green?v=0.12.3)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
-![Test Coverage: 97%](https://badgen.net/static/test%20coverage/97%25/green?v=0.12.3)
+![Test Coverage: 94%](https://badgen.net/static/test%20coverage/94%25/green?v=0.12.3)
 [![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.12.3)](https://opensource.org/licenses/ISC)
 
 # Bunshine
@@ -963,7 +963,11 @@ app.listen({ port: 3100 });
 - 🔲 tests for cors
 - 🔲 tests for devLogger
 - 🔲 tests for prodLogger
+- 🔲 tests for gzip
+- 🔲 tests for getMimeType
+- 🔲 tests for responseFactories
 - ✅ tests for serveFiles
+- 🔲 100% test coverage
 - 🔲 add flags to bin/serve.ts with commander
 - 🔲 document flags for `bunx bunshine serve`
 - 🔲 more files in examples folder

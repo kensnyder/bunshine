@@ -42,7 +42,7 @@ export default class PathMatcher<Target extends any> {
     filter?: (target: Target) => boolean,
     fallbacks?: Function[]
   ) {
-    const matched = [];
+    const matched: Array<{ target: any; params: Record<string, string> }> = [];
     for (const reg of this.registered) {
       const result = reg.matcher(path);
       if (result && (!filter || filter(reg.target))) {

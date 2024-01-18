@@ -1,5 +1,6 @@
 import type { BunFile } from 'bun';
 import { LRUCache } from 'lru-cache';
+import getMimeType from '../getMimeType/getMimeType.ts';
 import { type FileGzipper } from './FileGzipper.ts';
 import { GzipCache } from './GzipCache.ts';
 import { gzipFile } from './gzip.ts';
@@ -11,6 +12,7 @@ export default class MemoryCache extends GzipCache {
     super();
     this._gzipper = gzipper;
     this._cache = new LRUCache<string, Uint8Array>({
+      // @ts-expect-error
       maxSize: this._gzipper.config!.cache.maxBytes!,
       sizeCalculation: (value: Uint8Array, key: string) => {
         return key.length + value.length;
@@ -30,7 +32,7 @@ export default class MemoryCache extends GzipCache {
       status: 200,
       headers: {
         'Content-Encoding': 'gzip',
-        'Content-Type': file.type,
+        'Content-Type': getMimeType(file),
         'Content-Length': String(body!.length),
         'Last-Modified': new Date(file.lastModified).toUTCString(),
       },

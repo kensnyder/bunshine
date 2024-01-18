@@ -356,6 +356,7 @@ describe('HttpRouter', () => {
     it('should handle POST', async () => {
       app.post('/parrot', async ({ request }) => {
         const formData = await request.formData();
+        // @ts-expect-error
         const json = JSON.stringify(Object.fromEntries(formData));
         return new Response(json, {
           status: 200,
@@ -380,6 +381,7 @@ describe('HttpRouter', () => {
     it('should handle POST', async () => {
       app.post('/parrot', async ({ request }) => {
         const formData = await request.formData();
+        // @ts-expect-error
         const json = JSON.stringify(Object.fromEntries(formData));
         return new Response(json, {
           status: 200,

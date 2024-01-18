@@ -145,14 +145,11 @@ export default class SocketRouter {
       const matched = this.pathMatcher.match(pathname);
       for (const { target } of matched) {
         try {
-          // @ts-expect-error
           target[eventName]?.(ws, ...args);
         } catch (e) {
           const error = e as Error;
-          // @ts-expect-error
           if (typeof target?.error === 'function') {
             try {
-              // @ts-expect-error
               target.error(ws, eventName, error);
             } catch (e) {
               const error = e as Error;

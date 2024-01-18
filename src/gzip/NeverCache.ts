@@ -1,4 +1,5 @@
 import type { BunFile } from 'bun';
+import getMimeType from '../getMimeType/getMimeType.ts';
 import { type FileGzipper } from './FileGzipper.ts';
 import { GzipCache } from './GzipCache.ts';
 import { gzipFile } from './gzip.ts';
@@ -15,7 +16,7 @@ export default class NeverCache extends GzipCache {
       status: 200,
       headers: {
         'Content-Encoding': 'gzip',
-        'Content-Type': file.type,
+        'Content-Type': getMimeType(file),
         'Content-Length': String(body.length),
         'Last-Modified': new Date(file.lastModified).toUTCString(),
       },
