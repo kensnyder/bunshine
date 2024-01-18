@@ -39,7 +39,8 @@ export class FileGzipper {
       file.size > this.config.maxFileSize ||
       !this.isAllowedMimeType(file.type)
     ) {
-      return new Response(file, {
+      const body = process.versions.bun ? file : await file.arrayBuffer();
+      return new Response(body, {
         status: 200,
         headers: {
           'Content-Type': file.type,

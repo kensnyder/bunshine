@@ -61,8 +61,9 @@ export default class PrecompressCache extends GzipCache {
         },
       });
     } else {
+      const body = process.versions.bun ? file : await file.arrayBuffer();
       // not in zipped cache; return original file
-      return new Response(file, {
+      return new Response(body, {
         status: 200,
         headers: {
           'Content-Type': file.type,

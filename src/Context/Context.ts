@@ -81,7 +81,7 @@ export default class Context<
   redirect(url: string, status = 302) {
     return redirect(url, status);
   }
-  /** A shorthand for `new Response(fileBody, fileHeaders)` */
+  /** A shorthand for `new Response(bunFile, fileHeaders)` */
   async file(
     filenameOrBunFile: string | BunFile,
     fileOptions: FileResponseOptions = {}

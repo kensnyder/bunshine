@@ -92,11 +92,11 @@ export default class HttpRouter {
     });
     return this;
   }
-  listen(options: ListenOptions) {
-    if (typeof options === 'number') {
-      options = { port: options };
+  listen(portOrOptions: ListenOptions) {
+    if (typeof portOrOptions === 'number') {
+      portOrOptions = { port: portOrOptions };
     }
-    const server = Bun.serve(this.getExport(options));
+    const server = Bun.serve(this.getExport(portOrOptions));
     this.server = server;
     return server;
   }

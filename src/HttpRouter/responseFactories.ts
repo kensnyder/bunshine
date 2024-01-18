@@ -241,10 +241,11 @@ export async function buildFileResponse({
       `bytes ${start}-${end}/${totalFileSize}`
     );
   } else {
+    const body = process.versions.bun ? file : await file.arrayBuffer();
     // Bun will automatically set content-type and content-length,
     //   but delays until the response is actually sent, but middleware might
     //   want to know the file details ahead of time
-    response = new Response(file, {
+    response = new Response(body, {
       headers: {
         'Content-Length': String(file.size),
         'Content-Type': file.type || 'application/octet-stream',
