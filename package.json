@@ -23,10 +23,14 @@
     "Bun Web Framework",
     "Bun Server Sent Events",
     "Bun Ranged Files",
+    "Bun File Server",
     "HTTP Server",
     "Socket Server",
     "Server",
+    "Server Sent Events",
     "Ranged Files",
+    "File Server",
+    "GZIP Responses",
     "Bun"
   ],
   "author": "kendsnyder@gmail.com",
@@ -43,12 +47,12 @@
   "devDependencies": {
     "@types/eventsource": "^1.1.15",
     "@types/ms": "^0.7.34",
-    "bun-types": "^1.0.22",
+    "bun-types": "^1.0.23",
     "eventsource": "^2.0.2",
     "globby": "^14.0.0",
-    "prettier": "^3.1.1",
+    "prettier": "^3.2.4",
     "prettier-plugin-organize-imports": "^3.2.4",
-    "tinybench": "^2.5.1",
+    "tinybench": "^2.6.0",
     "type-fest": "^4.9.0",
     "typescript": "^5.3.3"
   }
