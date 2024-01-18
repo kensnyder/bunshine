@@ -2,6 +2,9 @@ export { default as Context } from './src/Context/Context';
 export {
   default as HttpRouter,
   type Handler,
+  type HttpMethods,
+  type HttpRouterOptions,
+  type ListenOptions,
   type Middleware,
   type NextFunction,
 } from './src/HttpRouter/HttpRouter';

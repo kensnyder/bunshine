@@ -31,6 +31,8 @@ type RouteInfo = {
   handler: Handler<any>;
 };
 
+export type ListenOptions = Omit<ServeOptions, 'fetch' | 'websocket'> | number;
+
 export type HttpMethods =
   | 'ALL'
   | 'GET'
@@ -90,7 +92,10 @@ export default class HttpRouter {
     });
     return this;
   }
-  listen(options: Omit<ServeOptions, 'fetch'> = {}) {
+  listen(options: ListenOptions) {
+    if (typeof options === 'number') {
+      options = { port: options };
+    }
     const server = Bun.serve(this.getExport(options));
     this.server = server;
     return server;
