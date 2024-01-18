@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "include": ["*"],
+    "include": ["src/**/*"],
     "lib": ["ESNext"],
     "module": "esnext",
     "target": "esnext",

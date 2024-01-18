@@ -1,5 +1,6 @@
 import type { ServeOptions, Server } from 'bun';
 // @ts-ignore
+import os from 'os';
 import bunshine from '../../package.json';
 import Context from '../Context/Context';
 import MatcherWithCache from '../MatcherWithCache/MatcherWithCache.ts';
@@ -102,11 +103,14 @@ export default class HttpRouter {
     }
     const servingAt = String(this.server.url);
     if (verbose) {
-      const server = Bun.env.COMPUTERNAME || Bun.env.HOSTNAME;
+      const server = Bun.env.COMPUTERNAME || os.hostname();
       const mode = Bun.env.NODE_ENV || 'production';
       const took = Math.round(performance.now());
+      const runtime = process.versions.bun
+        ? `Bun v${process.versions.bun}`
+        : `Node v${process.versions.node}`;
       to(
-        `☀️ Bunshine v${bunshine.version} on Bun v${Bun.version} running at ${servingAt} on server "${server}" in ${mode} (${took}ms)`
+        `☀️ Bunshine v${bunshine.version} on ${runtime} serving at ${servingAt} on "${server}" in ${mode} (${took}ms)`
       );
     } else {
       to(`☀️ Serving ${servingAt}`);

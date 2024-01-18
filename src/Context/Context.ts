@@ -21,6 +21,8 @@ export default class Context<
 > {
   /** The raw request object */
   request: Request;
+  /** Alias for `request` */
+  req: Request;
   /** The Bun server instance */
   server: Server;
   /** The HttpRouter instance */
@@ -40,6 +42,7 @@ export default class Context<
   // construct this Context object
   constructor(request: Request, server: Server, app: HttpRouter) {
     this.request = request;
+    this.req = request;
     this.server = server;
     this.app = app;
     this.url = new URL(request.url);

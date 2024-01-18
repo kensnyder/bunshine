@@ -1,9 +1,9 @@
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.11.2" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.12.0" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.11.2)](https://npmjs.com/package/bunshine)
-[![Dependencies](https://badgen.net/static/dependencies/3/green?v=0.11.2)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
-![Test Coverage: 97%](https://badgen.net/static/test%20coverage/96%25/green?v=0.11.2)
-[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.11.2)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.12.0)](https://npmjs.com/package/bunshine)
+[![Dependencies](https://badgen.net/static/dependencies/3/green?v=0.12.0)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
+![Test Coverage: 97%](https://badgen.net/static/test%20coverage/96%25/green?v=0.12.0)
+[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.12.0)](https://opensource.org/licenses/ISC)
 
 # Bunshine
 
@@ -956,16 +956,23 @@ app.listen({ port: 3100 });
 - ✅ middleware > performanceHeader
 - ✅ middleware > securityHeaders
 - ✅ middleware > trailingSlashes
+- 🔲 middleware > directoryListing
+- 🔲 middleware > rate limiter
 - ✅ gzip compression
 - ✅ options for serveFiles
 - 🔲 tests for cors
 - 🔲 tests for devLogger
 - 🔲 tests for prodLogger
 - ✅ tests for serveFiles
-- 🔲 more examples
+- 🔲 add flags to bin/serve.ts with commander
+- 🔲 document flags for `bunx bunshine serve`
+- 🔲 more files in examples folder
+- 🔲 example of mini app that uses bin/serve.ts (maybe our own docs?)
 - 🔲 GitHub Actions to run tests and coverage
-- 🔲 Export functions to gzip strings and files
-- 🔲 Gzip performance testing (to get min/max defaults)
+- 🔲 Fix TypeScript warnings
+- 🔲 Support server clusters
+- ✅ Export functions to gzip strings and files
+- ✅ Gzip performance testing (to get min/max defaults)
 
 ## License
 
