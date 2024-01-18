@@ -1,6 +1,8 @@
 {
+  "include": ["index.ts", "package.json", "src/**/*"],
+  "exclude": [],
   "compilerOptions": {
-    "lib": ["ESNext","DOM"],
+    "lib": ["ESNext", "DOM"],
     "module": "esnext",
     "target": "esnext",
     "moduleResolution": "bundler",
@@ -8,7 +10,6 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "allowImportingTsExtensions": true,
-    "noEmit": true,
     "composite": true,
     "strict": true,
     "downlevelIteration": true,
@@ -18,7 +19,7 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "types": [
-      "bun-types" // add Bun global
-    ]
-  }
+      "bun-types",
+    ],
+  },
 }

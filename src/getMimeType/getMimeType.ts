@@ -6,7 +6,7 @@ export default function getMimeType(file: BunFile) {
     return file.type;
   }
   if (file.name) {
-    return mime.getType(file.name);
+    return mime.getType(file.name) || 'application/octet-stream';
   }
   return 'application/octet-stream';
 }

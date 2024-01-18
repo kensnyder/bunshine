@@ -1,12 +1,14 @@
 {
   "name": "bunshine",
-  "version": "0.12.3",
+  "version": "0.12.5",
   "module": "server/server.ts",
   "type": "module",
+  "main": "index.ts",
+  "types": "index.d.ts",
   "scripts": {
     "test-watch": "bun test --watch",
     "coverage": "bun test --coverage",
-    "lint": "tsc",
+    "lint": "tsc --declaration --emitDeclarationOnly",
     "example": "bun --watch ./examples/server.ts"
   },
   "repository": {
