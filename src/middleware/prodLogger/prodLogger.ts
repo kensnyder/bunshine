@@ -3,7 +3,7 @@ import os from 'os';
 import bunshine from '../../../package.json';
 import type { Middleware } from '../../HttpRouter/HttpRouter.ts';
 
-const machine = Bun.env.COMPUTERNAME || os.hostname();
+const machine = os.hostname();
 const runtime = process.versions.bun
   ? `Bun v${process.versions.bun}`
   : `Node v${process.versions.node}`;

@@ -108,7 +108,7 @@ export default class HttpRouter {
     }
     const servingAt = String(this.server.url);
     if (verbose) {
-      const server = Bun.env.COMPUTERNAME || os.hostname();
+      const server = os.hostname();
       const mode = Bun.env.NODE_ENV || 'production';
       const took = Math.round(performance.now());
       const runtime = process.versions.bun
