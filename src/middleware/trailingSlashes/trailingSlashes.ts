@@ -1,6 +1,6 @@
 import { Middleware } from '../../HttpRouter/HttpRouter';
 
-export default function trailingSlashes(mode: 'add' | 'remove'): Middleware {
+export function trailingSlashes(mode: 'add' | 'remove'): Middleware {
   if (mode === 'add') {
     return c => {
       if (!c.url.pathname.endsWith('/')) {
