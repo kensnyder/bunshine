@@ -12,6 +12,7 @@
     "allowImportingTsExtensions": true,
     "composite": true,
     "strict": true,
+    "noEmit": true,
     "downlevelIteration": true,
     "skipLibCheck": true,
     "noImplicitAny": false,
@@ -19,7 +20,7 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "types": [
-      "bun-types",
-    ],
-  },
+      "bun-types"
+    ]
+  }
 }
