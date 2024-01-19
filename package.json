@@ -1,6 +1,6 @@
 {
   "name": "bunshine",
-  "version": "0.12.6",
+  "version": "0.12.7",
   "module": "server/server.ts",
   "type": "module",
   "main": "index.ts",

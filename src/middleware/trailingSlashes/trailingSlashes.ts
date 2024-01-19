@@ -9,7 +9,7 @@ export function trailingSlashes(mode: 'add' | 'remove'): Middleware {
     };
   } else {
     return c => {
-      if (c.url.pathname.endsWith('/')) {
+      if (c.url.pathname !== '/' && c.url.pathname.endsWith('/')) {
         const noSlash = c.url.pathname.slice(0, -1);
         return c.redirect(`${noSlash}${c.url.search}`, 302);
       }

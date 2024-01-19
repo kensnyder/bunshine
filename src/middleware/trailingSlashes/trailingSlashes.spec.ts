@@ -40,4 +40,11 @@ describe('trailingSlashes middleware', () => {
     expect(resp.redirected).toBe(true);
     expect(resp.url).toBe('http://localhost:7803/foo?a=b');
   });
+  it('should not remove slashes at root', async () => {
+    app.use(trailingSlashes('remove'));
+    server = app.listen({ port: 7804 });
+    const resp = await fetch('http://localhost:7804/');
+    expect(resp.redirected).toBe(false);
+    expect(resp.url).toBe('http://localhost:7804/');
+  });
 });
