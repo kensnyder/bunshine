@@ -1,3 +1,15 @@
+# Not for NPM
+assets
+benchmarks
+examples
+src/**/*.spec.ts
+testFixtures
+.prettierrc.json
+
+#
+# From .gitignore
+#
+
 # macOS
 .DS_Store
 
