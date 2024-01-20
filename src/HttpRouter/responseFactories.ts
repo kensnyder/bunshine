@@ -10,17 +10,22 @@ const textEncoder = new TextEncoder();
 
 // body must be large enough to be worth compressing
 // (54 is minimum size of gzip after metadata; 100 is arbitrary choice)
+// see benchmarks/gzip.ts for more information
 export let minGzipSize = 100;
 
 export function json(this: Context, data: any, init: ResponseInit = {}) {
   let body: string | Uint8Array = JSON.stringify(data);
   init.headers = new Headers(init.headers || {});
-  init.headers.set('Content-type', `application/json; charset=utf-8`);
-  // body must be large enough to be worth compressing
-  if (body.length >= minGzipSize) {
-    body = gzipString(body);
-    init.headers.set('Content-Encoding', 'gzip');
-    init.headers.set('Content-Length', String(body.length));
+  if (!init.headers.has('Content-Type')) {
+    init.headers.set('Content-type', `application/json; charset=utf-8`);
+  }
+  if (!init.headers.has('Content-Encoding')) {
+    // body must be large enough to be worth compressing
+    if (body.length >= minGzipSize) {
+      body = gzipString(body);
+      init.headers.set('Content-Encoding', 'gzip');
+      init.headers.set('Content-Length', String(body.length));
+    }
   }
   return new Response(body, init);
 }
@@ -28,16 +33,20 @@ export function json(this: Context, data: any, init: ResponseInit = {}) {
 export function factory(contentType: string): Factory {
   return function (this: Context, body: string, init: ResponseInit = {}) {
     init.headers = new Headers(init.headers || {});
-    init.headers.set('Content-type', `${contentType}; charset=utf-8`);
-    if (
-      // client must expect gzip
-      this.request.headers.get('Accept-Encoding')?.includes('gzip') &&
-      // body must be large enough to be worth compressing
-      body.length >= minGzipSize
-    ) {
-      // @ts-expect-error
-      body = gzipString(body);
-      init.headers.set('Content-Encoding', 'gzip');
+    if (!init.headers.has('Content-Type')) {
+      init.headers.set('Content-type', `${contentType}; charset=utf-8`);
+    }
+    if (!init.headers.has('Content-Encoding')) {
+      if (
+        // client must expect gzip
+        this.request.headers.get('Accept-Encoding')?.includes('gzip') &&
+        // body must be large enough to be worth compressing
+        body.length >= minGzipSize
+      ) {
+        // @ts-expect-error
+        body = gzipString(body);
+        init.headers.set('Content-Encoding', 'gzip');
+      }
     }
     init.headers.set('Content-Length', String(body.length));
     return new Response(body, init);

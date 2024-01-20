@@ -2,7 +2,7 @@ import type Context from '../../Context/Context';
 import type { Middleware } from '../../HttpRouter/HttpRouter';
 
 export type CorsOptions = {
-  origin:
+  origin?:
     | string
     | RegExp
     | Array<string | RegExp>
@@ -25,7 +25,7 @@ export const CorsDefaults = {
   exposeHeaders: [],
 };
 
-export function cors(options: CorsOptions): Middleware {
+export function cors(options: CorsOptions = {}): Middleware {
   const opts = {
     ...CorsDefaults,
     ...options,
@@ -73,6 +73,13 @@ export function cors(options: CorsOptions): Middleware {
   })(opts.origin);
   function handleOptionsRequest(c: Context) {
     const respHeaders = new Headers();
+    const incomingOrigin = c.request.headers.get('origin');
+    const allowOrigin = incomingOrigin
+      ? findAllowOrigin(incomingOrigin, c)
+      : null;
+    if (allowOrigin) {
+      respHeaders.set('Access-Control-Allow-Origin', allowOrigin);
+    }
     if (opts.maxAge != null) {
       respHeaders.set('Access-Control-Max-Age', opts.maxAge.toString());
     }

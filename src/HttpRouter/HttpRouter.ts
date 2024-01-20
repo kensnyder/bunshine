@@ -67,6 +67,7 @@ export type HttpRouterOptions = {
 export type EmitUrlOptions = {
   verbose?: boolean;
   to?: (message: string) => void;
+  date?: boolean;
 };
 
 export default class HttpRouter {
@@ -100,13 +101,18 @@ export default class HttpRouter {
     this.server = server;
     return server;
   }
-  emitUrl({ verbose = false, to = console.log }: EmitUrlOptions = {}) {
+  emitUrl({
+    verbose = false,
+    to = console.log,
+    date = false,
+  }: EmitUrlOptions = {}) {
     if (!this.server) {
       throw new Error(
         'Cannot emit URL before server has been started. Use .listen() to start the server first.'
       );
     }
     const servingAt = String(this.server.url);
+    let message: string;
     if (verbose) {
       const server = os.hostname();
       const mode = Bun.env.NODE_ENV || 'production';
@@ -114,12 +120,14 @@ export default class HttpRouter {
       const runtime = process.versions.bun
         ? `Bun v${process.versions.bun}`
         : `Node v${process.versions.node}`;
-      to(
-        `☀️ Bunshine v${bunshine.version} on ${runtime} serving at ${servingAt} on "${server}" in ${mode} (${took}ms)`
-      );
+      message = `☀️ Bunshine v${bunshine.version} on ${runtime} serving at ${servingAt} on "${server}" in ${mode} (${took}ms)`;
     } else {
-      to(`☀️ Serving ${servingAt}`);
+      message = `☀️ Serving ${servingAt}`;
     }
+    if (date) {
+      message = `[${new Date().toISOString()}] ${message}`;
+    }
+    to(message);
   }
   getExport(options: Omit<ServeOptions, 'fetch' | 'websocket'> = {}) {
     const config = {

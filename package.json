@@ -1,6 +1,6 @@
 {
   "name": "bunshine",
-  "version": "0.12.7",
+  "version": "0.12.8",
   "module": "server/server.ts",
   "type": "module",
   "main": "index.ts",
@@ -8,6 +8,7 @@
     "test-watch": "bun test --watch",
     "coverage": "bun test --coverage",
     "lint": "tsc",
+    "build": "rm index.d.ts; dts-generator --project . --out index.d.ts",
     "example": "bun --watch ./examples/server.ts"
   },
   "repository": {
@@ -42,8 +43,9 @@
   },
   "homepage": "https://github.com/kensnyder/bunshine#readme",
   "dependencies": {
+    "dts-generator": "3.0.0",
     "lru-cache": "10.1.0",
-    "mime": "^4.0.1",
+    "mime": "4.0.1",
     "ms": "2.1.3",
     "path-to-regexp": "6.2.1"
   },

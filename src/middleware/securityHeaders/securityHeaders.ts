@@ -140,8 +140,8 @@ export function securityHeaders(
   }
   return async (context: Context, next: NextFunction) => {
     const resp = await next();
-    if (!resp.headers.get('content-type')?.includes('text/html')) {
-      // no need to set security headers for non-html responses
+    if (!_needsHeaders(resp)) {
+      // browsers ignore security headers for some responses
       return resp;
     }
     for (let [dasherizedName, value] of headers.values) {
@@ -163,7 +163,22 @@ export function securityHeaders(
   };
 }
 
-function _resolveHeaderValue(
+export function _needsHeaders(response: Response) {
+  const types = [
+    'text/html',
+    'image/svg+xml',
+    'application/atom+xml',
+    'application/rss+xml',
+  ];
+  // browsers only accept security headers for interactive responses
+  //   or 3xx redirects
+  return (
+    (response.status >= 300 && response.status <= 399) ||
+    types.some(type => response.headers.get('content-type')?.includes(type))
+  );
+}
+
+export function _resolveHeaderValue(
   name: string,
   value: SecurityHeaderValue | AllowedApis | CSPDirectives
 ) {
@@ -183,11 +198,11 @@ function _resolveHeaderValue(
   return value;
 }
 
-function _dasherize(str: string): string {
+export function _dasherize(str: string): string {
   return str.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
 }
 
-function _getCspHeader(directives: CSPDirectives) {
+export function _getCspHeader(directives: CSPDirectives) {
   const items: string[] = [];
   for (let [key, originalValue] of Object.entries(directives)) {
     let value:
@@ -211,7 +226,7 @@ function _getCspHeader(directives: CSPDirectives) {
   return items.join('; ');
 }
 
-function _getCspItem(source: CSPSource) {
+export function _getCspItem(source: CSPSource) {
   if (typeof source === 'string') {
     return source;
   } else if ('uris' in source) {
@@ -229,7 +244,7 @@ function _getCspItem(source: CSPSource) {
   }
 }
 
-function _getPpHeader(apis: AllowedApis) {
+export function _getPpHeader(apis: AllowedApis) {
   const final = { ...permissionsPolicyDefaults, ...apis };
   const items: string[] = [];
   for (const [name, value] of Object.entries(final)) {
@@ -238,7 +253,7 @@ function _getPpHeader(apis: AllowedApis) {
   return items.join(', ');
 }
 
-function _getSandboxString(options: SandboxOptions) {
+export function _getSandboxString(options: SandboxOptions) {
   const items: string[] = [];
   for (const [name, value] of Object.entries(options)) {
     if (value) {
@@ -252,7 +267,7 @@ function _getSandboxString(options: SandboxOptions) {
   return items.join(' ');
 }
 
-function _getReportString(reportOption: ReportOptions) {
+export function _getReportString(reportOption: ReportOptions) {
   if (reportOption.uri) {
     return `report-uri ${reportOption.uri}`;
   }
