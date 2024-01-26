@@ -86,8 +86,8 @@ export declare class HttpRouter {
 	server: Server | undefined;
 	pathMatcher: MatcherWithCache<RouteInfo>;
 	_wsRouter?: SocketRouter;
-	_onErrors: any[];
-	_on404s: any[];
+	private _onErrors;
+	private _on404s;
 	constructor(options?: HttpRouterOptions);
 	listen(portOrOptions?: ListenOptions): Server;
 	emitUrl({ verbose, to, date, }?: EmitUrlOptions): void;

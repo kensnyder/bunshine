@@ -86,8 +86,8 @@ export default class HttpRouter {
   server: Server | undefined;
   pathMatcher: MatcherWithCache<RouteInfo>;
   _wsRouter?: SocketRouter;
-  _onErrors: any[] = [];
-  _on404s: any[] = [];
+  private _onErrors: any[] = [];
+  private _on404s: any[] = [];
   constructor(options: HttpRouterOptions = {}) {
     this.pathMatcher = new MatcherWithCache<RouteInfo>(
       new PathMatcher(),
