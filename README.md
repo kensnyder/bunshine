@@ -2,11 +2,11 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.13.0" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.13.1" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.13.0)](https://npmjs.com/package/bunshine)
-![Test Coverage: 95%](https://badgen.net/static/test%20coverage/95%25/green?v=0.13.0)
-[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.13.0)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.13.1)](https://npmjs.com/package/bunshine)
+![Test Coverage: 95%](https://badgen.net/static/test%20coverage/95%25/green?v=0.13.1)
+[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.13.1)](https://opensource.org/licenses/ISC)
 
 ## Installation
 

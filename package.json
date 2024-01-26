@@ -1,9 +1,10 @@
 {
   "name": "bunshine",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "module": "server/server.ts",
   "type": "module",
   "main": "index.ts",
+  "types": "index.d.ts",
   "scripts": {
     "test-watch": "bun test --watch",
     "coverage": "bun test --coverage",
