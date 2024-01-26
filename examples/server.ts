@@ -29,7 +29,6 @@ app.get('/file', c => c.file(`${import.meta.dir}/server.ts`));
 app.post('/parrot', async c =>
   c.json({
     receivedJson: await c.request.json(),
-    // @ts-expect-error
     withHeaders: Object.fromEntries(c.request.headers),
   })
 );

@@ -1,7 +1,7 @@
-import type Context from '../Context/Context';
+import type { ContextWithError } from '../Context/Context';
 
-export const fallback500 = (context: Context) => {
-  const error = context.error!;
+export const fallback500 = (context: ContextWithError) => {
+  const error = context.error;
   const headers = new Headers();
   let body: string;
   if (Bun.env.NODE_ENV === 'development') {

@@ -1,8 +1,7 @@
 import type { ServeOptions, Server } from 'bun';
-// @ts-ignore
 import os from 'os';
 import bunshine from '../../package.json';
-import Context from '../Context/Context';
+import Context, { type ContextWithError } from '../Context/Context';
 import MatcherWithCache from '../MatcherWithCache/MatcherWithCache.ts';
 import PathMatcher from '../PathMatcher/PathMatcher';
 import SocketRouter from '../SocketRouter/SocketRouter.ts';
@@ -21,7 +20,7 @@ export type SingleHandler<
 export type SingleErrorHandler<
   ParamsShape extends Record<string, string> = Record<string, string>,
 > = (
-  context: Context<ParamsShape> & { error: Error },
+  context: ContextWithError<ParamsShape>,
   next: NextFunction
 ) => Response | void | Promise<Response | void>;
 
@@ -94,15 +93,6 @@ export default class HttpRouter {
       new PathMatcher(),
       options.cacheSize || 4000
     );
-  }
-  respectSigTerm({ closeActiveConnections = true } = {}) {
-    ['SIGTERM', 'SIGINT'].forEach(signal => {
-      process.once(signal, () => {
-        console.log(`☀️ Received ${signal}, shutting down.`);
-        this.server?.stop(closeActiveConnections);
-      });
-    });
-    return this;
   }
   listen(portOrOptions: ListenOptions = {}) {
     if (typeof portOrOptions === 'number') {
@@ -263,9 +253,7 @@ export default class HttpRouter {
         return fallback404(context);
       }
       context.params = match.params;
-      const handler = match.target.handler as SingleHandler<
-        Record<string, string>
-      >;
+      const handler = match.target.handler as SingleHandler;
 
       try {
         let result = handler(context, next);
@@ -289,13 +277,12 @@ export default class HttpRouter {
         // a response has been thrown; respond to client with it
         return e;
       }
-      // @ts-expect-error
       context.error = e as Error;
       let idx = 0;
       const nextError: NextFunction = async () => {
         const handler = this._onErrors[idx++];
         if (!handler) {
-          return fallback500(context);
+          return fallback500(context as ContextWithError);
         }
         try {
           let result = handler(context, nextError);
@@ -309,7 +296,6 @@ export default class HttpRouter {
             }
           }
         } catch (e) {
-          // @ts-expect-error
           context.error = e as Error;
         }
         return nextError();

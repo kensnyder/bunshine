@@ -1,4 +1,7 @@
-export { default as Context } from './src/Context/Context';
+export {
+  default as Context,
+  type ContextWithError,
+} from './src/Context/Context';
 export {
   default as HttpRouter,
   type EmitUrlOptions,

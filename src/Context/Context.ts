@@ -16,6 +16,10 @@ const textHtml = factory('text/html');
 const textXml = factory('text/xml');
 const textCss = factory('text/css');
 
+export type ContextWithError<
+  ParamsShape extends Record<string, string> = Record<string, string>,
+> = Context<ParamsShape> & { error: Error };
+
 export default class Context<
   ParamsShape extends Record<string, string> = Record<string, string>,
 > {
@@ -37,6 +41,8 @@ export default class Context<
   date: Date;
   /** The milliseconds between server start and this request, as float (from performance.now()) */
   now: number;
+  /** If an error has been thrown, the error Object */
+  error: Error | null = null;
   // construct this Context object
   constructor(request: Request, server: Server, app: HttpRouter) {
     this.request = request;
