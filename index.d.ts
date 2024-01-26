@@ -57,8 +57,8 @@ export declare class SocketRouter {
 	handlers: WsHandlers;
 	constructor(router: HttpRouter);
 	at: <ParamsShape extends Record<string, string> = Record<string, string>, UpgradeShape extends Record<string, any> = Record<string, any>>(path: string, handlers: WsHandlers<ParamsShape, UpgradeShape>) => this;
-	_fallbackError: (ws: ServerWebSocket<Record<string, any>>, eventName: string, error: Error) => void;
-	_createHandler: (eventName: SocketEventName) => (ws: ServerWebSocket<Record<string, any>>, ...args: any) => Promise<void>;
+	private _fallbackError;
+	private _createHandler;
 }
 export type NextFunction = () => Promise<Response>;
 export type SingleHandler<ParamsShape extends Record<string, string> = Record<string, string>> = (context: Context<ParamsShape>, next: NextFunction) => Response | void | Promise<Response | void>;

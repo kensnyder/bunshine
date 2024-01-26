@@ -129,7 +129,7 @@ export default class SocketRouter {
     // allow chaining
     return this;
   };
-  _fallbackError = (
+  private _fallbackError = (
     ws: ServerWebSocket<Record<string, any>>,
     eventName: string,
     error: Error
@@ -139,7 +139,7 @@ export default class SocketRouter {
       error
     );
   };
-  _createHandler = (eventName: SocketEventName) => {
+  private _createHandler = (eventName: SocketEventName) => {
     return async (ws: ServerWebSocket<Record<string, any>>, ...args: any) => {
       const pathname = ws.data.url.pathname;
       const matched = this.pathMatcher.match(pathname);
