@@ -5,7 +5,6 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 <img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.12.8" width="200" height="187" />
 
 [![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.12.8)](https://npmjs.com/package/bunshine)
-[![Dependencies](https://badgen.net/static/dependencies/3/green?v=0.12.8)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
 ![Test Coverage: 94%](https://badgen.net/static/test%20coverage/94%25/green?v=0.12.8)
 [![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.12.8)](https://opensource.org/licenses/ISC)
 
@@ -980,13 +979,14 @@ app.listen({ port: 3100 });
 - ✅ middleware > trailingSlashes
 - 🔲 middleware > directoryListing
 - 🔲 middleware > rate limiter
+- 🔲 document headers middleware
+- 🔲 move securityHeaders to @bunshine/security-headers
 - ✅ gzip compression
 - ✅ options for serveFiles
 - 🔲 tests for cors
 - 🔲 tests for devLogger
 - 🔲 tests for prodLogger
 - 🔲 tests for gzip
-- 🔲 tests for getMimeType
 - 🔲 tests for responseFactories
 - ✅ tests for serveFiles
 - 🔲 100% test coverage
@@ -997,6 +997,7 @@ app.listen({ port: 3100 });
 - 🔲 GitHub Actions to run tests and coverage
 - 🔲 Fix TypeScript warnings
 - 🔲 Support server clusters
+- 🔲 Replace "ms" with a super simple implementation
 - ✅ Export functions to gzip strings and files
 - ✅ Gzip performance testing (to get min/max defaults)
 
