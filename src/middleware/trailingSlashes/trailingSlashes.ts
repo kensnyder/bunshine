@@ -15,7 +15,7 @@ export function trailingSlashes(mode: 'add' | 'remove'): Middleware {
         c.url.pathname.endsWith('/')
       ) {
         const noSlash = c.url.pathname.slice(0, -1);
-        return c.redirect(`${noSlash}${c.url.search}`, 302);
+        return c.redirect(`${noSlash}${c.url.search}`, 301);
       }
     };
   }

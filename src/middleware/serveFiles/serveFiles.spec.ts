@@ -48,7 +48,7 @@ describe('serveFiles middleware', () => {
       });
       const text = await resp.text();
       expect(text).toBe('');
-      expect(resp.headers.get('content-length')).toBe('22');
+      expect(resp.headers.get('content-length')).toBe('0');
       expect(resp.status).toBe(204);
     });
     it('should 404 if file does not exist', async () => {

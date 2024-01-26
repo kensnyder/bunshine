@@ -2,6 +2,7 @@ export { default as Context } from './src/Context/Context';
 export {
   default as HttpRouter,
   type EmitUrlOptions,
+  type ErrorHandler,
   type Handler,
   type HttpMethods,
   type HttpRouterOptions,

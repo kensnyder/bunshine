@@ -3,6 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import EventSource from 'eventsource';
 import HttpRouter from './HttpRouter';
 
+type SseTestEvent = {
+  type: string;
+  data: string;
+  lastEventId?: string;
+  origin?: string;
+};
+
 // @ts-expect-error
 const server: Server = {};
 
@@ -276,7 +283,7 @@ describe('HttpRouter', () => {
     });
     it('should assign random port', async () => {
       app.get('/', () => new Response('Hi'));
-      server = app.listen();
+      server = app.listen({ port: 7769 });
       const resp = await fetch(`http://localhost:${server.port}/`);
       expect(typeof server.port).toBe('number');
       expect(server.port).toBeGreaterThan(0);
@@ -285,7 +292,7 @@ describe('HttpRouter', () => {
     });
     it('should get client ip info', async () => {
       app.get('/', c => c.json(c.ip));
-      server = app.listen();
+      server = app.listen({ port: 7770 });
       const resp = await fetch(`http://localhost:${server.port}/`);
       const info = (await resp.json()) as {
         address: string;
@@ -298,7 +305,7 @@ describe('HttpRouter', () => {
     });
     it('should emit url', async () => {
       app.all('/', () => new Response('Hi'));
-      server = app.listen({ port: 7772 });
+      server = app.listen({ port: 7771 });
       let output: string;
       const to = (message: string) => (output = message);
       app.emitUrl({ to });
@@ -479,163 +486,133 @@ describe('HttpRouter', () => {
       expect(resp.status).toBe(200);
       expect(await resp.text()).toBe('bar');
     });
-    it('should enable raw EventSource', async () => {
-      app.get('/home', c => {
-        return c.sse((send, close) => {
-          setTimeout(() => send('hello'), 10);
-          setTimeout(() => send('hello2'), 20);
-          setTimeout(close, 30);
-        });
-      });
-      server = app.listen({ port: 7783 });
-      const stream = new EventSource('http://localhost:7783/home');
-      let messages: string[] = [];
-      stream.addEventListener('open', () => {
-        messages.push('open');
-      });
-      stream.addEventListener('message', evt => {
-        messages.push(String(evt.data));
-      });
-      expect(stream).toBeInstanceOf(EventSource);
-      await new Promise(r => setTimeout(r, 100));
-      expect(messages).toEqual(['open', 'hello', 'hello2']);
-      stream.close();
+  });
+  describe('sse', () => {
+    let app: HttpRouter;
+    let server: Server;
+    beforeEach(() => {
+      app = new HttpRouter();
     });
-    it('should enable named EventSource', async () => {
-      // TODO: change EventSource tests to use Promises instead of timeouts
-      app.get('/home', c => {
-        return c.sse((send, close) => {
-          setTimeout(() => send('myEvent', 'hi', 'id1', 2000), 10);
-          setTimeout(() => send('myEvent', 'hi2', 'id2', 2000), 20);
-          setTimeout(close, 30);
-        });
-      });
-      server = app.listen({ port: 7784 });
-      const stream = new EventSource('http://localhost:7784/home');
-      let messages: Array<{
-        name: string;
-        payload: string;
-        id: string;
-        origin: string;
-      }> = [];
-      stream.addEventListener('myEvent', evt => {
-        messages.push({
-          name: evt.type,
-          payload: evt.data,
-          id: evt.lastEventId,
-          origin: evt.origin,
-        });
-      });
-      await new Promise(r => setTimeout(r, 100));
-      expect(messages).toEqual([
-        {
-          name: 'myEvent',
-          payload: 'hi',
-          id: 'id1',
-          origin: 'http://localhost:7784',
-        },
-        {
-          name: 'myEvent',
-          payload: 'hi2',
-          id: 'id2',
-          origin: 'http://localhost:7784',
-        },
-      ]);
-      stream.close();
+    afterEach(() => {
+      server.stop(true);
     });
-    it('should close EventSource when client closes', async () => {
-      app.get('/home', c => {
-        return c.sse(send => {
-          setTimeout(() => send('myEvent', 'hi'), 20);
-        });
-      });
-      server = app.listen({ port: 7785 });
-      const stream = new EventSource('http://localhost:7785/home');
-      let messages: any[] = [];
-      stream.addEventListener('myEvent', evt => {
-        messages.push(evt);
-      });
-      await new Promise(r => setTimeout(r, 10));
-      stream.close();
-      await new Promise(r => setTimeout(r, 20));
-      expect(messages).toEqual([]);
-    });
-    it('should JSON encode data if needed', done => {
-      const readyToSend = new Promise((resolve, reject) => {
-        app.get('/home', c => {
-          return c.sse(send => {
-            resolve(() => {
-              send('myEvent', { hello: '7786' }, 'id1');
-            });
+    function sseTest({
+      port,
+      payloads,
+      event,
+      headers = {},
+    }: {
+      port: number;
+      payloads:
+        | Array<[string, any, string]>
+        | Array<[string, any]>
+        | Array<[string]>;
+      event: string;
+      headers?: Record<string, string>;
+    }): Promise<SseTestEvent[]> {
+      return new Promise((outerResolve, outerReject) => {
+        const events: SseTestEvent[] = [];
+        const readyToSend = new Promise((resolve, reject) => {
+          app.get('/sse', c => {
+            return c.sse(
+              send => {
+                resolve(() => {
+                  for (const payload of payloads) {
+                    // @ts-expect-error
+                    send(...payload);
+                  }
+                });
+              },
+              { headers }
+            );
           });
-        });
-        app.onError(c => reject(c.error));
-        server = app.listen({ port: 7786 });
-      }) as Promise<() => void>;
-      const readyToListen = new Promise((resolve, reject) => {
-        const stream = new EventSource('http://localhost:7786/home');
-        stream.addEventListener('error', evt => {
-          reject();
-          console.log('-------------------------------');
-          console.log('Stream at 7786 got error event:', evt);
-          expect(false).toBe(true);
-          done();
-          stream.close();
-        });
-        stream.addEventListener('myEvent', evt => {
-          expect(evt.type).toBe('myEvent');
-          expect(evt.data).toBe('{"hello":"7786"}');
-          expect(evt.lastEventId).toBe('id1');
-          expect(evt.origin).toBe('http://localhost:7786');
-          done();
-          stream.close();
-        });
-        resolve(7786);
-      }) as Promise<number>;
-      Promise.all([readyToSend, readyToListen]).then(([doSend]) => doSend());
+          app.onError(c => reject(c.error));
+          server = app.listen({ port });
+        }) as Promise<() => void>;
+        const readyToListen = new Promise((resolve, reject) => {
+          const stream = new EventSource(`http://localhost:${port}/sse`);
+          stream.addEventListener('error', evt => {
+            reject(evt);
+            stream.close();
+          });
+          stream.addEventListener(event, evt => {
+            events.push(evt);
+            if (events.length === payloads.length) {
+              outerResolve(events);
+              stream.close();
+            }
+          });
+          resolve(port);
+        }) as Promise<number>;
+        Promise.all([readyToSend, readyToListen])
+          .then(([doSend]) => doSend())
+          .catch(outerReject);
+      });
+    }
+    it('should handle unnamed data', async () => {
+      const events = await sseTest({
+        event: 'message',
+        port: 7784,
+        payloads: [['Hello'], ['World']],
+      });
+      expect(events.length).toBe(2);
+      expect(events[0].data).toBe('Hello');
+      expect(events[1].data).toBe('World');
+    });
+    it('should send last event id and origin', async () => {
+      const events = await sseTest({
+        event: 'myEvent',
+        port: 7785,
+        payloads: [
+          ['myEvent', 'hi1', 'id1'],
+          ['myEvent', 'hi2', 'id2'],
+        ],
+      });
+      expect(events.length).toBe(2);
+      expect(events[0].data).toBe('hi1');
+      expect(events[1].data).toBe('hi2');
+      expect(events[0].lastEventId).toBe('id1');
+      expect(events[1].lastEventId).toBe('id2');
+      expect(events[0].origin).toBe('http://localhost:7785');
+      expect(events[1].origin).toBe('http://localhost:7785');
+    });
+    it('should JSON encode data if needed', async () => {
+      const events = await sseTest({
+        event: 'myEvent',
+        port: 7786,
+        payloads: [['myEvent', { name: 'Bob' }]],
+      });
+      expect(events.length).toBe(1);
+      expect(events[0].data).toBe('{"name":"Bob"}');
     });
     it('should warn when overriding some headers', async () => {
       spyOn(console, 'warn').mockImplementation(() => {});
-      app.get('/home', c => {
-        return c.sse(send => send('data'), {
-          headers: {
-            'Content-Type': 'text/plain',
-            'Cache-Control': 'foo',
-            Connection: 'whatever',
-          },
-        });
+      await sseTest({
+        event: 'myEvent',
+        port: 7787,
+        payloads: [['myEvent', { name: 'Bob' }]],
+        headers: {
+          'Content-Type': 'text/plain',
+          'Cache-Control': 'foo',
+          Connection: 'whatever',
+        },
       });
-      app.onError(c => {
-        console.log('app.onError', c.error);
-      });
-      server = app.listen({ port: 7787 });
-      const stream = new EventSource('http://localhost:7787/home');
-      stream.addEventListener('myEvent', () => {});
-      await new Promise(r => setTimeout(r, 100));
-      stream.close();
       expect(console.warn).toHaveBeenCalledTimes(3);
       // @ts-expect-error
       console.warn.mockRestore();
     });
     it('should not warn if those headers are correct', async () => {
       spyOn(console, 'warn').mockImplementation(() => {});
-      app.get('/home', c => {
-        return c.sse(send => send('data'), {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            Connection: 'keep-alive',
-          },
-        });
+      await sseTest({
+        event: 'myEvent',
+        port: 7788,
+        payloads: [['myEvent', { name: 'Bob' }]],
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
       });
-      app.onError(c => {
-        console.log('app.onError', c.error);
-      });
-      server = app.listen({ port: 7788 });
-      const stream = new EventSource('http://localhost:7788/home');
-      stream.addEventListener('myEvent', () => {});
-      await new Promise(r => setTimeout(r, 100));
-      stream.close();
       expect(console.warn).toHaveBeenCalledTimes(0);
       // @ts-expect-error
       console.warn.mockRestore();

@@ -9,7 +9,6 @@ describe('securityHeaders middleware', () => {
   let req: Request;
   let resp: Response;
   let app: HttpRouter;
-  let oldEnv: string | undefined;
   beforeEach(() => {
     req = new Request('http://localhost/');
     resp = new Response('', {

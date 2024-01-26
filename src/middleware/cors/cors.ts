@@ -79,6 +79,8 @@ export function cors(options: CorsOptions = {}): Middleware {
       : null;
     if (allowOrigin) {
       respHeaders.set('Access-Control-Allow-Origin', allowOrigin);
+    } else {
+      // TODO: find out if we should send a 4xx instead?
     }
     if (opts.maxAge != null) {
       respHeaders.set('Access-Control-Max-Age', opts.maxAge.toString());
@@ -110,7 +112,7 @@ export function cors(options: CorsOptions = {}): Middleware {
       status: 204,
     });
   }
-  function addAccessHeaders(c: Context, response: Response) {
+  function maybeAddAccessHeaders(c: Context, response: Response) {
     const incomingOrigin = c.request.headers.get('origin');
     const allowOrigin = incomingOrigin
       ? findAllowOrigin(incomingOrigin, c)
@@ -136,7 +138,7 @@ export function cors(options: CorsOptions = {}): Middleware {
       return handleOptionsRequest(c);
     }
     const response = await next();
-    addAccessHeaders(c, response);
+    maybeAddAccessHeaders(c, response);
     return response;
   };
 }

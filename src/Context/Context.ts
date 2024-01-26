@@ -31,8 +31,6 @@ export default class Context<
   params: ParamsShape = {} as ParamsShape;
   /** A place to persist data between handlers for the duration of the request */
   locals: Record<string, any> = {};
-  /** Handlers registered with app.on500() can see this Error object */
-  error: Error | undefined;
   /** A URL object constructed with `new URL(request.url)` */
   url: URL;
   /** The date the request was received */

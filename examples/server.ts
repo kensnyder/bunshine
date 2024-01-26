@@ -34,5 +34,5 @@ app.post('/parrot', async c =>
   })
 );
 
-app.listen(3300);
+app.listen({ port: 3300 });
 app.emitUrl({ date: true });

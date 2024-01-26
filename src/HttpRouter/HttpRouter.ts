@@ -18,6 +18,13 @@ export type SingleHandler<
   next: NextFunction
 ) => Response | void | Promise<Response | void>;
 
+export type SingleErrorHandler<
+  ParamsShape extends Record<string, string> = Record<string, string>,
+> = (
+  context: Context<ParamsShape> & { error: Error },
+  next: NextFunction
+) => Response | void | Promise<Response | void>;
+
 export type Middleware<
   ParamsShape extends Record<string, string> = Record<string, string>,
 > = SingleHandler<ParamsShape>;
@@ -25,6 +32,10 @@ export type Middleware<
 export type Handler<
   ParamsShape extends Record<string, string> = Record<string, string>,
 > = SingleHandler<ParamsShape> | Handler<ParamsShape>[];
+
+export type ErrorHandler<
+  ParamsShape extends Record<string, string> = Record<string, string>,
+> = SingleErrorHandler<ParamsShape> | ErrorHandler<ParamsShape>[];
 
 type RouteInfo = {
   verb: string;
@@ -229,7 +240,7 @@ export default class HttpRouter {
   use(...handlers: Handler<{}>[]) {
     return this.all('*', handlers);
   }
-  onError(...handlers: Handler<Record<string, string>>[]) {
+  onError(...handlers: ErrorHandler<Record<string, string>>[]) {
     this._onErrors.push(...handlers.flat(9));
     return this;
   }
@@ -278,6 +289,7 @@ export default class HttpRouter {
         // a response has been thrown; respond to client with it
         return e;
       }
+      // @ts-expect-error
       context.error = e as Error;
       let idx = 0;
       const nextError: NextFunction = async () => {
@@ -297,6 +309,7 @@ export default class HttpRouter {
             }
           }
         } catch (e) {
+          // @ts-expect-error
           context.error = e as Error;
         }
         return nextError();

@@ -13,9 +13,9 @@ export function devLogger(): Middleware {
     // log response status
     const ms = (performance.now() - start).toFixed(1);
     process.stdout.write(
-      `${gray(`[${time}]`)} ${c.request.method} ${green(pathname)} `
+      `${gray(`[${time}]`)} ${c.request.method} ${green(pathname)} ` +
+        `${cyan(String(resp.status))}${maybeRange} (${ms}ms)\n`
     );
-    console.log(`${cyan(String(resp.status))}${maybeRange} (${ms}ms)`);
     // return response
     return resp;
   };

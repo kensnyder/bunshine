@@ -2,7 +2,7 @@
   "include": ["index.ts", "package.json", "src/**/*", "examples", "benchmarks"],
   "exclude": [],
   "compilerOptions": {
-    "lib": ["ESNext", "DOM"],
+    "lib": ["ESNext", "dom", "dom.iterable"],
     "module": "esnext",
     "target": "esnext",
     "moduleResolution": "bundler",

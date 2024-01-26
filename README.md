@@ -45,6 +45,11 @@ _Or to run Bunshine on Node,
 8. [Server Sent Events](#server-sent-events)
 9. [Routing examples](#routing-examples)
 10. [Included middleware](#included-middleware)
+    - [serveFiles](#servefiles)
+    - [cors](#cors)
+    - [devLogger & prodLogger](#devlogger--prodlogger)
+    - [performanceHeader](#performanceheader)
+    - [securityHeaders](#securityheaders)
 11. [TypeScript pro-tips](#typescript-pro-tips)
 12. [Roadmap](#roadmap)
 13. [License](./LICENSE.md)
@@ -692,14 +697,14 @@ import { HttpRouter, cors } from 'bunshine';
 
 const app = new HttpRouter();
 
-// most basic cors examples
+// cors origin examples
 app.use(cors({ origin: '*' }));
 app.use(cors({ origin: true }));
 app.use(cors({ origin: 'https://example.com' }));
 app.use(cors({ origin: /^https:\/\// }));
 app.use(cors({ origin: ['https://example.com', 'https://stuff.com'] }));
 app.use(cors({ origin: ['https://example.com', /https:\/\/stuff.[a-z]+/i] }));
-app.use(cors({ origin: incomingOrigin => getOrigin(incomingOrigin) }));
+app.use(cors({ origin: incomingOrigin => myGetOrigin(incomingOrigin) }));
 
 // All options
 app.use(
@@ -707,17 +712,29 @@ app.use(
     origin: 'https://example.com',
     allowMethods: ['GET', 'POST'],
     allowHeaders: ['X-HTTP-Method-Override', 'Authorization'],
+    exposeHeaders: ['X-Response-Id'],
     maxAge: 86400,
     credentials: true,
-    exposeHeaders: ['X-Response-Id'],
   })
 );
 
 // and of course, cors can be attached at a specific path
 app.all('/api', cors({ origin: '*' }));
 
+// then add your endpoints
+app.get('/api/hello', c => c.json({ hello: 'world' }));
+
 app.listen({ port: 3100 });
 ```
+
+Options details:
+
+_origin_: A string, regex, array of strings/regexes, or a function that returns
+_allowMethods_: an array of HTTP verbs to allow clients to make
+_allowHeaders_: an array of HTTP headers to allow clients to send
+_exposeHeaders_: an array of HTTP headers to expose to clients
+_maxAge_: the number of seconds clients should cache the CORS headers
+_credentials_: whether to allow credentials (cookies or auth headers)
 
 ### devLogger & prodLogger
 
@@ -735,7 +752,7 @@ Request log:
   "date": "2021-08-01T19:10:50.276Z",
   "method": "GET",
   "pathname": "/",
-  "runtime": "Bun 1.0.16",
+  "runtime": "Bun 1.0.25",
   "machine": "server1",
   "pid": 1,
   "id": "ea98fe2e-45e0-47d1-9344-2e3af680d6a7"
@@ -750,7 +767,7 @@ Response log:
   "method": "GET",
   "pathname": "/",
   "status": 200,
-  "runtime": "Bun 1.0.16",
+  "runtime": "Bun 1.0.25",
   "machine": "server1",
   "pid": 1,
   "id": "ea98fe2e-45e0-47d1-9344-2e3af680d6a7",

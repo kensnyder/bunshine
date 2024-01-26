@@ -1,3 +1,4 @@
+import isPromise from 'is-promise';
 import bunshine from '../../../package.json';
 import Context from '../../Context/Context.ts';
 import type { Middleware, NextFunction } from '../../HttpRouter/HttpRouter.ts';
@@ -150,8 +151,8 @@ export function securityHeaders(
     for (let [rawName, value] of headers.functions) {
       try {
         let resolved = _resolveHeaderValue(rawName, value(context));
-        // @ts-expect-error
-        if (resolved && typeof resolved.then === 'function') {
+        if (isPromise(resolved)) {
+          // @ts-expect-error
           resolved = await resolved;
         }
         if (typeof resolved === 'string' && resolved !== '') {
