@@ -231,11 +231,11 @@ export async function buildFileResponse({
     // Bun has a bug when setting content-length and content-range automatically
     // so convert file to buffer
     let buffer = await file.arrayBuffer();
-    let status = 206;
+    let status = 200;
     // the range is less than the entire file
     if (end - 1 < totalFileSize) {
       buffer = buffer.slice(start, end + 1);
-      status = 200;
+      status = 206;
     }
     response = new Response(buffer, { status });
     if (!response.headers.has('Content-Type')) {

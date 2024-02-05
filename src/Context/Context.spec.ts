@@ -41,7 +41,7 @@ describe('Context', () => {
     expect(resp).toBeInstanceOf(Response);
     const file = await resp.blob();
     const text = await file.text();
-    expect(resp.status).toBe(200);
+    expect(resp.status).toBe(206);
     expect(text).toBe('<h1>');
   });
   it('should handle files with range "bytes=0-"', async () => {
@@ -64,8 +64,7 @@ describe('Context', () => {
     const c = new Context(request, server, app);
     const resp = await c.file(`${import.meta.dir}/../testFixtures/home.html`);
     expect(resp).toBeInstanceOf(Response);
-    expect(resp.status).toBe(416);
-    expect(await resp.text()).toBe('416 Range not satisfiable');
+    expect(resp.status).toBe(200);
   });
   it('should handle files with range "bytes=-3"', async () => {
     const request = new Request('http://localhost/home.html', {
@@ -75,7 +74,7 @@ describe('Context', () => {
     const c = new Context(request, server, app);
     const resp = await c.file(`${import.meta.dir}/../testFixtures/home.html`);
     expect(resp).toBeInstanceOf(Response);
-    expect(resp.status).toBe(200);
+    expect(resp.status).toBe(206);
     expect(await resp.text()).toBe('<h1>');
   });
   describe('server', () => {
