@@ -361,35 +361,40 @@ const app = new HttpRouter();
 app.get('/', c => c.text('Hello World!'));
 
 // WebSocket routes
-app.socket.at('/games/rooms/:room', {
+type ParamsShape = { room: string };
+type DataShape = { user: User };
+app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
   // Optional. Allows you to specify arbitrary data to attach to ws.data.
-  upgrade: ({ request, params, url }) => {
-    const cookies = req.headers.get('cookie');
+  upgrade: sc => {
+    const cookies = sc.request.headers.get('cookie');
     const user = getUserFromCookies(cookies);
     return { user };
   },
   // Optional. Allows you to deal with errors thrown by handlers.
-  error: (ws, error) => {
-    console.log('WebSocket error', error);
+  error: (sc, error) => {
+    console.log('WebSocket error', error.message);
   },
   // Optional. Called when the client connects
-  open(ws) {
-    const room = ws.data.params.room;
-    const user = ws.data.user;
+  open(sc) {
+    const room = sc.params.room;
+    const user = sc.data.user;
     markUserEntrance(room, user);
     ws.send(getGameState(room));
   },
   // Optional. Called when the client sends a message
-  message(ws, message) {
-    const room = ws.data.params.room;
-    const user = ws.data.user;
-    const result = saveMove(room, user, message);
+  message(sc, message) {
+    const room = sc.params.room;
+    const user = sc.data.user;
+    const result = saveMove(room, user, message.json());
+    // send accepts strings, Buffers, ArrayBuffers
+    // and anything else will be serialized to JSON
     ws.send(result);
   },
   // Optional. Called when the client disconnects
-  close(ws, code, message) {
-    const room = ws.data.params.room;
-    const user = ws.data.user;
+  // List of codes and messages: https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code
+  close(sc, code, message) {
+    const room = sc.params.room;
+    const user = sc.data.user;
     markUserExit(room, user);
   },
 });
@@ -427,31 +432,36 @@ const app = new HttpRouter();
 
 app.get('/', c => c.text('Hello World!'));
 
-app.socket.at('/chat/:room', {
-  upgrade: ({ request, params, url }) => {
-    const cookies = request.headers.get('cookie');
+type ParamsShape = { room: string };
+type DataShape = { username: string };
+app.socket.at<ParamsShape, DataShape>('/chat/:room', {
+  upgrade: c => {
+    const cookies = c.request.headers.get('cookie');
     const username = getUsernameFromCookies(cookies);
     return { username };
   },
-  open(ws) {
-    const msg = `${ws.data.username} has entered the chat`;
-    ws.subscribe('the-group-chat');
-    ws.publish('the-group-chat', msg);
+  open(sc) {
+    const msg = `${sc.data.username} has entered the chat`;
+    sc.subscribe(`chat-room-${sc.params.room}`);
+    sc.publish(`chat-room-${sc.params.room}`, msg);
   },
-  message(ws, message) {
-    // the server re-broadcasts incoming messages to everyone
-    ws.publish('the-group-chat', `${ws.data.username}: ${message}`);
+  message(sc, message) {
+    // the server re-broadcasts incoming messages
+    // to each connection's message handler
+    const fullMessage = `${sc.data.username}: ${message}`;
+    sc.publish(`chat-room-${sc.params.room}`, fullMessage);
+    sc.send(fullMessage);
   },
-  close(ws, code, message) {
-    const msg = `${ws.data.username} has left the chat`;
-    ws.publish('the-group-chat', msg);
-    ws.unsubscribe('the-group-chat');
+  close(sc, code, message) {
+    const msg = `${sc.data.username} has left the chat`;
+    ws.publish(`chat-room-${sc.params.room}`, msg);
+    ws.unsubscribe(`chat-room-${sc.params.room}`);
   },
 });
 
 const server = app.listen({ port: 3100 });
 
-// at a later time, publish a message from another source
+// at a later time, you can also publish a message from another source
 server.publish(channel, message);
 ```
 
@@ -466,7 +476,7 @@ import { HttpRouter } from 'bunshine';
 
 const app = new HttpRouter();
 
-app.get('/stock/:symbol', c => {
+app.get<{ stock: string }>('/stock/:symbol', c => {
   const symbol = c.params.symbol;
   return c.sse(send => {
     setInterval(async () => {
@@ -496,22 +506,22 @@ Creating an `EventSource` object will open a connection to the server, and if
 the server closes the connection, the browser will automatically reconnect.
 
 So if you want to tell the browser you are done sending events, send a
-message that the browser will understand to mean "stop listening". Here is an
-example:
+message that your client-side code will understand to mean "stop listening".
+Here is an example:
 
 ```ts
 import { HttpRouter } from 'bunshine';
 
 const app = new HttpRouter();
 
-app.get('/convert-video/:videoId', c => {
+app.get<{ videoId: string }>('/convert-video/:videoId', c => {
   const { videoId } = c.params;
   return c.sse(send => {
     const onProgress = percent => {
-      send('progress', percent);
+      send('progress', { percent });
     };
     const onComplete = () => {
-      send('progress', 'complete');
+      send('progress', { percent: 100 });
     };
     startVideoConversion(videoId, onProgress, onComplete);
   });
@@ -526,7 +536,8 @@ app.listen({ port: 3100 });
 const conversionProgress = new EventSource('/convert-video/123');
 
 conversionProgress.addEventListener('progress', e => {
-  if (e.data === 'complete') {
+  const data = JSON.parse(e.data);
+  if (data.percent === 100) {
     conversionProgress.close();
   } else {
     document.querySelector('#progress').innerText = e.data;
@@ -631,11 +642,13 @@ import { HttpRouter, serveFiles } from 'bunshine';
 const app = new HttpRouter();
 
 app.on(['HEAD', 'GET'], '/public/*', serveFiles(`${import.meta.dir}/public`));
+// or
+app.headGet('/public/*', serveFiles(`${import.meta.dir}/public`));
 
 app.listen({ port: 3100 });
 ```
 
-How to alter the response:
+How to alter the response provided by another handler:
 
 ```ts
 import { HttpRouter, serveFiles } from 'bunshine';
@@ -680,12 +693,12 @@ All options for serveFiles:
 | etag         | N/A         | Not yet implemented                                                                       |
 | extensions   | `[]`        | If given, a list of file extensions to allow                                              |
 | fallthrough  | `true`      | If false, issue a 404 when a file is not found, otherwise proceed to next handler         |
+| maxAge       | `undefined` | If given, add a Cache-Control header with max-age†                                        |
 | immutable    | `false`     | If true, add immutable directive to Cache-Control header; must also specify maxAge        |
 | index        | `[]`        | If given, a list of filenames (e.g. index.html) to look for when path is a folder         |
 | lastModified | `true`      | If true, set the Last-Modified header                                                     |
-| maxAge       | `undefined` | If given, add a Cache-Control header with max-age†                                        |
 
-† _A number in milliseconds or [ms](https://www.npmjs.com/package/ms) compatible expression such as '30m' or '1y'._
+† _A number in milliseconds or expression such as '30min', '14 days', '1y'._
 
 ### cors
 
@@ -703,7 +716,8 @@ app.use(cors({ origin: 'https://example.com' }));
 app.use(cors({ origin: /^https:\/\// }));
 app.use(cors({ origin: ['https://example.com', 'https://stuff.com'] }));
 app.use(cors({ origin: ['https://example.com', /https:\/\/stuff.[a-z]+/i] }));
-app.use(cors({ origin: incomingOrigin => myGetOrigin(incomingOrigin) }));
+app.use(cors({ origin: incomingOrigin => incomingOrigin }));
+app.use(cors({ origin: incomingOrigin => getAllowedOrigins(incomingOrigin) }));
 
 // All options
 app.use(

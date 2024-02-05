@@ -619,6 +619,7 @@ describe('serveFiles middleware', () => {
               minFileSize: 0,
               maxFileSize: 1e6,
               cache: { type: 'never' },
+              zlibOptions: { level: 9 },
             },
           }),
           c => c.text('Hello')

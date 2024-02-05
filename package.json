@@ -44,7 +44,6 @@
   },
   "homepage": "https://github.com/kensnyder/bunshine#readme",
   "dependencies": {
-    "is-promise": "4.0.0",
     "lru-cache": "10.2.0",
     "path-to-regexp": "6.2.1"
   },

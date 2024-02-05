@@ -1,4 +1,3 @@
-import isPromise from 'is-promise';
 import type Context from '../../Context/Context.ts';
 import type { Middleware, NextFunction } from '../../HttpRouter/HttpRouter.ts';
 
@@ -28,7 +27,7 @@ export function headers(
     if (!shouldAdd) {
       return resp;
     }
-    for (let [name, value] of Object.entries(headers)) {
+    for (const [name, value] of Object.entries(headers)) {
       const resolved = await resolveHeaderValue(value, context, resp);
       if (typeof resolved === 'string') {
         resp.headers.set(name, resolved);
@@ -47,10 +46,7 @@ async function resolveHeaderValue(
     return value;
   } else {
     try {
-      let resolved = value(context, resp);
-      if (isPromise(resolved)) {
-        resolved = await resolved;
-      }
+      const resolved = await value(context, resp);
       return resolved || null;
     } catch (e) {
       return null;

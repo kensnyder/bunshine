@@ -1,63 +1,68 @@
-import type { Server, ServerWebSocket } from 'bun';
-import type { Merge } from 'type-fest';
-import type Context from '../Context/Context';
-import type HttpRouter from '../HttpRouter/HttpRouter';
+import type { ServerWebSocket } from 'bun';
+import { RequireAtLeastOne } from 'type-fest';
+import Context from '../Context/Context.ts';
+import HttpRouter, { NextFunction } from '../HttpRouter/HttpRouter';
 import PathMatcher from '../PathMatcher/PathMatcher';
+import SocketContext, { SocketMessage } from './SocketContext.ts';
 
-export type DefaultDataShape = {
-  url: URL;
-  params: Record<string, string>;
-  server: Server;
+// U = UpgradeShape
+// P = ParamsShape
+// T = Type i.e. EventName
+
+export type WsDataShape<U = any, P = Record<string, any>> = {
+  sc: SocketContext<U, P>;
 };
-
-export type FinalWsDataShape<ParamsShape, UpgradeShape> = Merge<
-  Merge<DefaultDataShape, { params: ParamsShape }>,
-  UpgradeShape
->;
 
 export type SocketUpgradeHandler<
-  ParamsShape extends Record<string, string> = Record<string, string>,
-  UpgradeShape extends Record<string, any> = Record<string, any>,
-> = (context: Context<ParamsShape>) => UpgradeShape | Promise<UpgradeShape>;
-export type SocketErrorHandler<
-  WsDataShape extends Record<string, any> = Record<string, any>,
-> = (
-  ws: ServerWebSocket<WsDataShape>,
-  eventName: SocketEventName,
+  U,
+  P extends Record<string, any> = Record<string, any>,
+> = (context: Context<P>, next: NextFunction) => U | Promise<U>;
+
+export type SocketPlainHandler<U, P> = (context: SocketContext<U, P>) => void;
+
+export type SocketMessageHandler<U, P, T extends SocketEventName> = (
+  context: SocketContext<U, P>,
+  message: SocketMessage<T>
+) => void;
+
+export type SocketErrorHandler<U, P> = (
+  context: SocketContext<U, P>,
   error: Error
 ) => void;
-export type SocketOpenHandler<
-  WsDataShape extends Record<string, any> = Record<string, any>,
-> = (ws: ServerWebSocket<WsDataShape>) => void;
-export type SocketMessageHandler<
-  WsDataShape extends Record<string, any> = Record<string, any>,
-> = (ws: ServerWebSocket<WsDataShape>, message: string | Buffer) => void;
-export type SocketCloseHandler<
-  WsDataShape extends Record<string, any> = Record<string, any>,
-> = (ws: ServerWebSocket<WsDataShape>, status: number, reason: string) => void;
-export type SocketDrainHandler<
-  WsDataShape extends Record<string, any> = Record<string, any>,
-> = (ws: ServerWebSocket<WsDataShape>) => void;
-export type SocketPingHandler<
-  WsDataShape extends Record<string, any> = Record<string, any>,
-> = (ws: ServerWebSocket<WsDataShape>, message: Buffer) => void;
-export type SocketPongHandler<
-  WsDataShape extends Record<string, any> = Record<string, any>,
-> = (ws: ServerWebSocket<WsDataShape>, message: Buffer) => void;
 
-export type WsHandlers<
-  ParamsShape extends Record<string, string> = Record<string, string>,
-  UpgradeShape extends Record<string, any> = Record<string, any>,
-> = {
-  upgrade?: SocketUpgradeHandler<ParamsShape, UpgradeShape>;
-  error?: SocketErrorHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
-  open?: SocketOpenHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
-  message?: SocketMessageHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
-  close?: SocketCloseHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
-  drain?: SocketDrainHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
-  ping?: SocketPingHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
-  pong?: SocketPongHandler<FinalWsDataShape<ParamsShape, UpgradeShape>>;
+export type SocketCloseHandler<U, P> = (
+  context: SocketContext<U, P>,
+  status: number,
+  reason: string
+) => void;
+
+export type BunshineHandlers<
+  U,
+  P extends Record<string, string> = Record<string, string>,
+> = RequireAtLeastOne<{
+  upgrade: SocketUpgradeHandler<U, P>;
+  error: SocketErrorHandler<U, P>;
+  open: SocketPlainHandler<U, P>;
+  message: SocketMessageHandler<U, P, 'message'>;
+  close: SocketCloseHandler<U, P>;
+  drain: SocketPlainHandler<U, P>;
+  ping: SocketMessageHandler<U, P, 'ping'>;
+  pong: SocketMessageHandler<U, P, 'pong'>;
+}>;
+
+export type BunHandlers = {
+  open: (ws: ServerWebSocket<WsDataShape>) => void;
+  message: (ws: ServerWebSocket<WsDataShape>, data: any) => void;
+  close: (
+    ws: ServerWebSocket<WsDataShape>,
+    code: number,
+    reason: string
+  ) => void;
+  drain: (ws: ServerWebSocket<WsDataShape>) => void;
+  ping: (ws: ServerWebSocket<WsDataShape>, data: any) => void;
+  pong: (ws: ServerWebSocket<WsDataShape>, data: any) => void;
 };
+
 export type SocketEventName =
   | 'open'
   | 'message'
@@ -68,12 +73,12 @@ export type SocketEventName =
 
 export default class SocketRouter {
   httpRouter: HttpRouter;
-  pathMatcher: PathMatcher<WsHandlers>;
-  handlers: WsHandlers;
+  pathMatcher: PathMatcher<BunshineHandlers<any>>;
+  handlers: BunHandlers;
   constructor(router: HttpRouter) {
     this.httpRouter = router;
     this.httpRouter._wsRouter = this;
-    this.pathMatcher = new PathMatcher<WsHandlers>();
+    this.pathMatcher = new PathMatcher<BunshineHandlers<any>>();
     this.handlers = {
       open: this._createHandler('open'),
       message: this._createHandler('message'),
@@ -83,29 +88,29 @@ export default class SocketRouter {
       pong: this._createHandler('pong'),
     };
   }
-  at = <
-    ParamsShape extends Record<string, string> = Record<string, string>,
-    UpgradeShape extends Record<string, any> = Record<string, any>,
-  >(
+  at = <P extends Record<string, string> = Record<string, string>, U = any>(
     path: string,
-    handlers: WsHandlers<ParamsShape, UpgradeShape>
+    handlers: BunshineHandlers<U, P>
   ) => {
+    if (!handlers.upgrade) {
+      handlers.upgrade = function () {
+        return {} as U;
+      };
+    }
     // capture the matcher details
     // @ts-expect-error
     this.pathMatcher.add(path, handlers);
     // console.log('ws handlers registered!', path);
     // create a router path that upgrades to a socket
-    this.httpRouter.get<ParamsShape>(path, c => {
-      const upgradeData = handlers.upgrade?.(c) || {};
+    this.httpRouter.get<P>(path, async (c, next) => {
+      const upgradeData = await handlers.upgrade?.(c, next);
+      const sc = new SocketContext(c.server, c.url, c.params, upgradeData);
       try {
         // upgrade the request to a WebSocket
         if (
           c.server.upgrade(c.request, {
             data: {
-              server: c.server,
-              url: c.url,
-              params: c.params,
-              ...upgradeData,
+              sc,
             },
           })
         ) {
@@ -129,34 +134,42 @@ export default class SocketRouter {
     // allow chaining
     return this;
   };
-  private _fallbackError = (
-    ws: ServerWebSocket<Record<string, any>>,
-    eventName: string,
-    error: Error
-  ) => {
+  private _fallbackError = (context: SocketContext, error: Error) => {
     console.error(
-      `Unhandled WebSocket handler error at "${ws.data.url.pathname}" for event "${eventName}"`,
-      error
+      `Unhandled WebSocket handler error at "${context.url.pathname}" in handler "${context.type}": ${error.message}`
     );
   };
   private _createHandler = (eventName: SocketEventName) => {
-    return async (ws: ServerWebSocket<Record<string, any>>, ...args: any) => {
-      const pathname = ws.data.url.pathname;
+    return async (ws: ServerWebSocket<WsDataShape>, ...args: any) => {
+      const sc = ws.data.sc as SocketContext;
+      sc.ws = ws;
+      sc.type = eventName;
+      const pathname = sc.url.pathname;
       const matched = this.pathMatcher.match(pathname);
+      const rest: any = [];
+      if (['message', 'ping', 'pong'].includes(eventName)) {
+        rest.push(new SocketMessage(eventName, args[0]));
+      } else if (eventName === 'close') {
+        rest.push(args[0], args[1]);
+      }
       for (const { target } of matched) {
+        if (!target[eventName]) {
+          continue;
+        }
         try {
-          target[eventName]?.(ws, ...args);
+          target[eventName](sc, ...rest);
         } catch (e) {
-          const error = e as Error;
-          if (typeof target?.error === 'function') {
+          const handlerError = e as Error;
+          if (typeof target.error === 'function') {
             try {
-              target.error(ws, eventName, error);
+              target.error(sc, handlerError);
             } catch (e) {
-              const error = e as Error;
-              this._fallbackError(ws, eventName, error);
+              const errorError = e as Error;
+              sc.type = 'error';
+              this._fallbackError(sc, errorError);
             }
           } else {
-            this._fallbackError(ws, eventName, error);
+            this._fallbackError(sc, handlerError);
           }
         }
       }

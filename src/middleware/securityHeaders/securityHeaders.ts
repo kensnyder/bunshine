@@ -1,4 +1,3 @@
-import isPromise from 'is-promise';
 import bunshine from '../../../package.json';
 import Context from '../../Context/Context.ts';
 import type { Middleware, NextFunction } from '../../HttpRouter/HttpRouter.ts';
@@ -145,16 +144,12 @@ export function securityHeaders(
       // browsers ignore security headers for some responses
       return resp;
     }
-    for (let [dasherizedName, value] of headers.values) {
+    for (const [dasherizedName, value] of headers.values) {
       resp.headers.set(dasherizedName, value);
     }
-    for (let [rawName, value] of headers.functions) {
+    for (const [rawName, value] of headers.functions) {
       try {
-        let resolved = _resolveHeaderValue(rawName, value(context));
-        if (isPromise(resolved)) {
-          // @ts-expect-error
-          resolved = await resolved;
-        }
+        const resolved = await _resolveHeaderValue(rawName, value(context));
         if (typeof resolved === 'string' && resolved !== '') {
           resp.headers.set(_dasherize(rawName), resolved);
         }
@@ -205,7 +200,7 @@ export function _dasherize(str: string): string {
 
 export function _getCspHeader(directives: CSPDirectives) {
   const items: string[] = [];
-  for (let [key, originalValue] of Object.entries(directives)) {
+  for (const [key, originalValue] of Object.entries(directives)) {
     let value:
       | true
       | CSPSource[]
