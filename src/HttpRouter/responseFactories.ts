@@ -225,7 +225,7 @@ export async function buildFileResponse({
       // Initial request: some browsers use "Range: bytes=0-"
       end = Math.min(start + (chunkSize || 3 * 1024 ** 2), totalFileSize - 1);
     }
-    if (end > totalFileSize - 1) {
+    if (start > totalFileSize - 1) {
       return new Response('416 Range not satisfiable', { status: 416 });
     }
     // Bun has a bug when setting content-length and content-range automatically
