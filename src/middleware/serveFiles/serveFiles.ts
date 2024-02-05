@@ -1,9 +1,9 @@
 import { ZlibCompressionOptions } from 'bun';
-import ms from 'ms';
 import path from 'path';
 import type { Middleware } from '../../HttpRouter/HttpRouter.ts';
 import { buildFileResponse } from '../../HttpRouter/responseFactories.ts';
 import { FileGzipper } from '../../gzip/FileGzipper.ts';
+import ms from '../../ms/ms.ts';
 
 // see https://expressjs.com/en/4x/api.html#express.static
 // and https://www.npmjs.com/package/send#dotfiles
@@ -54,7 +54,8 @@ export function serveFiles(
   {
     acceptRanges = true,
     dotfiles = 'ignore',
-    etag = true, // Not yet implemented
+    // etag is Not yet implemented
+    etag = true,
     extensions = [],
     fallthrough = true,
     immutable = false,
@@ -149,17 +150,10 @@ export function serveFiles(
 }
 
 function getCacheControl(maxAge: string | number, immutable: boolean) {
-  let cacheControl = 'public, ';
-  if (typeof maxAge === 'string') {
-    const milliseconds = ms(maxAge);
-    if (milliseconds === undefined) {
-      throw new Error(`Invalid maxAge: ${maxAge}`);
-    }
-    maxAge = milliseconds;
-  }
-  if (typeof maxAge === 'number' && maxAge >= 0) {
-    const seconds = Math.floor(maxAge / 1000);
-    cacheControl += `max-age=${seconds}`;
+  let cacheControl = 'public';
+  if (maxAge || maxAge === 0) {
+    const seconds = Math.floor(ms(maxAge) / 1000);
+    cacheControl += `, max-age=${seconds}`;
   }
   if (immutable) {
     cacheControl += ', immutable';
