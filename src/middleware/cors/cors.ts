@@ -20,7 +20,7 @@ export type CorsOptions = {
 
 export const CorsDefaults = {
   origin: '*',
-  allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH'],
+  allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'PATCH', 'DELETE'],
   allowHeaders: [],
   exposeHeaders: [],
 };

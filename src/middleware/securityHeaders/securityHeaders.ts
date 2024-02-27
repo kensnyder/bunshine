@@ -141,17 +141,24 @@ export function securityHeaders(
   return async (context: Context, next: NextFunction) => {
     const resp = await next();
     if (!_needsHeaders(resp)) {
-      // browsers ignore security headers for some responses
+      // we only need security headers for interactive responses and redirects
       return resp;
     }
     for (const [dasherizedName, value] of headers.values) {
+      if (resp.headers.has(dasherizedName)) {
+        continue;
+      }
       resp.headers.set(dasherizedName, value);
     }
     for (const [rawName, value] of headers.functions) {
+      const name = _dasherize(rawName);
+      if (resp.headers.has(name)) {
+        continue;
+      }
       try {
         const resolved = await _resolveHeaderValue(rawName, value(context));
         if (typeof resolved === 'string' && resolved !== '') {
-          resp.headers.set(_dasherize(rawName), resolved);
+          resp.headers.set(name, resolved);
         }
       } catch (e) {}
     }

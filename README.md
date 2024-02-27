@@ -2,11 +2,11 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.14.0" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.14.1" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.14.0)](https://npmjs.com/package/bunshine)
-![Test Coverage: 95%](https://badgen.net/static/test%20coverage/95%25/green?v=0.14.0)
-[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.14.0)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.14.1)](https://npmjs.com/package/bunshine)
+![Test Coverage: 95%](https://badgen.net/static/test%20coverage/95%25/green?v=0.14.1)
+[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.14.1)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
@@ -991,10 +991,12 @@ app.listen({ port: 3100 });
 - ✅ middleware > performanceHeader
 - ✅ middleware > securityHeaders
 - ✅ middleware > trailingSlashes
+- 🔲 middleware > html rewriter
+- 🔲 middleware > hmr
 - 🔲 middleware > directoryListing
 - 🔲 middleware > rate limiter
 - 🔲 document headers middleware
-- 🔲 move securityHeaders to @bunshine/security-headers
+- 🔲 move some middleware to @bunshine/\*
 - ✅ gzip compression
 - ✅ options for serveFiles
 - 🔲 tests for cors
@@ -1011,7 +1013,7 @@ app.listen({ port: 3100 });
 - 🔲 GitHub Actions to run tests and coverage
 - 🔲 Fix TypeScript warnings
 - 🔲 Support server clusters
-- 🔲 Replace "ms" with a super simple implementation
+- ✅ Replace "ms" with a small and simple implementation
 - ✅ Export functions to gzip strings and files
 - ✅ Gzip performance testing (to get min/max defaults)
 
