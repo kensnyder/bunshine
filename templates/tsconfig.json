@@ -1,6 +1,10 @@
 {
   "include": [
-    "scripts/**/*"
+    "index.ts",
+    "package.json",
+    "*src/**/*",
+    "packages/core/examples",
+    "packages/core/benchmarks"
   ],
   "exclude": [],
   "compilerOptions": {

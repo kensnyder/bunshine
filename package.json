@@ -1,62 +1,26 @@
 {
-  "name": "bunshine",
-  "version": "0.14.1",
-  "module": "server/server.ts",
-  "type": "module",
-  "main": "index.ts",
-  "types": "index.d.ts",
+  "name": "bunshine-monorepo",
+  "version": "0.15.0",
   "scripts": {
-    "test-watch": "bun test --watch",
-    "coverage": "bun test --coverage",
-    "lint": "tsc",
-    "build": "rm index.d.ts; bunx dts-bundle-generator -o index.d.ts index.ts",
-    "example": "bun --watch ./examples/server.ts"
+    "copy-configs": "bun scripts/copy-configs.ts",
+    "install": "bun scripts/install-all.ts"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kensnyder/bunshine.git"
   },
-  "bin": {
-    "serve": "bun ./bin/serve.ts"
-  },
-  "keywords": [
-    "Bun HTTP Server",
-    "Bun Socket Server",
-    "Bun Server",
-    "Bun Framework",
-    "Bun Web Framework",
-    "Bun Server Sent Events",
-    "Bun Ranged Files",
-    "Bun File Server",
-    "HTTP Server",
-    "Socket Server",
-    "Server",
-    "Server Sent Events",
-    "Ranged Files",
-    "File Server",
-    "GZIP Responses",
-    "Bun"
-  ],
+  "keywords": [],
   "author": "kendsnyder@gmail.com",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/kensnyder/bunshine/issues"
   },
   "homepage": "https://github.com/kensnyder/bunshine#readme",
-  "dependencies": {
-    "lru-cache": "10.2.0",
-    "path-to-regexp": "6.2.1"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@types/eventsource": "1.1.15",
-    "@types/ms": "0.7.34",
-    "bun-types": "1.0.25",
-    "eventsource": "2.0.2",
-    "globby": "14.0.0",
-    "prettier": "3.2.4",
+    "bun-types": "1.0.30",
+    "prettier": "3.2.5",
     "prettier-plugin-organize-imports": "3.2.4",
-    "tinybench": "2.6.0",
-    "type-fest": "4.10.1",
-    "typescript": "5.3.3"
+    "typescript": "5.4.2"
   }
 }
