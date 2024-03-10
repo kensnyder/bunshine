@@ -1,0 +1,25 @@
+# Not for NPM
+assets
+benchmarks
+examples
+src/**/*.spec.ts
+testFixtures
+.prettierrc.json
+
+#
+# From .gitignore
+#
+
+# macOS
+.DS_Store
+
+# IDEs
+.idea
+.vscode
+
+# Dependency directories
+node_modules
+.eslintcache
+
+# Other
+tsconfig.tsbuildinfo

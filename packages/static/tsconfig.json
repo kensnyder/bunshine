@@ -1,0 +1,32 @@
+{
+  "include": [
+    "index.ts",
+    "package.json",
+    "*src/**/*",
+    "packages/core/examples",
+    "packages/core/benchmarks"
+  ],
+  "exclude": [],
+  "compilerOptions": {
+    "lib": ["ESNext", "dom", "dom.iterable"],
+    "module": "esnext",
+    "target": "esnext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "composite": true,
+    "strict": true,
+    "noEmit": true,
+    "downlevelIteration": true,
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowJs": true,
+    "types": [
+      "bun-types"
+    ]
+  }
+}
