@@ -27,17 +27,15 @@ export {
 } from './src/HttpRouter/responseFactories';
 export {
   default as SocketRouter,
-  type DefaultDataShape,
-  type FinalWsDataShape,
+  type BunHandlers,
+  type BunshineHandlers,
   type SocketCloseHandler,
-  type SocketDrainHandler,
   type SocketErrorHandler,
   type SocketEventName,
   type SocketMessageHandler,
-  type SocketOpenHandler,
-  type SocketPingHandler,
-  type SocketPongHandler,
+  type SocketPlainHandler,
   type SocketUpgradeHandler,
+  type WsDataShape,
 } from './src/SocketRouter/SocketRouter.ts';
 export { cors, type CorsOptions } from './src/middleware/cors/cors';
 export { devLogger } from './src/middleware/devLogger/devLogger';
