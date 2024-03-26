@@ -480,7 +480,7 @@ app.get<{ stock: string }>('/stock/:symbol', c => {
   const symbol = c.params.symbol;
   return c.sse(send => {
     setInterval(async () => {
-      const data = getPriceData(symbol);
+      const data = await getPriceData(symbol);
       send('price', { gain: data.gain, price: data.price });
     }, 6000);
   });

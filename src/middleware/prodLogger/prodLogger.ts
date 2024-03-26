@@ -18,7 +18,8 @@ export function prodLogger(): Middleware {
     // log request
     process.stdout.write(
       JSON.stringify({
-        msg: 'HTTP request',
+        msg: `--> ${c.request.method} ${pathname}`,
+        type: 'request',
         date,
         id,
         host,
@@ -35,7 +36,8 @@ export function prodLogger(): Middleware {
     const took = Math.round((performance.now() - start) * 1000) / 1000;
     process.stdout.write(
       JSON.stringify({
-        msg: 'HTTP response',
+        msg: `${resp.status} ${c.request.method} ${pathname}`,
+        type: 'response',
         date,
         id,
         host,
