@@ -2,11 +2,11 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=0.14.1" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=1.0.0" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=0.14.1)](https://npmjs.com/package/bunshine)
-![Test Coverage: 95%](https://badgen.net/static/test%20coverage/95%25/green?v=0.14.1)
-[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=0.14.1)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=1.0.0)](https://npmjs.com/package/bunshine)
+![Test Coverage: 95%](https://badgen.net/static/test%20coverage/95%25/green?v=1.0.0)
+[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=1.0.0)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
@@ -128,10 +128,11 @@ app.get('/hello', (c: Context, next: NextFunction) => {
   c.server; // The Bun server instance (useful for pub-sub)
   c.app; // The HttpRouter instance
   c.locals; // A place to persist data between handlers for the duration of the request
-  c.error; // Handlers registered with app.on500() can see this Error object
+  c.error; // An error object available to handlers registered with app.on500()
   c.ip; // The IP address of the client (not necessarily the end user)
   c.date; // The date of the request
   c.now; // The result of performance.now() at the start of the request
+
   // Convenience methods for creating Response objects with various content types
   // Note that responses are automatically gzipped if the client accepts gzip
   c.json(data, init);
@@ -141,6 +142,7 @@ app.get('/hello', (c: Context, next: NextFunction) => {
   c.html(htmlText, init);
   c.css(cssText, init);
   c.file(path, init);
+
   // Create a redirect Response
   c.redirect(url, status);
 });
@@ -163,6 +165,9 @@ app.listen({ port: 3100 });
 ```
 
 See the [serveFiles](#serveFiles) section for more info.
+
+Also note you can serve files with bunshine anywhere with `bunx bunshine serve`.
+It currently uses the default `serveFiles()` options.
 
 ## Writing middleware
 
@@ -211,7 +216,7 @@ app.get('/admin', c => {
 
 // Middleware before a given handler (as array)
 app.get('/users/:id', [
-  paramValidationMiddleware,
+  paramValidationMiddleware({ id: zod.number() }),
   async c => {
     const user = await getUser(c.params.id);
     return c.json(user);
@@ -224,13 +229,14 @@ app.get('/users/:id', paramValidationMiddleware, async c => {
   return c.json(user);
 });
 
+// handler affected by applicable middleware
 app.get('/', c => c.text('Hello World!'));
 
 app.listen({ port: 3100 });
 ```
 
 Note that because every handler is treated like middleware,
-you must register handlers in order of specificity. For example:
+you must register handlers in order of desired specificity. For example:
 
 ```ts
 // This order matters
@@ -276,9 +282,7 @@ const app = new HttpRouter();
 
 // ❌ Incorrect use of next
 app.get('/hello', (c: Context, next: NextFunction) => {
-  // wait for other handlers to return a response
   const resp = next();
-  // do stuff with response
 });
 
 // ✅ Correct use of next
@@ -476,7 +480,7 @@ import { HttpRouter } from 'bunshine';
 
 const app = new HttpRouter();
 
-app.get<{ stock: string }>('/stock/:symbol', c => {
+app.get<{ symbol: string }>('/stock/:symbol', c => {
   const symbol = c.params.symbol;
   return c.sse(send => {
     setInterval(async () => {
@@ -742,19 +746,23 @@ app.listen({ port: 3100 });
 
 Options details:
 
-_origin_: A string, regex, array of strings/regexes, or a function that returns
+_origin_: A string, regex, array of strings/regexes, or a function that returns the desired origin header
 _allowMethods_: an array of HTTP verbs to allow clients to make
 _allowHeaders_: an array of HTTP headers to allow clients to send
 _exposeHeaders_: an array of HTTP headers to expose to clients
 _maxAge_: the number of seconds clients should cache the CORS headers
-_credentials_: whether to allow credentials (cookies or auth headers)
+_credentials_: whether to allow credentials (e.g. cookies or auth headers)
 
 ### devLogger & prodLogger
 
-`devLogger` outputs colorful logs in the form
-`[timestamp] METHOD PATHNAME STATUS_CODE (RESPONSE_TIME)`.
+`devLogger` outputs colorful logs in the form below.
 
-For example: `[19:10:50.276Z] GET / 200 (5ms)`.
+```text
+[timestamp] METHOD PATHNAME STATUS_CODE (RESPONSE_TIME)
+
+example:
+[19:10:50.276Z] GET /api/users/me 200 (5ms)
+```
 
 `prodLogger` outputs logs in JSON with the following shape:
 
@@ -762,13 +770,18 @@ Request log:
 
 ```json
 {
+  "msg": "--> GET /",
+  "type": "request",
   "date": "2021-08-01T19:10:50.276Z",
+  "id": "ea98fe2e-45e0-47d1-9344-2e3af680d6a7",
+  "host": "example.com",
   "method": "GET",
   "pathname": "/",
-  "runtime": "Bun 1.0.25",
+  "runtime": "Bun v1.1.4",
+  "poweredBy": "Bunshine v1.0.0",
   "machine": "server1",
-  "pid": 1,
-  "id": "ea98fe2e-45e0-47d1-9344-2e3af680d6a7"
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+  "pid": 123
 }
 ```
 
@@ -776,14 +789,18 @@ Response log:
 
 ```json
 {
-  "date": "2021-08-01T19:10:50.276Z",
+  "msg": "200 GET /",
+  "type": "response",
+  "date": "2021-08-01T19:10:50.286Z",
+  "id": "ea98fe2e-45e0-47d1-9344-2e3af680d6a7",
+  "host": "example.com",
   "method": "GET",
   "pathname": "/",
-  "status": 200,
-  "runtime": "Bun 1.0.25",
+  "runtime": "Bun v1.1.4",
+  "poweredBy": "Bunshine v1.0.0",
   "machine": "server1",
-  "pid": 1,
-  "id": "ea98fe2e-45e0-47d1-9344-2e3af680d6a7",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+  "pid": 123,
   "took": 5
 }
 ```
@@ -797,6 +814,8 @@ const app = new HttpRouter();
 
 const logger = process.env.NODE_ENV === 'development' ? devLogger : prodLogger;
 app.use(logger());
+// or at a specific path
+app.use('/api/*', logger());
 
 app.listen({ port: 3100 });
 ```
@@ -928,7 +947,7 @@ app.post<{ id: string }>('/users/:id', async c => {
 });
 
 app.get<{ 0: string }>('/auth/*', async c => {
-  // TypeScript now knows that c['0'] is a string
+  // TypeScript now knows that c.params['0'] is a string
 });
 
 app.listen({ port: 3100 });
@@ -996,7 +1015,7 @@ app.listen({ port: 3100 });
 - 🔲 middleware > directoryListing
 - 🔲 middleware > rate limiter
 - 🔲 document headers middleware
-- 🔲 move some middleware to @bunshine/\*
+- 🔲 move some middleware to `@bunshine/\*`?
 - ✅ gzip compression
 - ✅ options for serveFiles
 - 🔲 tests for cors
@@ -1006,12 +1025,10 @@ app.listen({ port: 3100 });
 - 🔲 tests for responseFactories
 - ✅ tests for serveFiles
 - 🔲 100% test coverage
-- 🔲 add flags to bin/serve.ts with commander
-- 🔲 document flags for `bunx bunshine serve`
+- 🔲 support and document flags to bin/serve.ts with commander
 - 🔲 more files in examples folder
 - 🔲 example of mini app that uses bin/serve.ts (maybe our own docs?)
 - 🔲 GitHub Actions to run tests and coverage
-- 🔲 Fix TypeScript warnings
 - 🔲 Support server clusters
 - ✅ Replace "ms" with a small and simple implementation
 - ✅ Export functions to gzip strings and files

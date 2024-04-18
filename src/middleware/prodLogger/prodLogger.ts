@@ -28,6 +28,8 @@ export function prodLogger(): Middleware {
         runtime,
         poweredBy,
         machine,
+        userAgent: c.request.headers.get('user-agent'),
+        pid: process.pid,
       }) + '\n'
     );
     // wait for response
@@ -47,6 +49,8 @@ export function prodLogger(): Middleware {
         runtime,
         poweredBy,
         machine,
+        userAgent: c.request.headers.get('user-agent'),
+        pid: process.pid,
         took,
       }) + '\n'
     );

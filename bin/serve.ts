@@ -1,3 +1,5 @@
+#!/usr/bin/env bun
+
 import fs from 'fs/promises';
 import { devLogger, HttpRouter, prodLogger, serveFiles } from '../index.ts';
 
