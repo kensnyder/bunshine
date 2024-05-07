@@ -11,7 +11,7 @@ if (!(await fs.exists(folder))) {
 }
 
 const app = new HttpRouter();
-app.use(Bun.env.NODE_ENV === 'development' ? devLogger() : prodLogger());
+app.use(Bun.env.NODE_ENV === 'production' ? prodLogger() : devLogger());
 app.headGet(
   '*',
   serveFiles(folder, {
@@ -22,8 +22,11 @@ app.headGet(
   })
 );
 app.listen();
-app.emitUrl();
-console.log('Copied URL to clipboard.');
+
+console.log(`☀️ Bunshine serving static files at ${app.server!.url}`);
+
+// TODO: copy to clipboard
+// console.log(`Copied local address to clipboard.`);
 
 process.on('beforeExit', () => {
   if (app.server) {

@@ -109,8 +109,8 @@ export type SseSend = (
   data?: string | object,
   id?: string,
   retry?: number
-) => void;
-export type SseClose = () => void;
+) => void | Promise<void>;
+export type SseClose = () => void | Promise<void>;
 export type SseSetupFunction = (
   send: SseSend,
   close: SseClose
