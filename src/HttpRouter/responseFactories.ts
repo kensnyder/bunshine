@@ -1,57 +1,49 @@
 import { BunFile } from 'bun';
 import path from 'node:path';
 import Context from '../Context/Context.ts';
+import { maybeCompressResponseBody } from '../compress/compress.ts';
 import getMimeType from '../getMimeType/getMimeType.ts';
-import { gzipString } from '../gzip/gzip.ts';
+import ms from '../ms/ms.ts';
+import { MaybeHeadersAndStatus } from './HttpRouter.ts';
 
-export type Factory = (body: string, init?: ResponseInit) => Response;
+export type Factory = (
+  body: string,
+  init?: ResponseInit
+) => Response | Promise<Response>;
 
 const textEncoder = new TextEncoder();
 
-// body must be large enough to be worth compressing
-// (54 is minimum size of gzip after metadata; 100 is arbitrary choice)
-// see benchmarks/gzip.ts for more information
-export let minGzipSize = 100;
-
-export function json(this: Context, data: any, init: ResponseInit = {}) {
-  let body: string | Uint8Array = JSON.stringify(data);
-  init.headers = new Headers(init.headers || {});
-  if (!init.headers.has('Content-Type')) {
-    init.headers.set('Content-type', `application/json; charset=utf-8`);
-  }
-  if (!init.headers.has('Content-Encoding')) {
-    // body must be large enough to be worth compressing
-    if (body.length >= minGzipSize) {
-      body = gzipString(body);
-      init.headers.set('Content-Encoding', 'gzip');
-      init.headers.set('Content-Length', String(body.length));
-    }
-  }
-  return new Response(body, init);
+export async function json(
+  this: Context,
+  data: unknown,
+  init: ResponseInit = {}
+) {
+  return applicationJson.call(this, JSON.stringify(data), init);
 }
 
 export function factory(contentType: string): Factory {
-  return function (this: Context, body: string, init: ResponseInit = {}) {
-    init.headers = new Headers(init.headers || {});
-    if (!init.headers.has('Content-Type')) {
-      init.headers.set('Content-type', `${contentType}; charset=utf-8`);
-    }
-    if (!init.headers.has('Content-Encoding')) {
-      if (
-        // client must expect gzip
-        this.request.headers.get('Accept-Encoding')?.includes('gzip') &&
-        // body must be large enough to be worth compressing
-        body.length >= minGzipSize
-      ) {
-        // @ts-expect-error
-        body = gzipString(body);
-        init.headers.set('Content-Encoding', 'gzip');
-      }
-    }
-    init.headers.set('Content-Length', String(body.length));
-    return new Response(body, init);
+  return async function (
+    this: Context,
+    body: string,
+    init: MaybeHeadersAndStatus = {}
+  ) {
+    const finalInit = {
+      headers: new Headers(init.headers),
+      status: init.status || 200,
+      statusText: init.statusText || 'OK',
+    };
+    const finalBody = await this.runBodyProcessors(body, finalInit);
+    finalInit.headers.set('Content-Type', contentType);
+    return new Response(finalBody, finalInit);
   };
 }
+
+export const textPlain = factory('text/plain');
+export const textJs = factory('text/javascript');
+export const textHtml = factory('text/html');
+export const textXml = factory('text/xml');
+export const textCss = factory('text/css');
+export const applicationJson = factory('application/json; charset=utf-8');
 
 export const redirect = (url: string, status = 302) => {
   return new Response('', {
@@ -65,11 +57,15 @@ export const redirect = (url: string, status = 302) => {
 export type FileResponseOptions = {
   range?: string;
   chunkSize?: number;
-  gzip?: boolean;
+  compress?: boolean; // default true
   disposition?: 'inline' | 'attachment';
   acceptRanges?: boolean;
+  noCache?: boolean;
+  maxAge?: string | number;
+  headers?: HeadersInit;
 };
 export const file = async (
+  requestHeaders: Headers,
   filenameOrBunFile: string | BunFile,
   fileOptions: FileResponseOptions = {}
 ) => {
@@ -81,12 +77,13 @@ export const file = async (
     return new Response('File not found', { status: 404 });
   }
   const resp = await buildFileResponse({
+    requestHeaders,
     file,
     acceptRanges: true,
     chunkSize: fileOptions.chunkSize,
     rangeHeader: fileOptions.range,
     method: 'GET',
-    gzip: fileOptions.gzip,
+    compress: fileOptions.compress,
   });
   if (fileOptions.acceptRanges !== false) {
     // tell the client that we are capable of handling range requests
@@ -101,6 +98,24 @@ export const file = async (
   } else if (fileOptions.disposition === 'inline') {
     resp.headers.set('Content-Disposition', 'inline');
   }
+  if (fileOptions.noCache) {
+    resp.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    resp.headers.set('Expires', '0');
+    resp.headers.set('Pragma', 'no-cache');
+  } else if (fileOptions.maxAge !== 'undefined') {
+    const seconds =
+      typeof fileOptions.maxAge === 'string'
+        ? Math.floor(ms(fileOptions.maxAge) / 1000)
+        : fileOptions.maxAge;
+    resp.headers.set('Cache-Control', `public, max-age=${seconds}`);
+  }
+  for (const [name, value] of new Headers(fileOptions.headers)) {
+    if (name.toLowerCase() === 'cache-control') {
+      resp.headers.set('Cache-Control', value);
+    } else {
+      resp.headers.append(name, value);
+    }
+  }
   return resp;
 };
 
@@ -109,8 +124,8 @@ export type SseSend = (
   data?: string | object,
   id?: string,
   retry?: number
-) => void | Promise<void>;
-export type SseClose = () => void | Promise<void>;
+) => void;
+export type SseClose = () => void;
 export type SseSetupFunction = (
   send: SseSend,
   close: SseClose
@@ -201,22 +216,31 @@ export const sse = (
 };
 
 export async function buildFileResponse({
+  requestHeaders,
   file,
   acceptRanges,
   chunkSize,
   rangeHeader,
   method,
-  gzip,
+  compress,
 }: {
+  requestHeaders?: Headers;
   file: BunFile;
   acceptRanges: boolean;
   chunkSize?: number;
   rangeHeader?: string | null;
   method: string;
-  gzip?: boolean;
+  compress?: boolean;
 }) {
-  let response: Response;
   const rangeMatch = String(rangeHeader).match(/^bytes=(\d*)-(\d*)$/);
+  const responseHeaders = new Headers({
+    'Content-Type': getMimeType(file),
+    Date: new Date().toUTCString(),
+    'Last-Modified': new Date(file.lastModified).toUTCString(),
+  });
+  if (acceptRanges) {
+    responseHeaders.set('Accept-Ranges', 'bytes');
+  }
   if (acceptRanges && rangeMatch) {
     const totalFileSize = file.size;
     const start = parseInt(rangeMatch[1]) || 0;
@@ -237,35 +261,43 @@ export async function buildFileResponse({
       buffer = buffer.slice(start, end + 1);
       status = 206;
     }
-    response = new Response(buffer, { status });
-    if (!response.headers.has('Content-Type')) {
-      response.headers.set('Content-Type', 'application/octet-stream');
-    }
-    response.headers.set('Content-Length', String(buffer.byteLength));
-    response.headers.set(
+    responseHeaders.set(
       'Content-Range',
       `bytes ${start}-${end}/${totalFileSize}`
     );
+    responseHeaders.set('Content-Length', String(buffer.byteLength));
+    if (compress && requestHeaders) {
+      // @ts-expect-error  We know that Response allows an ArrayBuffer or Buffer
+      buffer = await maybeCompressResponseBody(
+        requestHeaders,
+        responseHeaders,
+        buffer
+      );
+    }
+    return new Response(buffer, { headers: responseHeaders, status });
   } else {
+    // Although Bun will automatically set content-type and content-length,
+    //   it delays setting it until the response is actually sent.
+    //   Since middleware might want to know the file details ahead of time,
+    //   we set it here.
+    responseHeaders.set('Content-Length', String(file.size));
     let body: null | ArrayBuffer | BunFile;
     if (method === 'HEAD') {
       body = null;
     } else {
       body = process.versions.bun ? file : await file.arrayBuffer();
+      if (compress && requestHeaders) {
+        // @ts-expect-error  We know that Response allows an ArrayBuffer or Buffer
+        body = await maybeCompressResponseBody(
+          requestHeaders,
+          responseHeaders,
+          body
+        );
+      }
     }
-    // Bun will automatically set content-type and content-length,
-    //   but delays until the response is actually sent, but middleware might
-    //   want to know the file details ahead of time
-    response = new Response(body, {
-      headers: {
-        'Content-Length': String(file.size),
-        'Content-Type': getMimeType(file),
-      },
-      status: method === 'HEAD' ? 204 : 200,
+    return new Response(body, {
+      headers: responseHeaders,
+      status: 200,
     });
   }
-  if (acceptRanges) {
-    response.headers.set('Accept-Ranges', 'bytes');
-  }
-  return response;
 }

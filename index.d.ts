@@ -9,7 +9,7 @@ export type Registration<T> = {
 	matcher: ReturnType<typeof match<Record<string, string>>>;
 	target: T;
 };
-declare class PathMatcher<Target extends any> {
+export declare class PathMatcher<Target extends any> {
 	registered: Registration<Target>[];
 	add(path: string | RegExp, target: Target): void;
 	match(path: string, filter?: (target: Target) => boolean, fallbacks?: Function[]): {
@@ -17,14 +17,14 @@ declare class PathMatcher<Target extends any> {
 		params: Record<string, string>;
 	}[];
 }
-declare class MatcherWithCache<Target = any> {
+export declare class MatcherWithCache<Target = any> {
 	matcher: PathMatcher<Target>;
 	cache: LRUCache<string, any>;
 	constructor(matcher: PathMatcher<Target>, size?: number);
 	add(path: string | RegExp, target: Target): void;
 	match(path: string, filter?: (target: Target) => boolean, fallbacks?: Function[]): any;
 }
-declare class SocketContext<UpgradeShape = any, ParamsShape = Record<string, any>> {
+export declare class SocketContext<UpgradeShape = any, ParamsShape = Record<string, any>> {
 	ws?: ServerWebSocket<WsDataShape<UpgradeShape, ParamsShape>>;
 	server: Server;
 	url: URL;
@@ -48,7 +48,7 @@ declare class SocketContext<UpgradeShape = any, ParamsShape = Record<string, any
 	pong(data?: string | Bun.BufferSource): ServerWebSocketSendStatus;
 }
 export type SocketEventName = "upgrade" | "open" | "message" | "close" | "drain" | "ping" | "pong" | "error";
-declare class SocketMessage<T extends SocketEventName> {
+export declare class SocketMessage<T extends SocketEventName> {
 	readonly type: T;
 	private readonly _rawMessage;
 	constructor(type: T, rawMessage: string | Buffer);
@@ -86,7 +86,7 @@ export type BunHandlers = {
 	ping: (ws: ServerWebSocket<WsDataShape>, data: any) => void;
 	pong: (ws: ServerWebSocket<WsDataShape>, data: any) => void;
 };
-type SocketEventName$1 = "open" | "message" | "close" | "drain" | "ping" | "pong";
+export type SocketEventName$1 = "open" | "message" | "close" | "drain" | "ping" | "pong";
 export declare class SocketRouter {
 	httpRouter: HttpRouter;
 	pathMatcher: PathMatcher<BunshineHandlers<any>>;

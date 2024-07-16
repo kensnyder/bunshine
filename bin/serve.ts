@@ -16,28 +16,9 @@ app.headGet(
   '*',
   serveFiles(folder, {
     index: ['index.html'],
-    gzip: {
-      cache: false,
-    },
   })
 );
+app.enableGracefulShutdown();
 app.listen();
 
 console.log(`☀️ Bunshine serving static files at ${app.server!.url}`);
-
-// TODO: copy to clipboard
-// console.log(`Copied local address to clipboard.`);
-
-process.on('beforeExit', () => {
-  if (app.server) {
-    console.log('☀️ Gracefully shutting down.');
-    app.server.stop();
-  }
-});
-process.on('SIGINT', () => {
-  if (app.server) {
-    console.log('☀️ Force closing all open sockets.');
-    app.server.stop(true);
-  }
-  process.exit(0);
-});

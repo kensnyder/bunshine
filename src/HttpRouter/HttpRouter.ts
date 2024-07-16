@@ -1,8 +1,10 @@
 import type { ServeOptions, Server } from 'bun';
 import os from 'os';
 import bunshine from '../../package.json';
+import { compression } from '../compress/compress.ts';
 import Context, { type ContextWithError } from '../Context/Context';
 import MatcherWithCache from '../MatcherWithCache/MatcherWithCache.ts';
+import etags from '../middleware/etags/etags.ts';
 import PathMatcher from '../PathMatcher/PathMatcher';
 import SocketRouter from '../SocketRouter/SocketRouter.ts';
 import { fallback404 } from './fallback404';
@@ -41,6 +43,26 @@ type RouteInfo = {
   handler: Handler<any>;
 };
 
+// Note that BunFile is a subclass of Blob
+export type ResponseBody = string | null | Blob | Buffer | ArrayBuffer;
+
+export type HeadersAndStatus = {
+  headers: Headers;
+  status: number;
+  statusText: string;
+};
+export type MaybeHeadersAndStatus = {
+  headers?: Headers | Record<string, string> | Array<[string, string]>;
+  status?: number;
+  statusText?: string;
+};
+
+export type BodyProcessor = (
+  context: Context,
+  body: ResponseBody,
+  init: HeadersAndStatus
+) => ResponseBody | Promise<ResponseBody>;
+
 export type ListenOptions = Omit<ServeOptions, 'fetch' | 'websocket'> | number;
 
 export type HttpMethods =
@@ -53,6 +75,12 @@ export type HttpMethods =
   | 'HEAD'
   | 'OPTIONS'
   | 'TRACE';
+
+const runtime = process.versions.bun
+  ? `Bun v${process.versions.bun}`
+  : `Node v${process.versions.node}`;
+
+const poweredBy = `Bunshine/${bunshine.version}; ${runtime.replace(' v', '/')}`;
 
 const getPathMatchFilter = (verb: string) => (target: RouteInfo) => {
   return target.verb === verb || target.verb === 'ALL';
@@ -84,15 +112,19 @@ export default class HttpRouter {
   version: string = bunshine.version;
   locals: Record<string, any> = {};
   server: Server | undefined;
+  isRunning = false;
   pathMatcher: MatcherWithCache<RouteInfo>;
   _wsRouter?: SocketRouter;
   private _onErrors: any[] = [];
   private _on404s: any[] = [];
+  private _bodyProcessors: Array<{ name: string; handler: BodyProcessor }> = [];
   constructor(options: HttpRouterOptions = {}) {
     this.pathMatcher = new MatcherWithCache<RouteInfo>(
       new PathMatcher(),
       options.cacheSize || 4000
     );
+    this.enableEtags();
+    this.enableCompression();
   }
   listen(portOrOptions: ListenOptions = {}) {
     if (typeof portOrOptions === 'number') {
@@ -100,6 +132,7 @@ export default class HttpRouter {
     }
     const server = Bun.serve(this.getExport(portOrOptions));
     this.server = server;
+    this.isRunning = true;
     return server;
   }
   emitUrl({
@@ -118,9 +151,6 @@ export default class HttpRouter {
       const server = os.hostname();
       const mode = Bun.env.NODE_ENV || 'production';
       const took = Math.round(performance.now());
-      const runtime = process.versions.bun
-        ? `Bun v${process.versions.bun}`
-        : `Node v${process.versions.node}`;
       message = `☀️ Bunshine v${bunshine.version} on ${runtime} serving at ${servingAt} on "${server}" in ${mode} (${took}ms)`;
     } else {
       message = `☀️ Serving ${servingAt}`;
@@ -129,6 +159,9 @@ export default class HttpRouter {
       message = `[${new Date().toISOString()}] ${message}`;
     }
     to(message);
+  }
+  getPoweredByString() {
+    return poweredBy;
   }
   getExport(options: Omit<ServeOptions, 'fetch' | 'websocket'> = {}) {
     const config = {
@@ -142,11 +175,52 @@ export default class HttpRouter {
     }
     return config;
   }
+  stop() {
+    if (!this.isRunning) {
+      console.warn('😮 Cant stop server because it has not been started yet.');
+    }
+    try {
+      this.server?.stop();
+    } catch (e) {}
+    this.isRunning = false;
+    console.warn('⛅️ Bunshine was stopped');
+  }
+  enableGracefulShutdown() {
+    // handle graceful shutdown
+    const onExit = (code: string | number) => {
+      this.stop();
+      console.warn(`🌩️ Bunshine exited after receiving exit code: ${code}`);
+      process.exit(typeof code === 'number' ? code : 1);
+    };
+    process.on('SIGTERM', onExit);
+    process.on('SIGINT', onExit);
+  }
   get socket() {
     if (!this._wsRouter) {
       this._wsRouter = new SocketRouter(this);
     }
     return this._wsRouter;
+  }
+  addBodyProcessor(name: string, handler: BodyProcessor) {
+    this._bodyProcessors.push({ name, handler });
+  }
+  removeBodyProcessor(name: string) {
+    this._bodyProcessors = this._bodyProcessors.filter(h => h.name !== name);
+  }
+  getBodyProcessors() {
+    return this._bodyProcessors;
+  }
+  enableCompression() {
+    this.addBodyProcessor('compression', compression());
+  }
+  disableCompression() {
+    this.removeBodyProcessor('compression');
+  }
+  enableEtags() {
+    this.addBodyProcessor('etags', etags());
+  }
+  disableEtags() {
+    this.removeBodyProcessor('etags');
   }
   on<ParamsShape extends Record<string, string> = Record<string, string>>(
     verbOrVerbs: HttpMethods | HttpMethods[],

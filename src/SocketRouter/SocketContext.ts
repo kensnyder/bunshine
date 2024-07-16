@@ -116,6 +116,14 @@ export default class SocketContext<
       return this.ws!.pong(JSON.stringify(data));
     }
   }
+  /** Get the search params as an object */
+  getQueryObject() {
+    return Object.fromEntries(this.url.searchParams);
+  }
+  /** Get the search params as an array of key-value arrays */
+  getQueryEntries() {
+    return this.url.searchParams.entries();
+  }
 }
 
 export type SocketEventName =

@@ -17,7 +17,7 @@ export {
 export {
   factory,
   json,
-  minGzipSize,
+  minCompressionSize,
   redirect,
   type Factory,
   type FileResponseOptions,

@@ -89,37 +89,37 @@ describe('Context', () => {
       expect(resp.status).toBe(404);
     });
     it('should include text()', async () => {
-      const resp = c.text('Hi');
+      const resp = await c.text('Hi');
       expect(await resp.text()).toBe('Hi');
       expect(resp.headers.get('Content-type')).toStartWith('text/plain');
     });
     it('should include js()', async () => {
-      const resp = c.js('alert(42)');
+      const resp = await c.js('alert(42)');
       expect(await resp.text()).toBe('alert(42)');
       expect(resp.headers.get('Content-type')).toStartWith('text/javascript');
     });
     it('should include html()', async () => {
-      const resp = c.html('<h1>Hi</h1>');
+      const resp = await c.html('<h1>Hi</h1>');
       expect(await resp.text()).toBe('<h1>Hi</h1>');
       expect(resp.headers.get('Content-type')).toStartWith('text/html');
     });
     it('should include css()', async () => {
-      const resp = c.css('* { min-width: 0 }');
+      const resp = await c.css('* { min-width: 0 }');
       expect(await resp.text()).toBe('* { min-width: 0 }');
       expect(resp.headers.get('Content-type')).toStartWith('text/css');
     });
     it('should include xml()', async () => {
-      const resp = c.xml('<greeting>Hi</greeting>');
+      const resp = await c.xml('<greeting>Hi</greeting>');
       expect(await resp.text()).toBe('<greeting>Hi</greeting>');
       expect(resp.headers.get('Content-type')).toStartWith('text/xml');
     });
     it('should include json(data)', async () => {
-      const resp = c.json({ hello: 'world' });
+      const resp = await c.json({ hello: 'world' });
       expect(await resp.json()).toEqual({ hello: 'world' });
       expect(resp.headers.get('Content-type')).toStartWith('application/json');
     });
     it('should include json(data, init)', async () => {
-      const resp = c.json(
+      const resp = await c.json(
         { hello: 'world' },
         {
           headers: {

@@ -1,80 +1,37 @@
-import { ZlibCompressionOptions } from 'bun';
 import path from 'path';
 import type { Middleware } from '../../HttpRouter/HttpRouter.ts';
-import { buildFileResponse } from '../../HttpRouter/responseFactories.ts';
-import { FileGzipper } from '../../gzip/FileGzipper.ts';
-import ms from '../../ms/ms.ts';
 
 // see https://expressjs.com/en/4x/api.html#express.static
 // and https://www.npmjs.com/package/send#dotfiles
 export type StaticOptions = {
-  acceptRanges?: boolean;
   dotfiles?: 'allow' | 'deny' | 'ignore';
   etag?: boolean;
   extensions?: string[];
   fallthrough?: boolean;
   immutable?: boolean;
   index?: string[];
-  lastModified?: boolean;
   maxAge?: number | string;
-  gzip?: GzipOptions;
-};
-
-export type GzipOptions = {
-  minFileSize?: number;
-  maxFileSize?: number;
-  mimeTypes?: Array<string | RegExp>;
-  zlibOptions?: ZlibCompressionOptions;
-  cache:
-    | false
-    | {
-        type: 'file' | 'precompress' | 'memory' | 'never';
-        maxBytes?: number;
-        path?: string;
-      };
-};
-
-const defaultGzipOptions: GzipOptions = {
-  minFileSize: 1024,
-  maxFileSize: 1024 * 1024 * 25,
-  mimeTypes: [
-    /^text\/.*/,
-    /^application\/json/,
-    /^image\/svg/,
-    /^font\/(otf|ttf|eot)/,
-  ],
-  zlibOptions: {},
-  cache: {
-    type: 'never',
-  },
+  headers?: HeadersInit;
+  compress?: boolean;
+  addPoweredBy?: boolean; // default true
 };
 
 export function serveFiles(
   directory: string,
   {
-    acceptRanges = true,
     dotfiles = 'ignore',
-    // etag is Not yet implemented
+    // etags middleware is not yet complete
     etag = true,
     extensions = [],
     fallthrough = true,
-    immutable = false,
     index = [],
-    lastModified = true,
     maxAge = undefined,
-    gzip = undefined,
+    compress = undefined,
+    headers = undefined,
+    addPoweredBy = true,
   }: StaticOptions = {}
 ): Middleware {
-  const cacheControlHeader =
-    maxAge === undefined ? null : getCacheControl(maxAge, immutable);
-  const gzipper = gzip
-    ? new FileGzipper(directory, { ...defaultGzipOptions, ...gzip })
-    : undefined;
   return async c => {
-    if (gzipper) {
-      // wait for setup cache if not done already
-      await gzipper.setupPromise;
-    }
     const filename = c.params[0] || c.url.pathname;
     if (filename.startsWith('.')) {
       if (dotfiles === 'ignore') {
@@ -102,8 +59,8 @@ export function serveFiles(
     // handle index files
     if (!exists && index.length > 0) {
       // try to find index file such as index.html or index.js
-      for (const indexFile of index) {
-        const indexFilePath = path.join(filePath, indexFile);
+      for (const indexFilename of index) {
+        const indexFilePath = path.join(filePath, indexFilename);
         file = Bun.file(indexFilePath);
         exists = await file.exists();
         if (exists) {
@@ -117,46 +74,14 @@ export function serveFiles(
       }
       return new Response('404 Not Found', { status: 404 });
     }
-    const rangeHeader = c.request.headers.get('range');
-    let response: Response;
-    if (rangeHeader || !gzipper) {
-      // get base response
-      response = await buildFileResponse({
-        file,
-        acceptRanges,
-        chunkSize: 0,
-        rangeHeader,
-        method: c.request.method,
-        gzip: false,
-      });
-    } else {
-      response = await gzipper.fetch(file);
-    }
-    // add current date
-    response.headers.set('Date', new Date().toUTCString());
-    // add last modified
-    if (lastModified) {
-      response.headers.set(
-        'Last-Modified',
-        new Date(file.lastModified).toUTCString()
-      );
-    }
-    // add Cache-Control header
-    if (cacheControlHeader) {
-      response.headers.set('Cache-Control', cacheControlHeader);
+    const response = await c.file(file, {
+      compress,
+      maxAge,
+      headers,
+    });
+    if (addPoweredBy) {
+      response.headers.set('X-Powered-By', c.app.getPoweredByString());
     }
     return response;
   };
-}
-
-function getCacheControl(maxAge: string | number, immutable: boolean) {
-  let cacheControl = 'public';
-  if (maxAge || maxAge === 0) {
-    const seconds = Math.floor(ms(maxAge) / 1000);
-    cacheControl += `, max-age=${seconds}`;
-  }
-  if (immutable) {
-    cacheControl += ', immutable';
-  }
-  return cacheControl;
 }

@@ -5,11 +5,14 @@
   "type": "module",
   "main": "index.ts",
   "types": "index.d.ts",
+  "sideEffects": false,
   "scripts": {
     "test-watch": "bun test --watch",
     "coverage": "bun test --coverage",
     "lint": "tsc",
-    "build": "rm index.d.ts; bunx dts-bundle-generator -o index.d.ts index.ts",
+    "build": "bun run build:dts && bun run build:mimes",
+    "build:dts": "rm index.d.ts; bunx dts-bundle-generator -o index.d.ts index.ts",
+    "build:mimes": "bun scripts/compileCompressibleMimes.ts",
     "example": "bun --watch ./examples/server.ts"
   },
   "repository": {
@@ -44,19 +47,21 @@
   },
   "homepage": "https://github.com/kensnyder/bunshine#readme",
   "dependencies": {
-    "lru-cache": "10.2.2",
+    "@types/mime-db": "1.43.5",
+    "lru-cache": "11.0.0",
     "path-to-regexp": "6.2.2"
   },
   "devDependencies": {
     "@types/eventsource": "1.1.15",
     "@types/ms": "0.7.34",
-    "bun-types": "1.1.7",
+    "bun-types": "1.1.20",
     "eventsource": "2.0.2",
-    "globby": "14.0.1",
-    "prettier": "3.2.5",
-    "prettier-plugin-organize-imports": "3.2.4",
+    "globby": "14.0.2",
+    "mime-db": "1.53.0",
+    "prettier": "3.3.3",
+    "prettier-plugin-organize-imports": "4.0.0",
     "tinybench": "2.8.0",
-    "type-fest": "4.18.2",
-    "typescript": "5.4.5"
+    "type-fest": "4.21.0",
+    "typescript": "5.5.3"
   }
 }

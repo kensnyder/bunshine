@@ -1,20 +1,21 @@
 import type { BunFile, Server } from 'bun';
-import type HttpRouter from '../HttpRouter/HttpRouter';
+import HttpRouter, {
+  HeadersAndStatus,
+  ResponseBody,
+} from '../HttpRouter/HttpRouter';
 import {
-  factory,
   file,
   json,
   redirect,
   sse,
+  textCss,
+  textHtml,
+  textJs,
+  textPlain,
+  textXml,
   type FileResponseOptions,
   type SseSetupFunction,
 } from '../HttpRouter/responseFactories';
-
-const textPlain = factory('text/plain');
-const textJs = factory('text/javascript');
-const textHtml = factory('text/html');
-const textXml = factory('text/xml');
-const textCss = factory('text/css');
 
 export type ContextWithError<
   ParamsShape extends Record<string, string> = Record<string, string>,
@@ -85,12 +86,12 @@ export default class Context<
   redirect(url: string, status = 302) {
     return redirect(url, status);
   }
-  /** A shorthand for `new Response(bunFile, fileHeaders)` */
+  /** A shorthand for `new Response(bunFile, fileHeaders)` that includes automatic compression */
   async file(
     filenameOrBunFile: string | BunFile,
     fileOptions: FileResponseOptions = {}
   ) {
-    return file(filenameOrBunFile, {
+    return file(this.request.headers, filenameOrBunFile, {
       range: this.request.headers.get('Range') || undefined,
       ...fileOptions,
     });
@@ -98,5 +99,20 @@ export default class Context<
   /** A shorthand for `new Response({ headers: { 'Content-type': 'text/event-stream' } })` */
   sse(setup: SseSetupFunction, init: ResponseInit = {}) {
     return sse(this.request.signal, setup, init);
+  }
+  /** Get the search params as an object */
+  getQueryObject() {
+    return Object.fromEntries(this.url.searchParams);
+  }
+  /** Get the search params as an array of key-value arrays */
+  getQueryEntries() {
+    return this.url.searchParams.entries();
+  }
+  async runBodyProcessors(body: ResponseBody, init: HeadersAndStatus) {
+    let finalBody = body;
+    for (const processor of this.app.getBodyProcessors()) {
+      finalBody = await processor.handler(this, finalBody, init);
+    }
+    return finalBody;
   }
 }

@@ -368,7 +368,7 @@ app.get('/', c => c.text('Hello World!'));
 type ParamsShape = { room: string };
 type DataShape = { user: User };
 app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
-  // Optional. Allows you to specify arbitrary data to attach to ws.data.
+  // Optional. Allows you to specify arbitrary data to attach to sc.data.
   upgrade: sc => {
     const cookies = sc.request.headers.get('cookie');
     const user = getUserFromCookies(cookies);
@@ -383,7 +383,7 @@ app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
     const room = sc.params.room;
     const user = sc.data.user;
     markUserEntrance(room, user);
-    ws.send(getGameState(room));
+    sc.send(getGameState(room));
   },
   // Optional. Called when the client sends a message
   message(sc, message) {
@@ -392,7 +392,7 @@ app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
     const result = saveMove(room, user, message.json());
     // send accepts strings, Buffers, ArrayBuffers
     // and anything else will be serialized to JSON
-    ws.send(result);
+    sc.send(result);
   },
   // Optional. Called when the client disconnects
   // List of codes and messages: https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code
@@ -458,8 +458,8 @@ app.socket.at<ParamsShape, DataShape>('/chat/:room', {
   },
   close(sc, code, message) {
     const msg = `${sc.data.username} has left the chat`;
-    ws.publish(`chat-room-${sc.params.room}`, msg);
-    ws.unsubscribe(`chat-room-${sc.params.room}`);
+    sc.publish(`chat-room-${sc.params.room}`, msg);
+    sc.unsubscribe(`chat-room-${sc.params.room}`);
   },
 });
 
@@ -973,23 +973,23 @@ type User = {
 // WebSocket routes
 app.socket.at<{ room: string }, { user: User }>('/games/rooms/:room', {
   upgrade: ({ request, params, url }) => {
-    // Typescript knows that ws.data.params.room is a string
+    // Typescript knows that sc.data.params.room is a string
     const cookies = req.headers.get('cookie');
     const user = getUserFromCookies(cookies);
     // here user is typed as User
     return { user };
   },
-  open(ws) {
-    // TypeScript knows that ws.data.params.room is a string
-    // TypeScript knows that ws.data.user is a User
+  open(sc) {
+    // TypeScript knows that sc.data.params.room is a string
+    // TypeScript knows that sc.data.user is a User
   },
-  message(ws, message) {
-    // TypeScript knows that ws.data.params.room is a string
-    // TypeScript knows that ws.data.user is a User
+  message(sc, message) {
+    // TypeScript knows that sc.data.params.room is a string
+    // TypeScript knows that sc.data.user is a User
   },
-  close(ws, code, message) {
-    // TypeScript knows that ws.data.params.room is a string
-    // TypeScript knows that ws.data.user is a User
+  close(sc, code, message) {
+    // TypeScript knows that sc.data.params.room is a string
+    // TypeScript knows that sc.data.user is a User
   },
 });
 

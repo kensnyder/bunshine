@@ -1,5 +1,5 @@
 import type { Server } from 'bun';
-import { beforeEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import HttpRouter from '../../HttpRouter/HttpRouter.ts';
 import { cors } from './cors.ts';
 
@@ -16,6 +16,9 @@ describe('headers middleware', () => {
         Origin: 'google.com',
       },
     };
+  });
+  afterEach(() => {
+    server.stop(true);
   });
   it('should have proper defaults', async () => {
     app.use(cors(), c => c.text('hello'));
