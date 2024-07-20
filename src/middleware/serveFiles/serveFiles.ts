@@ -5,14 +5,12 @@ import type { Middleware } from '../../HttpRouter/HttpRouter.ts';
 // and https://www.npmjs.com/package/send#dotfiles
 export type StaticOptions = {
   dotfiles?: 'allow' | 'deny' | 'ignore';
-  etag?: boolean;
   extensions?: string[];
   fallthrough?: boolean;
   immutable?: boolean;
   index?: string[];
   maxAge?: number | string;
   headers?: HeadersInit;
-  compress?: boolean;
   addPoweredBy?: boolean; // default true
 };
 
@@ -20,13 +18,10 @@ export function serveFiles(
   directory: string,
   {
     dotfiles = 'ignore',
-    // etags middleware is not yet complete
-    etag = true,
     extensions = [],
     fallthrough = true,
     index = [],
     maxAge = undefined,
-    compress = undefined,
     headers = undefined,
     addPoweredBy = true,
   }: StaticOptions = {}
@@ -75,7 +70,6 @@ export function serveFiles(
       return new Response('404 Not Found', { status: 404 });
     }
     const response = await c.file(file, {
-      compress,
       maxAge,
       headers,
     });

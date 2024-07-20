@@ -48,8 +48,11 @@
   "homepage": "https://github.com/kensnyder/bunshine#readme",
   "dependencies": {
     "@types/mime-db": "1.43.5",
+    "get-stream": "9.0.1",
+    "is-plain-object": "5.0.0",
     "lru-cache": "11.0.0",
-    "path-to-regexp": "6.2.2"
+    "path-to-regexp": "6.2.2",
+    "typed-array-buffer": "1.0.2"
   },
   "devDependencies": {
     "@types/eventsource": "1.1.15",

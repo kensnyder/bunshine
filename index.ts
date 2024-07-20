@@ -25,20 +25,9 @@ export {
   type SseSend,
   type SseSetupFunction,
 } from './src/HttpRouter/responseFactories';
-export {
-  default as SocketRouter,
-  type BunHandlers,
-  type BunshineHandlers,
-  type SocketCloseHandler,
-  type SocketErrorHandler,
-  type SocketEventName,
-  type SocketMessageHandler,
-  type SocketPlainHandler,
-  type SocketUpgradeHandler,
-  type WsDataShape,
-} from './src/SocketRouter/SocketRouter.ts';
 export { cors, type CorsOptions } from './src/middleware/cors/cors';
 export { devLogger } from './src/middleware/devLogger/devLogger';
+export { etags } from './src/middleware/etags/etags';
 export { performanceHeader } from './src/middleware/performanceHeader/performanceHeader.ts';
 export { prodLogger } from './src/middleware/prodLogger/prodLogger';
 export { securityHeaders } from './src/middleware/securityHeaders/securityHeaders';
@@ -57,3 +46,15 @@ export {
   type StaticOptions,
 } from './src/middleware/serveFiles/serveFiles';
 export { trailingSlashes } from './src/middleware/trailingSlashes/trailingSlashes';
+export {
+  default as SocketRouter,
+  type BunHandlers,
+  type BunshineHandlers,
+  type SocketCloseHandler,
+  type SocketErrorHandler,
+  type SocketEventName,
+  type SocketMessageHandler,
+  type SocketPlainHandler,
+  type SocketUpgradeHandler,
+  type WsDataShape,
+} from './src/SocketRouter/SocketRouter.ts';

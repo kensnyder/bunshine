@@ -1,6 +1,7 @@
 import { BunFile } from 'bun';
 import path from 'node:path';
 import Context from '../Context/Context.ts';
+import ResponseLike from '../ResponseLike/ResponseLike.ts';
 import { maybeCompressResponseBody } from '../compress/compress.ts';
 import getMimeType from '../getMimeType/getMimeType.ts';
 import ms from '../ms/ms.ts';
@@ -22,19 +23,14 @@ export async function json(
 }
 
 export function factory(contentType: string): Factory {
-  return async function (
-    this: Context,
-    body: string,
-    init: MaybeHeadersAndStatus = {}
-  ) {
+  return async function (this: Context, init: MaybeHeadersAndStatus = {}) {
     const finalInit = {
       headers: new Headers(init.headers),
       status: init.status || 200,
       statusText: init.statusText || 'OK',
     };
-    const finalBody = await this.runBodyProcessors(body, finalInit);
     finalInit.headers.set('Content-Type', contentType);
-    return new Response(finalBody, finalInit);
+    return new ResponseLike(finalBody, finalInit);
   };
 }
 
@@ -46,7 +42,7 @@ export const textCss = factory('text/css');
 export const applicationJson = factory('application/json; charset=utf-8');
 
 export const redirect = (url: string, status = 302) => {
-  return new Response('', {
+  return new ResponseLike('', {
     status,
     headers: {
       Location: url,
@@ -74,7 +70,7 @@ export const file = async (
       ? Bun.file(filenameOrBunFile)
       : filenameOrBunFile;
   if (!(await file.exists())) {
-    return new Response('File not found', { status: 404 });
+    return new ResponseLike('File not found', { status: 404 });
   }
   const resp = await buildFileResponse({
     requestHeaders,
@@ -274,7 +270,7 @@ export async function buildFileResponse({
         buffer
       );
     }
-    return new Response(buffer, { headers: responseHeaders, status });
+    return new ResponseLike(buffer, { headers: responseHeaders, status });
   } else {
     // Although Bun will automatically set content-type and content-length,
     //   it delays setting it until the response is actually sent.
@@ -295,7 +291,7 @@ export async function buildFileResponse({
         );
       }
     }
-    return new Response(body, {
+    return new ResponseLike(body, {
       headers: responseHeaders,
       status: 200,
     });

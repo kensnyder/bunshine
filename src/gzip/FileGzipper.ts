@@ -16,7 +16,7 @@ export class FileGzipper {
     this.directory = directory;
     this.config = config;
     if (config.cache === false || config.cache.type === 'never') {
-      // never cache i.e. always compress on the fly
+      // never cache i.e. always compression on the fly
       this._cache = new NeverCache(this);
     } else if (config.cache?.type === 'file') {
       // cached zip files on disk with LRU cache

@@ -1,23 +1,28 @@
 import type { ServeOptions, Server } from 'bun';
+import { isPlainObject } from 'is-plain-object';
 import os from 'os';
 import bunshine from '../../package.json';
-import { compression } from '../compress/compress.ts';
 import Context, { type ContextWithError } from '../Context/Context';
 import MatcherWithCache from '../MatcherWithCache/MatcherWithCache.ts';
-import etags from '../middleware/etags/etags.ts';
 import PathMatcher from '../PathMatcher/PathMatcher';
+import ResponseLike from '../ResponseLike/ResponseLike.ts';
 import SocketRouter from '../SocketRouter/SocketRouter.ts';
 import { fallback404 } from './fallback404';
 import { fallback500 } from './fallback500';
 
-export type NextFunction = () => Promise<Response>;
+export type NextFunction = () => Promise<ResponseLike>;
 
 export type SingleHandler<
   ParamsShape extends Record<string, string> = Record<string, string>,
 > = (
   context: Context<ParamsShape>,
   next: NextFunction
-) => Response | void | Promise<Response | void>;
+) =>
+  | ResponseBody
+  | Response
+  | ResponseLike
+  | void
+  | Promise<ResponseBody | Response | void | ResponseLike>;
 
 export type SingleErrorHandler<
   ParamsShape extends Record<string, string> = Record<string, string>,
@@ -44,7 +49,14 @@ type RouteInfo = {
 };
 
 // Note that BunFile is a subclass of Blob
-export type ResponseBody = string | null | Blob | Buffer | ArrayBuffer;
+export type ResponseBody =
+  | string
+  | null
+  | Blob
+  | Buffer
+  | ArrayBuffer
+  | Record<string, any>
+  | Array<any>;
 
 export type HeadersAndStatus = {
   headers: Headers;
@@ -56,12 +68,6 @@ export type MaybeHeadersAndStatus = {
   status?: number;
   statusText?: string;
 };
-
-export type BodyProcessor = (
-  context: Context,
-  body: ResponseBody,
-  init: HeadersAndStatus
-) => ResponseBody | Promise<ResponseBody>;
 
 export type ListenOptions = Omit<ServeOptions, 'fetch' | 'websocket'> | number;
 
@@ -117,7 +123,6 @@ export default class HttpRouter {
   _wsRouter?: SocketRouter;
   private _onErrors: any[] = [];
   private _on404s: any[] = [];
-  private _bodyProcessors: Array<{ name: string; handler: BodyProcessor }> = [];
   constructor(options: HttpRouterOptions = {}) {
     this.pathMatcher = new MatcherWithCache<RouteInfo>(
       new PathMatcher(),
@@ -200,27 +205,6 @@ export default class HttpRouter {
       this._wsRouter = new SocketRouter(this);
     }
     return this._wsRouter;
-  }
-  addBodyProcessor(name: string, handler: BodyProcessor) {
-    this._bodyProcessors.push({ name, handler });
-  }
-  removeBodyProcessor(name: string) {
-    this._bodyProcessors = this._bodyProcessors.filter(h => h.name !== name);
-  }
-  getBodyProcessors() {
-    return this._bodyProcessors;
-  }
-  enableCompression() {
-    this.addBodyProcessor('compression', compression());
-  }
-  disableCompression() {
-    this.removeBodyProcessor('compression');
-  }
-  enableEtags() {
-    this.addBodyProcessor('etags', etags());
-  }
-  disableEtags() {
-    this.removeBodyProcessor('etags');
   }
   on<ParamsShape extends Record<string, string> = Record<string, string>>(
     verbOrVerbs: HttpMethods | HttpMethods[],
@@ -331,16 +315,21 @@ export default class HttpRouter {
 
       try {
         let result = handler(context, next);
-        if (result instanceof Response) {
-          return result;
+        if (result === undefined) {
+          return next();
         }
         if (typeof result?.then === 'function') {
           result = await result;
-          if (result instanceof Response) {
-            return result;
+          if (result === undefined) {
+            return next();
           }
         }
-        return next();
+        const resp =
+          result instanceof ResponseLike ? result : new ResponseLike(result);
+        if (result instanceof Array || isPlainObject(result)) {
+          resp.headers.set('Content-Type', 'application/json');
+        }
+        return resp;
       } catch (e) {
         // @ts-expect-error
         return errorHandler(e);
@@ -376,6 +365,6 @@ export default class HttpRouter {
       };
       return nextError();
     };
-    return next();
+    return next().toResponse();
   };
 }
