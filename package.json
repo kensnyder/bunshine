@@ -45,7 +45,7 @@
   "homepage": "https://github.com/kensnyder/bunshine#readme",
   "dependencies": {
     "lru-cache": "10.2.2",
-    "path-to-regexp": "6.2.2"
+    "path-to-regexp": "6.3.0"
   },
   "devDependencies": {
     "@types/eventsource": "1.1.15",
