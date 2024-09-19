@@ -1,4 +1,5 @@
 import type { ContextWithError } from '../Context/Context';
+import ResponseLike from '../ResponseLike/ResponseLike.ts';
 
 export const fallback500 = (context: ContextWithError) => {
   const error = context.error;
@@ -16,7 +17,7 @@ export const fallback500 = (context: ContextWithError) => {
     headers.append('Content-Type', 'text/plain');
     body = '500 Server Error';
   }
-  return new Response(body, {
+  return new ResponseLike(body, {
     headers,
     status: 500,
   });

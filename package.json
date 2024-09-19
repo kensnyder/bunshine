@@ -48,6 +48,7 @@
   "homepage": "https://github.com/kensnyder/bunshine#readme",
   "dependencies": {
     "@types/mime-db": "1.43.5",
+    "any-data": "1.0.1",
     "get-stream": "9.0.1",
     "is-plain-object": "5.0.0",
     "lru-cache": "11.0.0",

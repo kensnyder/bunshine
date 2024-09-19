@@ -1,6 +1,7 @@
 // see https://developer.mozilla.org/en-US/docs/Web/API/Response/Response
+import { AnyData } from 'any-data';
+import { isPlainObject } from 'is-plain-object';
 import { TypedArray } from 'type-fest';
-import { AnyData } from '../../../any-data/src/AnyData';
 
 export type ResponseBody =
   | Blob
@@ -14,11 +15,8 @@ export type ResponseBody =
   | Record<string, any>
   | null;
 
-const textEncoder = new TextEncoder();
-const textDecoder = new TextDecoder();
-
 export default class ResponseLike {
-  _body: ResponseBody;
+  _body: AnyData;
   headers: Headers;
   bodyUsed = false;
   status: number;
@@ -26,6 +24,22 @@ export default class ResponseLike {
   statusText: string;
   type: ResponseType;
   url: string;
+  static fromAny = (
+    body: ResponseBody,
+    init: ResponseInit = {}
+  ): ResponseLike => {
+    if (body instanceof ResponseLike) {
+      return body;
+    } else if (body instanceof Response) {
+      return new ResponseLike(body.body, {
+        status: body.status,
+        statusText: body.statusText,
+        headers: body.headers,
+      });
+    } else {
+      return new ResponseLike(body, init);
+    }
+  };
   constructor(body?: ResponseBody, init: ResponseInit = {}) {
     this._body = new AnyData(body);
     this.headers = new Headers(init.headers);
@@ -41,10 +55,10 @@ export default class ResponseLike {
   set body(body: ResponseBody) {
     this._body = new AnyData(body);
   }
-  clone = () => {
+  clone = async () => {
     const cloned = new ResponseLike('');
     // make sure the body and headers objects are cloned
-    cloned._body = this._body.clone();
+    cloned._body = await this._body.clone();
     cloned.headers = new Headers(this.headers);
     // then copy all the properties
     cloned.status = this.status;
@@ -68,128 +82,80 @@ export default class ResponseLike {
   };
   arrayBuffer = (): Promise<ArrayBuffer> => {
     if (this._body.isSupported()) {
-      return new this.body.arrayBuffer();
+      return this._body.arrayBuffer();
     }
+    // probably ReadableStream
     this.bodyUsed = true;
-    return new Response(this.body).arrayBuffer();
+    // @ts-expect-error  TypeScript can't know that isSupported() rules out unsupported types
+    return new Response(this._body.data).arrayBuffer();
   };
-  async blob() {
-    if (this.body instanceof Blob) {
-      return this.body;
+  blob = (): Promise<Blob> => {
+    if (this._body.isSupported()) {
+      return this._body.blob();
     }
-    if (typeof this.body === 'string') {
-      return new Blob([Buffer.from(this.body, 'utf8')]);
+    // probably ReadableStream
+    this.bodyUsed = true;
+    // @ts-expect-error  TypeScript can't know that isSupported() rules out unsupported types
+    return new Response(this._body.data).blob();
+  };
+  text = (): Promise<string> => {
+    if (this._body.isSupported()) {
+      return this._body.text();
     }
-    if (
-      this.body instanceof ArrayBuffer ||
-      this.body instanceof DataView ||
-      isTypedArray(this.body)
-    ) {
-      return new Blob([this.body]);
+    // probably ReadableStream
+    this.bodyUsed = true;
+    // @ts-expect-error  TypeScript can't know that isSupported() rules out unsupported types
+    return new Response(this._body.data).text();
+  };
+  bytes = (): Promise<TypedArray> => {
+    if (this._body.isSupported()) {
+      return this._body.bytes();
     }
-    if (this.body instanceof FormData) {
-      const text = await this.text();
-      // @ts-expect-error  TypeScript can't know that text is a string
-      return new Blob([text]);
+    // probably ReadableStream
+    this.bodyUsed = true;
+    // @ts-expect-error  TypeScript can't know that isSupported() rules out unsupported types
+    return new Response(this._body.data).bytes();
+  };
+  json = (): Promise<unknown> => {
+    if (this._body.isSupported()) {
+      return this._body.json();
     }
-    if (this.body instanceof ReadableStream) {
-      return new Blob([getStreamAsArrayBuffer(this.body)]);
+    // probably ReadableStream
+    this.bodyUsed = true;
+    // @ts-expect-error  TypeScript can't know that isSupported() rules out unsupported types
+    return new Response(this._body.data).json();
+  };
+  formData = (): Promise<FormData> => {
+    if (this._body.isSupported()) {
+      return this._body.formData();
     }
-  }
-  async bytes() {
-    if (this.body instanceof Blob) {
-      return this.body.bytes();
+    // probably ReadableStream
+    this.bodyUsed = true;
+    // @ts-expect-error  TypeScript can't know that isSupported() rules out unsupported types
+    return new Response(this._body.data).formData();
+  };
+  toResponse = async () => {
+    let body: ResponseBody;
+    switch (this._body.getDataCategory()) {
+      case 'bytes':
+        body = await this._body.bytes();
+        break;
+      case 'text':
+        body = await this._body.text();
+        break;
+      case 'unknown':
+      default:
+        body = this._body.data;
+        break;
     }
-    if (typeof this.body === 'string') {
-      return textEncoder.encode(this.body);
+    if (isPlainObject(this._body.data) || Array.isArray(this._body.data)) {
+      this.headers.set('Content-Type', 'application/json');
     }
-    if (this.body instanceof FormData) {
-      return textEncoder.encode(await this.text());
-    }
-    if (this.body instanceof ArrayBuffer) {
-      return new Uint8Array(this.body);
-    }
-    if (this.body instanceof DataView) {
-      return new Blob([this.body]).bytes();
-    }
-    if (isTypedArray(this.body)) {
-      return this.body;
-    }
-  }
-  async formData() {
-    if (this.body instanceof FormData) {
-      return this.body;
-    }
-    const params = await this.text();
-    const formData = new FormData();
-    for (const pair of new URLSearchParams(params)) {
-      formData.append(pair[0], pair[1]);
-    }
-    return formData;
-  }
-  async json() {
-    if (this.body instanceof FormData) {
-      throw new Error('Cannot convert FormData to JSON');
-    }
-    const text = await this.text();
-    if (!text) {
-      return undefined;
-    }
-    return JSON.parse(text);
-  }
-  async text() {
-    if (this.body instanceof Blob) {
-      return this.body.text();
-    }
-    if (this.body instanceof ReadableStream) {
-      // return getStreamAsString(this.body);
-    }
-    if (typeof this.body === 'string') {
-      return this.body;
-    }
-    if (this.body instanceof ArrayBuffer) {
-      return textDecoder.decode(this.body);
-    }
-    if (isTypedArray(this.body) || this.body instanceof DataView) {
-      return textDecoder.decode(this.body);
-    }
-    if (this.body instanceof FormData) {
-      // use a response object here so it contains boundary information and such
-      const tmp = new Response(this.body);
-      return tmp.text();
-    }
-  }
-  // async stream() {
-  //   if (this.body instanceof ReadableStream) {
-  //     return this.body;
-  //   }
-  //   if (this.body instanceof Buffer || isTypedArray(this.body)) {
-  //     // @ts-expect-error  TypeScript can't know that this.body is a Buffer or TypedArray
-  //     return getStream(this.body);
-  //   }
-  // }
-  toResponse() {
-    return new Response(this.body, {
+    // @ts-expect-error  If body is unknown, it's probably a ReadableStream
+    return new Response(body, {
       status: this.status,
       statusText: this.statusText,
       headers: this.headers,
     });
-  }
-}
-
-function cloneBody(body: ResponseBody) {
-  if (typeof body === 'string') {
-    return body;
-  }
-  if (body instanceof Blob) {
-    return body.slice();
-  }
-  return body;
-}
-
-function isTypedArray(value: any): value is TypedArray {
-  return (
-    (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) &&
-    !(value instanceof DataView)
-  );
+  };
 }

@@ -1,5 +1,5 @@
+import { type SupportedData } from 'any-data';
 import type { ServeOptions, Server } from 'bun';
-import { isPlainObject } from 'is-plain-object';
 import os from 'os';
 import bunshine from '../../package.json';
 import Context, { type ContextWithError } from '../Context/Context';
@@ -18,11 +18,11 @@ export type SingleHandler<
   context: Context<ParamsShape>,
   next: NextFunction
 ) =>
-  | ResponseBody
-  | Response
   | ResponseLike
+  | Response
+  | SupportedData
   | void
-  | Promise<ResponseBody | Response | void | ResponseLike>;
+  | Promise<ResponseLike | Response | SupportedData | void>;
 
 export type SingleErrorHandler<
   ParamsShape extends Record<string, string> = Record<string, string>,
@@ -128,8 +128,6 @@ export default class HttpRouter {
       new PathMatcher(),
       options.cacheSize || 4000
     );
-    this.enableEtags();
-    this.enableCompression();
   }
   listen(portOrOptions: ListenOptions = {}) {
     if (typeof portOrOptions === 'number') {
@@ -314,31 +312,20 @@ export default class HttpRouter {
       const handler = match.target.handler as SingleHandler;
 
       try {
-        let result = handler(context, next);
+        const result = await handler(context, next);
         if (result === undefined) {
           return next();
         }
-        if (typeof result?.then === 'function') {
-          result = await result;
-          if (result === undefined) {
-            return next();
-          }
-        }
-        const resp =
-          result instanceof ResponseLike ? result : new ResponseLike(result);
-        if (result instanceof Array || isPlainObject(result)) {
-          resp.headers.set('Content-Type', 'application/json');
-        }
-        return resp;
+        return ResponseLike.fromAny(result);
       } catch (e) {
         // @ts-expect-error
         return errorHandler(e);
       }
     };
-    const errorHandler = (e: Error | Response) => {
-      if (e instanceof Response) {
+    const errorHandler = (e: Error | ResponseLike) => {
+      if (!(e instanceof Error)) {
         // a response has been thrown; respond to client with it
-        return e;
+        return ResponseLike.fromAny(e);
       }
       context.error = e as Error;
       let idx = 0;
@@ -348,16 +335,8 @@ export default class HttpRouter {
           return fallback500(context as ContextWithError);
         }
         try {
-          let result = handler(context, nextError);
-          if (result instanceof Response) {
-            return result;
-          }
-          if (typeof result?.then === 'function') {
-            result = await result;
-            if (result instanceof Response) {
-              return result;
-            }
-          }
+          const result = await handler(context, next);
+          return ResponseLike.fromAny(result);
         } catch (e) {
           context.error = e as Error;
         }
@@ -365,6 +344,7 @@ export default class HttpRouter {
       };
       return nextError();
     };
-    return next().toResponse();
+    const responseLike = await next();
+    return responseLike.toResponse();
   };
 }

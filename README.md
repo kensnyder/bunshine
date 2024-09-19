@@ -114,6 +114,7 @@ app.on500(c => {
   return c.json({ error: 'Internal server error' }, { status: 500 });
 });
 
+app.enableGracefulShutdown();
 app.listen({ port: 3100 });
 
 function authorize(authHeader: string) {

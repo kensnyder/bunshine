@@ -1,4 +1,5 @@
 import type Context from '../Context/Context';
+import ResponseLike from '../ResponseLike/ResponseLike.ts';
 
 export const fallback404 = (c: Context) => {
   const headers = new Headers();
@@ -11,7 +12,7 @@ export const fallback404 = (c: Context) => {
     headers.append('Content-Type', 'text/plain');
     body = '404 Not Found';
   }
-  return new Response(body, {
+  return new ResponseLike(body, {
     headers,
     status: 404,
   });

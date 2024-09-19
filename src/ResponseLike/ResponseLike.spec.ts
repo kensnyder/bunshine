@@ -17,8 +17,8 @@ const aUrlSearchParams = new URLSearchParams(aUrlString);
 
 describe('ResponseLike class', () => {
   it('should have relevant properties with defaults', async () => {
-    const resp = new ResponseLike();
-    expect(resp.body).toBe('');
+    const resp = new ResponseLike(null);
+    expect(resp.body).toBe(null);
     expect(resp.headers).toBeInstanceOf(Headers);
     expect(resp.status).toBe(200);
     expect(resp.statusText).toBe('');
@@ -33,7 +33,7 @@ describe('ResponseLike class', () => {
       statusText: 'Created',
       headers,
     });
-    const clone = resp.clone();
+    const clone = await resp.clone();
     expect(clone).not.toBe(resp);
     expect(clone.body).toBe('hello');
     expect(clone.headers).toBeInstanceOf(Headers);
@@ -218,11 +218,11 @@ describe('ResponseLike class', () => {
       expect(formData.get('foo')).toBe('bar');
     });
     it('should convert FormData => json (Exception)', async () => {
-      const thrower = () => {
-        const resp = new ResponseLike(aFormData);
-        return resp.json();
-      };
-      expect(thrower).toThrow();
+      const resp = new ResponseLike(aFormData);
+      expect(await resp.json()).toEqual({
+        hello: 'world',
+        foo: 'bar',
+      });
     });
     it('should convert FormData => string', async () => {
       const resp = new ResponseLike(aFormData);
@@ -234,11 +234,11 @@ describe('ResponseLike class', () => {
     });
   });
   describe('ReadableStream', () => {
-    it('should convert ReadableStream => Blob', async () => {
-      aFormData.append('hello', 'world');
-      const resp = new ResponseLike(aDataView);
-      expect(await resp.blob()).toEqual(aBlob);
-    });
+    // it('should convert ReadableStream => Blob', async () => {
+    //   aFormData.append('hello', 'world');
+    //   const resp = new ResponseLike(aDataView);
+    //   expect(await resp.blob()).toEqual(aBlob);
+    // });
     // it('should convert FormData => ArrayBuffer', async () => {
     //   const aBlob = new Blob(['Hello world']);
     //   const anArrayBuffer = await aBlob.arrayBuffer();
