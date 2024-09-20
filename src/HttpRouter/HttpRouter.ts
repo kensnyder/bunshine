@@ -3,7 +3,6 @@ import os from 'os';
 import bunshine from '../../package.json';
 import Context, { type ContextWithError } from '../Context/Context';
 import MatcherWithCache from '../MatcherWithCache/MatcherWithCache.ts';
-import PathMatcher from '../PathMatcher/PathMatcher';
 import SocketRouter from '../SocketRouter/SocketRouter.ts';
 import { fallback404 } from './fallback404';
 import { fallback500 } from './fallback500';
@@ -36,11 +35,6 @@ export type ErrorHandler<
   ParamsShape extends Record<string, string> = Record<string, string>,
 > = SingleErrorHandler<ParamsShape> | ErrorHandler<ParamsShape>[];
 
-type RouteInfo = {
-  verb: string;
-  handler: Handler<any>;
-};
-
 export type ListenOptions = Omit<ServeOptions, 'fetch' | 'websocket'> | number;
 
 export type HttpMethods =
@@ -53,22 +47,6 @@ export type HttpMethods =
   | 'HEAD'
   | 'OPTIONS'
   | 'TRACE';
-
-const getPathMatchFilter = (verb: string) => (target: RouteInfo) => {
-  return target.verb === verb || target.verb === 'ALL';
-};
-
-const filters = {
-  ALL: () => true,
-  GET: getPathMatchFilter('GET'),
-  POST: getPathMatchFilter('POST'),
-  PUT: getPathMatchFilter('PUT'),
-  PATCH: getPathMatchFilter('PATCH'),
-  DELETE: getPathMatchFilter('DELETE'),
-  HEAD: getPathMatchFilter('HEAD'),
-  OPTIONS: getPathMatchFilter('OPTIONS'),
-  TRACE: getPathMatchFilter('TRACE'),
-};
 
 export type HttpRouterOptions = {
   cacheSize?: number;
@@ -84,13 +62,12 @@ export default class HttpRouter {
   version: string = bunshine.version;
   locals: Record<string, any> = {};
   server: Server | undefined;
-  pathMatcher: MatcherWithCache<RouteInfo>;
+  routeMatcher: MatcherWithCache<SingleHandler>;
   _wsRouter?: SocketRouter;
   private _onErrors: any[] = [];
   private _on404s: any[] = [];
   constructor(options: HttpRouterOptions = {}) {
-    this.pathMatcher = new MatcherWithCache<RouteInfo>(
-      new PathMatcher(),
+    this.routeMatcher = new MatcherWithCache<SingleHandler>(
       options.cacheSize || 4000
     );
   }
@@ -160,10 +137,11 @@ export default class HttpRouter {
       return this;
     }
     for (const handler of handlers.flat(9)) {
-      this.pathMatcher.add(path, {
-        verb: verbOrVerbs as string,
-        handler: handler as SingleHandler<ParamsShape>,
-      });
+      this.routeMatcher.add(
+        verbOrVerbs,
+        path,
+        handler as SingleHandler<ParamsShape>
+      );
     }
     return this;
   }
@@ -244,16 +222,15 @@ export default class HttpRouter {
     const method = (
       request.headers.get('X-HTTP-Method-Override') || request.method
     ).toUpperCase();
-    const filter = filters[method] || getPathMatchFilter(method);
-    const matched = this.pathMatcher.match(pathname, filter, this._on404s);
+    const matched = this.routeMatcher.match(method, pathname, this._on404s);
     let i = 0;
     const next: NextFunction = async () => {
       const match = matched[i++];
       if (!match) {
         return fallback404(context);
       }
-      context.params = match.params;
-      const handler = match.target.handler as SingleHandler;
+      const handler = match[0].handler as SingleHandler;
+      context.params = match[1];
 
       try {
         let result = handler(context, next);
