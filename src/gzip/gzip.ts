@@ -11,6 +11,6 @@ export async function gzipFile(
 const textEncoder = new TextEncoder();
 
 export function gzipString(text: string, zlibOptions?: ZlibCompressionOptions) {
-  const buffer = Buffer.from(textEncoder.encode(text));
+  const buffer = new Uint8Array(textEncoder.encode(text));
   return Bun.gzipSync(buffer, zlibOptions);
 }

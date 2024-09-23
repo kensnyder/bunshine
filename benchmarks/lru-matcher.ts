@@ -1,5 +1,5 @@
 import MatcherWithCache from '../src/MatcherWithCache/MatcherWithCache.ts';
-import PathMatcher from '../src/PathMatcher/PathMatcher.ts';
+import RouteMatcher from '../src/RouteMatcher/RouteMatcher.ts';
 import { runBenchmarks } from './runBenchmarks.ts';
 
 /*
@@ -8,10 +8,7 @@ Cache sizes of 4000+ are all about 41x faster than no cache
 */
 
 function withCacheSize(size: number) {
-  const matcher =
-    size === 0
-      ? new PathMatcher()
-      : new MatcherWithCache(new PathMatcher(), size);
+  const matcher = size === 0 ? new RouteMatcher() : new MatcherWithCache(size);
   return setup(matcher);
 }
 
@@ -32,7 +29,7 @@ function setup(matcher: any) {
   const urls: string[] = [];
 
   function add(path: string, count?: number, min?: number, max?: number) {
-    matcher.add(path, _getFn());
+    matcher.add('GET', path, _getFn());
     generateUrls(path, count, min, max);
   }
 

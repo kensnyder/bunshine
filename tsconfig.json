@@ -1,6 +1,8 @@
 {
   "include": ["index.ts", "package.json", "src/**/*", "examples", "benchmarks", "bin/**/*"],
-  "exclude": [],
+  "exclude": [
+    "**/*.spec.ts"
+  ],
   "compilerOptions": {
     "lib": ["ESNext", "dom", "dom.iterable"],
     "module": "esnext",

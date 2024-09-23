@@ -2,27 +2,29 @@
 
 import { BunFile, ServeOptions, Server, ServerWebSocket, ServerWebSocketSendStatus, ZlibCompressionOptions } from 'bun';
 import { LRUCache } from 'lru-cache';
-import { match } from 'path-to-regexp';
 import { RequireAtLeastOne } from 'type-fest';
 
 export type Registration<T> = {
-	matcher: ReturnType<typeof match<Record<string, string>>>;
+	matcher: (subject: string) => null | Record<string, string>;
+	pattern: string;
+	regex: RegExp;
+	methodFilter: null | ((subject: string) => boolean);
 	target: T;
 };
-declare class PathMatcher<Target extends any> {
+export type Result<T> = Array<[
+	T,
+	Record<string, string>
+]>;
+declare class RouteMatcher<Target extends any> {
 	registered: Registration<Target>[];
-	add(path: string | RegExp, target: Target): void;
-	match(path: string, filter?: (target: Target) => boolean, fallbacks?: Function[]): {
-		target: any;
-		params: Record<string, string>;
-	}[];
+	match(method: string, subject: string, fallbacks?: Target[]): Result<Target>;
+	add(method: string, pattern: string | RegExp, target: Target): this;
+	detectPotentialDos(detector: any, config?: any): void;
 }
-declare class MatcherWithCache<Target = any> {
-	matcher: PathMatcher<Target>;
+declare class MatcherWithCache<Target = any> extends RouteMatcher<Target> {
 	cache: LRUCache<string, any>;
-	constructor(matcher: PathMatcher<Target>, size?: number);
-	add(path: string | RegExp, target: Target): void;
-	match(path: string, filter?: (target: Target) => boolean, fallbacks?: Function[]): any;
+	constructor(size?: number);
+	match(method: string, subject: string, fallbacks?: Target[]): any;
 }
 declare class SocketContext<UpgradeShape = any, ParamsShape = Record<string, any>> {
 	ws?: ServerWebSocket<WsDataShape<UpgradeShape, ParamsShape>>;
@@ -89,7 +91,7 @@ export type BunHandlers = {
 type SocketEventName$1 = "open" | "message" | "close" | "drain" | "ping" | "pong";
 export declare class SocketRouter {
 	httpRouter: HttpRouter;
-	pathMatcher: PathMatcher<BunshineHandlers<any>>;
+	routeMatcher: RouteMatcher<BunshineHandlers<any>>;
 	handlers: BunHandlers;
 	constructor(router: HttpRouter);
 	at: <P extends Record<string, string> = Record<string, string>, U = any>(path: string, handlers: BunshineHandlers<U, P>) => this;
@@ -102,10 +104,6 @@ export type SingleErrorHandler<ParamsShape extends Record<string, string> = Reco
 export type Middleware<ParamsShape extends Record<string, string> = Record<string, string>> = SingleHandler<ParamsShape>;
 export type Handler<ParamsShape extends Record<string, string> = Record<string, string>> = SingleHandler<ParamsShape> | Handler<ParamsShape>[];
 export type ErrorHandler<ParamsShape extends Record<string, string> = Record<string, string>> = SingleErrorHandler<ParamsShape> | ErrorHandler<ParamsShape>[];
-export type RouteInfo = {
-	verb: string;
-	handler: Handler<any>;
-};
 export type ListenOptions = Omit<ServeOptions, "fetch" | "websocket"> | number;
 export type HttpMethods = "ALL" | "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS" | "TRACE";
 export type HttpRouterOptions = {
@@ -120,7 +118,7 @@ export declare class HttpRouter {
 	version: string;
 	locals: Record<string, any>;
 	server: Server | undefined;
-	pathMatcher: MatcherWithCache<RouteInfo>;
+	routeMatcher: MatcherWithCache<SingleHandler>;
 	_wsRouter?: SocketRouter;
 	private _onErrors;
 	private _on404s;

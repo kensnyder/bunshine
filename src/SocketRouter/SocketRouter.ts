@@ -2,7 +2,7 @@ import type { ServerWebSocket } from 'bun';
 import { RequireAtLeastOne } from 'type-fest';
 import Context from '../Context/Context.ts';
 import HttpRouter, { NextFunction } from '../HttpRouter/HttpRouter';
-import PathMatcher from '../PathMatcher/PathMatcher';
+import RouteMatcher from '../RouteMatcher/RouteMatcher';
 import SocketContext, { SocketMessage } from './SocketContext.ts';
 
 // U = UpgradeShape
@@ -73,12 +73,12 @@ export type SocketEventName =
 
 export default class SocketRouter {
   httpRouter: HttpRouter;
-  pathMatcher: PathMatcher<BunshineHandlers<any>>;
+  routeMatcher: RouteMatcher<BunshineHandlers<any>>;
   handlers: BunHandlers;
   constructor(router: HttpRouter) {
     this.httpRouter = router;
     this.httpRouter._wsRouter = this;
-    this.pathMatcher = new PathMatcher<BunshineHandlers<any>>();
+    this.routeMatcher = new RouteMatcher<BunshineHandlers<any>>();
     this.handlers = {
       open: this._createHandler('open'),
       message: this._createHandler('message'),
@@ -98,8 +98,8 @@ export default class SocketRouter {
       };
     }
     // capture the matcher details
-    // @ts-expect-error
-    this.pathMatcher.add(path, handlers);
+    // @ts-expect-error  Handlers are more specific than any
+    this.routeMatcher.add('ALL', path, handlers);
     // console.log('ws handlers registered!', path);
     // create a router path that upgrades to a socket
     this.httpRouter.get<P>(path, async (c, next) => {
@@ -119,14 +119,10 @@ export default class SocketRouter {
         }
       } catch (e) {
         const error = e as Error;
-        console.error('WebSocket upgrade error', error);
         return c.text('Internal server error', {
           status: 500,
         });
       }
-      console.error(
-        'WebSocket upgrade failed: Client does not support WebSocket'
-      );
       return c.text('Client does not support WebSocket', {
         status: 426, // 426 Upgrade Required
       });
@@ -145,19 +141,19 @@ export default class SocketRouter {
       sc.ws = ws;
       sc.type = eventName;
       const pathname = sc.url.pathname;
-      const matched = this.pathMatcher.match(pathname);
-      const rest: any = [];
+      const matched = this.routeMatcher.match('', pathname);
+      const rest: any[] = [];
       if (['message', 'ping', 'pong'].includes(eventName)) {
         rest.push(new SocketMessage(eventName, args[0]));
       } else if (eventName === 'close') {
         rest.push(args[0], args[1]);
       }
-      for (const { target } of matched) {
+      for (const [target] of matched) {
         if (!target[eventName]) {
           continue;
         }
         try {
-          target[eventName](sc, ...rest);
+          target[eventName](sc, rest[0], rest[1]);
         } catch (e) {
           const handlerError = e as Error;
           if (typeof target.error === 'function') {

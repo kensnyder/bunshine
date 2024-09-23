@@ -50,7 +50,7 @@ export default class SocketContext<
     if (typeof message === 'string') {
       return this.ws!.sendText(message, compress);
     } else if (message instanceof Buffer) {
-      return this.ws!.sendBinary(message, compress);
+      return this.ws!.sendBinary(new Uint8Array(message.buffer), compress);
     } else if (isBufferSource(message)) {
       return this.ws!.send(message, compress);
     } else {
@@ -95,22 +95,14 @@ export default class SocketContext<
     }
   }
   ping(data?: string | Bun.BufferSource): ServerWebSocketSendStatus {
-    if (
-      typeof data === 'string' ||
-      data instanceof Buffer ||
-      isBufferSource(data)
-    ) {
+    if (typeof data === 'string' || isBufferSource(data)) {
       return this.ws!.ping(data);
     } else {
       return this.ws!.ping(JSON.stringify(data));
     }
   }
   pong(data?: string | Bun.BufferSource): ServerWebSocketSendStatus {
-    if (
-      typeof data === 'string' ||
-      data instanceof Buffer ||
-      isBufferSource(data)
-    ) {
+    if (typeof data === 'string' || isBufferSource(data)) {
       return this.ws!.pong(data);
     } else {
       return this.ws!.pong(JSON.stringify(data));

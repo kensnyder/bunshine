@@ -42,7 +42,7 @@ _Or to run Bunshine on Node,
 6. [WebSockets](#websockets)
 7. [WebSocket pub-sub](#websocket-pub-sub)
 8. [Server Sent Events](#server-sent-events)
-9. [Routing examples](#routing-examples)
+9. [Route Matching](#route-matching)
 10. [Included middleware](#included-middleware)
     - [serveFiles](#servefiles)
     - [cors](#cors)
@@ -572,28 +572,66 @@ events.addEventListener('event1', listener1);
 events.addEventListener('event2', listener2);
 ```
 
-## Routing examples
+## Route Matching
 
-Bunshine uses the `path-to-regexp` package for processing path routes. For more
-info, checkout the [path-to-regexp docs](https://www.npmjs.com/package/path-to-regexp).
+Bunshine v1 used the `path-to-regexp` package for processing path routes.
+Due to a discovered
+[RegExp Denial of Service vulnerability](https://security.snyk.io/vuln/SNYK-JS-PATHTOREGEXP-7925106),
+Bunshine no longer uses
+[path-to-regexp docs](https://www.npmjs.com/package/path-to-regexp).
+
+### Support
+
+Bunshine supports the following route matching features:
+
+- Named placeholders using colons (e.g. `/posts/:id`)
+- End wildcards using stars (e.g. `/assets/*`)
+- Middle non-slash wildcards using stars (e.g. `/assets/*/*.css`)
+- Static paths (e.g. `/posts`)
+- Custom Regular Expression (e.g. `/^\/author\/([a-z]+)$/i`)
+
+Support for other behaviors can lead to a Regular Expression Denial of service
+vulnerability where an attacker can request long URLs and tie up your server
+CPU with backtracking regular expression searches.
 
 ### Path examples
 
-| Path                   | URL                   | params                   |
-| ---------------------- | --------------------- | ------------------------ |
-| `'/path'`              | `'/path'`             | `{}`                     |
-| `'/users/:id'`         | `'/users/123'`        | `{ id: '123' }`          |
-| `'/users/:id/groups'`  | `'/users/123/groups'` | `{ id: '123' }`          |
-| `'/u/:id/groups/:gid'` | `'/u/1/groups/a'`     | `{ id: '1', gid: 'a' }`  |
-| `'/star/*'`            | `'/star/man'`         | `{ 0: 'man' }`           |
-| `'/star/*/can'`        | `'/star/man/can'`     | `{ 0: 'man' }`           |
-| `'/users/(\\d+)'`      | `'/users/123'`        | `{ 0: '123' }`           |
-| `/users/(\d+)/`        | `'/users/123'`        | `{ 0: '123' }`           |
-| `/users/([a-z-]+)/`    | `'/users/abc-def'`    | `{ 0: 'abc-def' }`       |
-| `'/(users\|u)/:id'`    | `'/users/123'`        | `{ id: '123' }`          |
-| `'/(users\|u)/:id'`    | `'/u/123'`            | `{ id: '123' }`          |
-| `'/:a/:b?'`            | `'/123'`              | `{ a: '123' }`           |
-| `'/:a/:b?'`            | `'/123/abc'`          | `{ a: '123', b: 'abc' }` |
+| Path                 | URL                 | params                  |
+| -------------------- | ------------------- | ----------------------- |
+| `/path`              | `/path`             | `{}`                    |
+| `/users/:id`         | `/users/123`        | `{ id: '123' }`         |
+| `/users/:id/groups`  | `/users/123/groups` | `{ id: '123' }`         |
+| `/u/:id/groups/:gid` | `/u/1/groups/a`     | `{ id: '1', gid: 'a' }` |
+| `/star/*`            | `/star/man`         | `{ 0: 'man' }`          |
+| `/star/*`            | `/star/man/can`     | `{ 0: 'man/can' }`      |
+| `/star/*/can`        | `/star/man/can`     | `{ 0: 'man' }`          |
+| `/star/*/can/*`      | `/star/man/can/go`  | `{ 0: 'man', 1: 'go' }` |
+
+### Special Characters
+
+Note that all regular-expression special characters including
+`\ ^ $ * + ? . ( ) | { } [ ]` will be escaped. If you need any of these
+behaviors, you'll need to pass in a `RegExp`.
+
+For example, the dot in `/assets/*.js` will not match all characters--only dots.™™
+
+### Not supported
+
+Support for regex-like syntax has been dropped in v2 due to a
+[RegExp Denial of Service vulnerability](https://security.snyk.io/vuln/SNYK-JS-PATHTOREGEXP-7925106).
+For cases where you need to limit by character or specify optional segments,
+you'll need to pass in a `RegExp`. Be sure to check your `RegExp` with a ReDoS
+checker such as [Devina](https://devina.io/redos-checker) or
+[redos-checker on npm](https://www.npmjs.com/package/redos-detector).
+
+| Example             | Explaination                              | Equivalent RegExp        |
+| ------------------- | ----------------------------------------- | ------------------------ |
+| `/users/([a-z-]+)/` | Character classes are not supported       | `^\/users\/([a-z-]+)$`   |
+| `/users/(\\d+)`     | Character class escapes are not supported | `^/\/users\/(\d+)$`      |
+| `/(users\|u)/:id`   | Pipes are not supported                   | `^\/(users\|u)/([^/]+)$` |
+| `/:a/:b?`           | Optional params are not supported         | `^\/([^/]*)\/(.*)$`      |
+
+### Caching
 
 ### HTTP methods
 
@@ -616,6 +654,9 @@ app.headGet('/files/*', serveFiles(`${import.meta.dir}/files`));
 
 // any list of multiple verbs (must be uppercase)
 app.on(['POST', 'PATCH'], '/posts/:id', addEditPost);
+
+// regular expression matchers are supported
+app.get(/^\/author\/([a-z]+)$/i, getPost);
 
 app.listen({ port: 3100 });
 ```

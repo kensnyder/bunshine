@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
+import { isSafe } from 'redos-detector';
 import RouteMatcher from './RouteMatcher';
 
 describe('RouteMatcher', () => {
@@ -54,11 +55,6 @@ describe('RouteMatcher', () => {
     const found = matcher.match('PATCH', '/blog/123');
     expect(found).toEqual([[42, { '0': '123' }]]);
   });
-  it('should match multiple stars', () => {
-    matcher.add('GET', '/author/*/blog/*', 42);
-    const found = matcher.match('GET', '/author/123/blog/456');
-    expect(found).toEqual([[42, { '0': '123', '1': '456' }]]);
-  });
   it('should match multiple routes', () => {
     matcher.add('GET', '/home', 123);
     matcher.add('GET', '/home', 456);
@@ -80,17 +76,48 @@ describe('RouteMatcher', () => {
   });
   it('should match mix of stars and named routes', () => {
     matcher.add('GET', '/author/:authorId/blog/*', 42);
-    const found = matcher.match('GET', '/author/123/blog/title');
-    expect(found).toEqual([[42, { authorId: '123', '0': 'title' }]]);
-  });
-  it('should treat trailing stars as true wildcards', () => {
-    matcher.add('GET', '/author/:authorId/blog/*', 42);
-    const found = matcher.match('GET', '/author/123/blog/title/2024');
-    expect(found).toEqual([[42, { authorId: '123', '0': 'title/2024' }]]);
+    const found = matcher.match('GET', '/author/123/blog/title/download.xml');
+    expect(found).toEqual([
+      [42, { authorId: '123', '0': 'title/download.xml' }],
+    ]);
   });
   it('should match star in middle', () => {
     matcher.add('GET', '/blog/*/comments', 42);
     const found = matcher.match('GET', '/blog/123/comments');
     expect(found).toEqual([[42, { 0: '123' }]]);
+  });
+  it('should allow multiple wildcards', () => {
+    matcher.add('GET', '/author/*/blog/*', 42);
+    const found = matcher.match('GET', '/author/123/blog/title');
+    expect(found).toEqual([[42, { '0': '123', '1': 'title' }]]);
+  });
+  it('should allow named params with custom delimiter', () => {
+    matcher.add('GET', '/:year-:month', 42);
+    const found = matcher.match('GET', '/2024-08');
+    expect(found).toEqual([[42, { year: '2024', month: '08' }]]);
+  });
+  it('should escape special characters', () => {
+    matcher.add('GET', '/assets/*.js', 42);
+    const found = matcher.match('GET', '/assets/abcjs');
+    expect(found).toEqual([]);
+  });
+  it('should produce safe regexes', () => {
+    function main() {
+      matcher.add('POST', '*', 42);
+      matcher.add('OPTIONS', '/*', 42);
+      matcher.add('GET', '/assets/*.js', 42);
+      matcher.add('GET', /^\/author\/([a-z]+)/, 42);
+      matcher.add('GET', /foo/, 42);
+      matcher.add('GET', '/home', 123);
+      matcher.add('GET', '/blog/:id', 42);
+      matcher.add('GET', '/author/:authorId/blog/:postId', 42);
+      matcher.add('GET', '/author/:authorId/blog/*', 42);
+      matcher.add('GET', '/blog/*/comments', 42);
+      matcher.add('GET', '/author/*/blog/*', 42);
+      matcher.add('GET', '/:year-:month', 42);
+      matcher.add('GET', '/assets/*.js', 42);
+      matcher.detectPotentialDos(isSafe);
+    }
+    expect(main).not.toThrow();
   });
 });

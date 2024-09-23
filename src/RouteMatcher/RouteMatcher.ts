@@ -1,6 +1,8 @@
 type Registration<T> = {
   matcher: (subject: string) => null | Record<string, string>;
-  methodFilter: (subject: string) => boolean;
+  pattern: string;
+  regex: RegExp;
+  methodFilter: null | ((subject: string) => boolean);
   target: T;
 };
 
@@ -11,7 +13,7 @@ export default class RouteMatcher<Target extends any> {
   match(method: string, subject: string, fallbacks?: Target[]) {
     const matched: Result<Target> = [];
     for (const reg of this.registered) {
-      if (!reg.methodFilter(method)) {
+      if (reg.methodFilter && !reg.methodFilter(method)) {
         continue;
       }
       const params = reg.matcher(subject);
@@ -26,19 +28,21 @@ export default class RouteMatcher<Target extends any> {
     }
     return matched;
   }
-  add(method: string, path: string | RegExp, target: Target): this {
-    let methodFilter: (method: string) => boolean;
+  add(method: string, pattern: string | RegExp, target: Target): this {
+    let methodFilter: null | ((method: string) => boolean);
     if (method === 'ALL') {
-      methodFilter = () => true;
+      methodFilter = null;
     } else {
       // must be a string
       methodFilter = m => m === method;
     }
-    if (path instanceof RegExp) {
+    if (pattern instanceof RegExp) {
       this.registered.push({
         methodFilter,
+        pattern: String(pattern),
+        regex: pattern,
         matcher: subject => {
-          const match = subject.match(path);
+          const match = subject.match(pattern);
           if (!match) {
             return null;
           }
@@ -52,54 +56,61 @@ export default class RouteMatcher<Target extends any> {
         target,
       });
       return this;
-    } else if (path === '/*') {
+    } else if (pattern === '/*') {
       this.registered.push({
         methodFilter,
+        pattern,
+        regex: /\/(.+)/,
         matcher: subject => ({ '0': subject.slice(1) }),
         target,
       });
       return this;
-    } else if (path === '*') {
+    } else if (pattern === '*') {
       this.registered.push({
         methodFilter,
+        pattern,
+        regex: /(.+)/,
         matcher: subject => ({ '0': subject }),
         target,
       });
       return this;
     }
-    // if (path.split('*').length > 1) {
-    //   throw new Error('Only one wildcard is allowed');
-    // }
     let matchIdx = 0;
     const segments: string[] = [];
     const keys: Array<string | number> = [];
-    const parts = path.split(/(\*|:\w+)/);
-    const prefix = parts[0];
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      if (part === '*') {
-        const isEndStar =
-          i === parts.length - 2 && parts[parts.length - 1] === '';
-        segments.push(isEndStar ? '(.+)' : '([^/]+)');
-        keys.push(matchIdx++);
-      } else if (part.at(0) === ':') {
-        keys.push(part.slice(1));
-        segments.push('([^/]+)');
-      } else {
-        segments.push(part);
-      }
-    }
-    if (segments.length === 0) {
+    // split on * or :name, capturing the delimiter and the character after it
+    const parts = pattern.split(/(\*(.|$)|:\w+(\W|$))/);
+    // we have a fixed path
+    if (parts.length === 1) {
       this.registered.push({
         methodFilter,
-        matcher: subject => (subject === path ? {} : null),
+        pattern,
+        regex: new RegExp(`^${pattern}$`),
+        matcher: subject => (subject === pattern ? {} : null),
         target,
       });
       return this;
     }
+    // we have some capturing patterns
+    const prefix = parts[0];
+    for (let i = 0; i < parts.length; i += 4) {
+      segments.push(regexEsc(parts[i] || ''));
+      if (parts[i + 1] === undefined) {
+        // no other capturing patterns
+        break;
+      }
+      const [segment, key] = getPathSegment(
+        parts[i + 1],
+        parts[i + 2] || parts[i + 3]
+      );
+      segments.push(segment);
+      keys.push(key || matchIdx++);
+    }
     const regex = new RegExp(`^${segments.join('')}$`);
     this.registered.push({
       methodFilter,
+      pattern,
+      regex,
       matcher: subject => {
         if (!subject.startsWith(prefix)) {
           return null;
@@ -118,108 +129,31 @@ export default class RouteMatcher<Target extends any> {
       target,
     });
     return this;
-    // else {
-    //   const prefix = segments[0];
-    //   const keys: string[] = [];
-    //   let regExp: string;
-    //   let idx = 0;
-    //   for (const segment of segments.slice(1)) {
-    //
-    //   }
-    //   const matcher = (subject: string) => {
-    //     if (!subject.startsWith(prefix)) {
-    //       return null;
-    //     }
-    //
-    //   }
-    //   return this;
-    // }
+  }
+  detectPotentialDos(detector: any, config?: any) {
+    for (const reg of this.registered) {
+      if (detector(reg.regex, config).safe === false) {
+        throw new Error(
+          `Potential ReDoS detected for pattern ${reg.pattern}. Consider using a `
+        );
+      }
+    }
   }
 }
 
-//
-//
-//
-//
-//
-//
-// function always(requestPath: string) {
-//   return {
-//     path: '*',
-//     index: 0,
-//     params: { 0: requestPath },
-//   };
-// }
-//
-// function normalizePath(path: string | RegExp) {
-//   if (path instanceof RegExp) {
-//     return path;
-//   }
-//   let i = 0;
-//   path = path.replace(/\/\*\?/g, () => {
-//     return `/{*slash_wildcard_${i++}}`;
-//   });
-//   path = path.replace(/\/\*/g, () => {
-//     return `/*slash_wildcard_${i++}`;
-//   });
-//   return path;
-// }
-//
-// function normalizeParams(params: Record<string, string>) {
-//   const normalizedParams: Record<string, string> = {};
-//   for (const key in params) {
-//     if (!Object.prototype.hasOwnProperty.call(params, key)) {
-//       continue;
-//     }
-//     const keyMatch = key.match(/^slash_wildcard_(\d+)$/);
-//     if (keyMatch) {
-//       normalizedParams[keyMatch[1]] = Array.isArray(params[key])
-//         ? params[key][0]
-//         : params[key];
-//     } else {
-//       normalizedParams[key] = params[key];
-//     }
-//   }
-//   return normalizedParams;
-// }
-//
-// export default class PathMatcher<Target extends any> {
-//   registered: Registration<Target>[] = [];
-//   add(path: string | RegExp, target: Target) {
-//     const effectivePath = normalizePath(path);
-//     const matcher =
-//       effectivePath === '*'
-//         ? always
-//         : match(effectivePath, {
-//             decode: decodeURIComponent,
-//             sensitive: true,
-//           });
-//     this.registered.push({
-//       // @ts-expect-error
-//       matcher,
-//       target,
-//     });
-//   }
-//   match(
-//     path: string,
-//     filter?: (target: Target) => boolean,
-//     fallbacks?: Function[]
-//   ) {
-//     const matched: Array<{ target: any; params: Record<string, string> }> = [];
-//     for (const reg of this.registered) {
-//       const result = reg.matcher(path);
-//       if (result && (!filter || filter(reg.target))) {
-//         matched.push({
-//           target: reg.target,
-//           params: normalizeParams(result.params),
-//         });
-//       }
-//     }
-//     if (fallbacks) {
-//       for (const fb of fallbacks) {
-//         matched.push({ target: { handler: fb }, params: {} });
-//       }
-//     }
-//     return matched;
-//   }
-// }
+function regexEsc(str: string) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+function getPathSegment(identifier: string, delimiter: string) {
+  if (identifier.at(-1) === delimiter) {
+    identifier = identifier.slice(0, -1);
+  }
+  if (delimiter === ']') {
+    delimiter = '\\]';
+  }
+  const classes = delimiter === undefined ? '.' : `[^${delimiter}]`;
+  const escapedDelimiter = regexEsc(delimiter || '');
+  const segment = `(${classes}+)${escapedDelimiter}`;
+  const name = identifier.slice(1);
+  return [segment, name];
+}

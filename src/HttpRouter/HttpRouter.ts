@@ -137,11 +137,7 @@ export default class HttpRouter {
       return this;
     }
     for (const handler of handlers.flat(9)) {
-      this.routeMatcher.add(
-        verbOrVerbs,
-        path,
-        handler as SingleHandler<ParamsShape>
-      );
+      this.routeMatcher.add(verbOrVerbs, path, handler as SingleHandler);
     }
     return this;
   }
@@ -229,7 +225,7 @@ export default class HttpRouter {
       if (!match) {
         return fallback404(context);
       }
-      const handler = match[0].handler as SingleHandler;
+      const handler = match[0] as SingleHandler;
       context.params = match[1];
 
       try {
