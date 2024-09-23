@@ -12,6 +12,7 @@
     "build": "rm index.d.ts; bunx dts-bundle-generator -o index.d.ts index.ts",
     "example": "bun --watch ./examples/server.ts"
   },
+  "sideEffects": false,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kensnyder/bunshine.git"

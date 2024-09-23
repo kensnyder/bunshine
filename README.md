@@ -2,11 +2,15 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=1.0.1" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=2.0.0" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=1.0.1)](https://npmjs.com/package/bunshine)
-![Test Coverage: 95%](https://badgen.net/static/test%20coverage/95%25/green?v=1.0.1)
-[![ISC License](https://img.shields.io/npm/l/bunshine.svg?v=1.0.1)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=2.0.0)](https://npmjs.com/package/bunshine)
+[![Language](https://badgen.net/static/language/TS?v=2.0.0)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
+![Test Coverage: 92%](https://badgen.net/static/test%20coverage/92%25/green?v=2.0.0)
+[![Gzipped Size](https://badgen.net/bundlephobia/minzip/bunshine?label=minzipped&v=2.0.0)](https://bundlephobia.com/package/bunshine@2.0.0)
+[![Dependency details](https://badgen.net/bundlephobia/dependency-count/bunshine?v=2.0.0)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
+[![Tree shakeable](https://badgen.net/bundlephobia/tree-shaking/bunshine?v=2.0.0)](https://www.npmjs.com/package/bunshine)
+[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=2.0.0)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
@@ -819,7 +823,7 @@ Request log:
   "method": "GET",
   "pathname": "/",
   "runtime": "Bun v1.1.4",
-  "poweredBy": "Bunshine v1.0.1",
+  "poweredBy": "Bunshine v2.0.0",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123
@@ -838,7 +842,7 @@ Response log:
   "method": "GET",
   "pathname": "/",
   "runtime": "Bun v1.1.4",
-  "poweredBy": "Bunshine v1.0.1",
+  "poweredBy": "Bunshine v2.0.0",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123,
