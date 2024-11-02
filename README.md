@@ -2,15 +2,15 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=2.0.0" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=3.0.0" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=2.0.0)](https://npmjs.com/package/bunshine)
-[![Language](https://badgen.net/static/language/TS?v=2.0.0)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
-![Test Coverage: 92%](https://badgen.net/static/test%20coverage/92%25/green?v=2.0.0)
-[![Gzipped Size](https://badgen.net/bundlephobia/minzip/bunshine?label=minzipped&v=2.0.0)](https://bundlephobia.com/package/bunshine@2.0.0)
-[![Dependency details](https://badgen.net/bundlephobia/dependency-count/bunshine?v=2.0.0)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
-[![Tree shakeable](https://badgen.net/bundlephobia/tree-shaking/bunshine?v=2.0.0)](https://www.npmjs.com/package/bunshine)
-[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=2.0.0)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.0.0)](https://npmjs.com/package/bunshine)
+[![Language](https://badgen.net/static/language/TS?v=3.0.0)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
+![Test Coverage: 92%](https://badgen.net/static/test%20coverage/92%25/green?v=3.0.0)
+[![Gzipped Size](https://badgen.net/bundlephobia/minzip/bunshine?label=minzipped&v=3.0.0)](https://bundlephobia.com/package/bunshine@3.0.0)
+[![Dependency details](https://badgen.net/bundlephobia/dependency-count/bunshine?v=3.0.0)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
+[![Tree shakeable](https://badgen.net/bundlephobia/tree-shaking/bunshine?v=3.0.0)](https://www.npmjs.com/package/bunshine)
+[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.0.0)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
@@ -30,8 +30,8 @@ _Or to run Bunshine on Node,
 5. Be very lightweight
 6. Treat every handler like middleware
 7. Support async handlers
-8. Provide common middleware out of the box
-9. Built-in gzip compression
+8. Provide common middleware out of the box (cors, prodLogger, headers, compression, etags)
+9. Support traditional routing syntax
 10. Make specifically for Bun
 11. Comprehensive unit tests
 12. Support for `X-HTTP-Method-Override` header
@@ -57,7 +57,14 @@ _Or to run Bunshine on Node,
 12. [Roadmap](#roadmap)
 13. [License](./LICENSE.md)
 
-## Usage
+## Upgrading from 1.x to 2.x
+
+RegExp symbols are not allowed in route definitions.
+
+## Upgrading from 2.x to 3.x
+
+The `securityHeaders` middleware has been dropped. Use
+[@side/fortifyjs](https://www.npmjs.com/package/@side/fortifyjs) instead.
 
 ## Basic example
 
@@ -76,14 +83,15 @@ app.listen({ port: 3100 });
 ## Full example
 
 ```ts
-import { HttpRouter, redirect } from 'bunshine';
+import { HttpRouter, redirect, compression } from 'bunshine';
 
 const app = new HttpRouter();
+app.use(compresion());
 
 app.patch('/users/:id', async c => {
-  await authorize(c.request.headers.get('Authorization'));
+  await authorize(c.request.headers.get('Authorization')); // see implementation below
   const data = await c.request.json();
-  const result = await updateUser(params.id, data);
+  const result = await updateUser(params.id, data); // made-up function
   if (result === 'not found') {
     return c.json({ error: 'User not found' }, { status: 404 });
   } else if (result === 'error') {
@@ -126,7 +134,7 @@ const app = new HttpRouter();
 
 app.get('/hello', (c: Context, next: NextFunction) => {
   // Properties of the Context object
-  c.request; // The raw request object
+  c.request; // The raw Request object
   c.url; // The URL object
   c.params; // The request params from route placeholders
   c.server; // The Bun server instance (useful for pub-sub)
@@ -138,7 +146,6 @@ app.get('/hello', (c: Context, next: NextFunction) => {
   c.now; // The result of performance.now() at the start of the request
 
   // Convenience methods for creating Response objects with various content types
-  // Note that responses are automatically gzipped if the client accepts gzip
   c.json(data, init);
   c.text(text, init);
   c.js(jsText, init);
@@ -182,6 +189,9 @@ import { HttpRouter } from 'bunshine';
 
 const app = new HttpRouter();
 
+// handler not affected by middleware defined below
+app.get('/healthcheck', c => c.text('200 OK'));
+
 // Run before each request
 app.use(c => {
   if (!isAllowed(c.request.headers.get('Authorization'))) {
@@ -218,6 +228,12 @@ app.get('/admin', c => {
   }
 });
 
+// Middleware before a given handler (as args)
+app.get('/users/:id', paramValidationMiddleware, async c => {
+  const user = await getUser(c.params.id);
+  return c.json(user);
+});
+
 // Middleware before a given handler (as array)
 app.get('/users/:id', [
   paramValidationMiddleware({ id: zod.number() }),
@@ -227,13 +243,7 @@ app.get('/users/:id', [
   },
 ]);
 
-// Middleware before a given handler (as args)
-app.get('/users/:id', paramValidationMiddleware, async c => {
-  const user = await getUser(c.params.id);
-  return c.json(user);
-});
-
-// handler affected by applicable middleware
+// handler affected by middleware defined above
 app.get('/', c => c.text('Hello World!'));
 
 app.listen({ port: 3100 });
@@ -245,7 +255,7 @@ you must register handlers in order of desired specificity. For example:
 ```ts
 // This order matters
 app.get('/users/me', handler1);
-app.get('/users/:id', handler2);
+app.get('/users/:id', handler2); // runs only if id is not "me" or handler1 doesn't respond
 app.get('*', http404Handler);
 ```
 
@@ -592,7 +602,6 @@ Bunshine supports the following route matching features:
 - End wildcards using stars (e.g. `/assets/*`)
 - Middle non-slash wildcards using stars (e.g. `/assets/*/*.css`)
 - Static paths (e.g. `/posts`)
-- Custom Regular Expression (e.g. `/^\/author\/([a-z]+)$/i`)
 
 Support for other behaviors can lead to a Regular Expression Denial of service
 vulnerability where an attacker can request long URLs and tie up your server
@@ -823,7 +832,7 @@ Request log:
   "method": "GET",
   "pathname": "/",
   "runtime": "Bun v1.1.4",
-  "poweredBy": "Bunshine v2.0.0",
+  "poweredBy": "Bunshine v3.0.0",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123
@@ -842,7 +851,7 @@ Response log:
   "method": "GET",
   "pathname": "/",
   "runtime": "Bun v1.1.4",
-  "poweredBy": "Bunshine v2.0.0",
+  "poweredBy": "Bunshine v3.0.0",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123,
@@ -1041,6 +1050,12 @@ app.socket.at<{ room: string }, { user: User }>('/games/rooms/:room', {
 // start the server
 app.listen({ port: 3100 });
 ```
+
+## Decisions
+
+The following decisions are based on scripts in /benchmarks.
+
+-
 
 ## Roadmap
 

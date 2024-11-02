@@ -1,30 +1,21 @@
 import { runBenchmarks } from './runBenchmarks.ts';
 
 /*
-Conclusion:
-performance.now() is actually 3.7x faster than +new Date,
-taking about 28 nanoseconds.
+Conclusions:
+The cost of a single performance.now() call is in the tens of nanoseconds.
 
-Also, Converting a Date object to a number takes about 50 nanoseconds.
+performance.now() is actually 2.11x faster than +new Date,
+with Date.now() in second place, 1.91x faster than +new Date.
+
+Also, converting a Date object to a number takes around 50 nanoseconds.
 */
-
-function perf() {
-  return performance.now();
-}
-
-function plusDate() {
-  return +new Date();
-}
-
-function date() {
-  return new Date();
-}
 
 await runBenchmarks(
   {
-    'performance.now()': perf,
-    '+new Date()': plusDate,
-    'new Date()': date,
+    'performance.now()': () => performance.now(),
+    'Date.now()': () => Date.now(),
+    '+new Date()': () => +new Date(),
+    'new Date()': () => new Date(),
   },
-  { time: 1000 }
+  { time: 2000 }
 );
