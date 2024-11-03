@@ -4,7 +4,10 @@ import { runBenchmarks } from './runBenchmarks.ts';
 /*
 Conclusions:
 
-
+etag hash calculation is fast:
+1k html:    1 µs
+10k html:   3 µs
+100k html: 24 µs
 */
 
 // some data!

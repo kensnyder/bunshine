@@ -1,25 +1,19 @@
-import Context from '../../Context/Context.ts';
-
 export type SecurityHeaderValue = string | null | undefined | boolean;
-export type SecurityHeader =
-  | SecurityHeaderValue
-  | ((context: Context) => SecurityHeaderValue)
-  | ((context: Context) => Promise<SecurityHeaderValue>);
 
-export type SecurityHeaderOptions = {
-  accessControlAllowOrigin?: SecurityHeader | true;
-  contentSecurityPolicy?: CSPDirectives | true;
-  crossOriginEmbedderPolicy?: SecurityHeader | true;
-  crossOriginOpenerPolicy?: SecurityHeader | true;
-  crossOriginResourcePolicy?: SecurityHeader | true;
-  permissionsPolicy?: AllowedApis | true;
-  referrerPolicy?: SecurityHeader | true;
-  server?: SecurityHeader | true;
-  strictTransportSecurity?: SecurityHeader | true;
-  xContentTypeOptions?: SecurityHeader | true;
-  xFrameOptions?: SecurityHeader | true;
-  xPoweredBy?: SecurityHeader | true;
-  xXssProtection?: SecurityHeader | true;
+export type SecurityHeaderShape = {
+  accessControlAllowOrigin?: SecurityHeaderValue;
+  contentSecurityPolicy?: CSPDirectives;
+  crossOriginEmbedderPolicy?: SecurityHeaderValue;
+  crossOriginOpenerPolicy?: SecurityHeaderValue;
+  crossOriginResourcePolicy?: SecurityHeaderValue;
+  permissionsPolicy?: PermittedApis;
+  referrerPolicy?: SecurityHeaderValue;
+  server?: SecurityHeaderValue;
+  strictTransportSecurity?: SecurityHeaderValue;
+  xContentTypeOptions?: SecurityHeaderValue;
+  xFrameOptions?: SecurityHeaderValue;
+  xPoweredBy?: SecurityHeaderValue;
+  xXssProtection?: SecurityHeaderValue;
 };
 
 export type SandboxOptions = {
@@ -58,8 +52,8 @@ export type CSPDirectives = {
   baseUri?: CSPSource[];
   formAction?: CSPSource[];
   frameAncestors?: CSPSource[];
-  sandbox?: SandboxOptions | true;
-  report?: ReportOptions | true;
+  sandbox?: SandboxOptions;
+  report?: ReportOptions;
 };
 
 export type ApiSource =
@@ -84,7 +78,8 @@ export type ApiSource =
       hashes: string[];
     };
 
-export type AllowedApis = {
+// see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy
+export type PermittedApis = {
   accelerometer?: ApiSource[];
   ambientLightSensor?: ApiSource[];
   autoplay?: ApiSource[];

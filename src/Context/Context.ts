@@ -58,45 +58,45 @@ export default class Context<
     return this.server.requestIP(this.request);
   }
   /** A shorthand for `new Response(text, { headers: { 'Content-type': 'text/plain' } })` */
-  text(text: string, init: ResponseInit = {}) {
+  text = (text: string, init: ResponseInit = {}) => {
     return textPlain.call(this, text, init);
-  }
+  };
   /** A shorthand for `new Response(js, { headers: { 'Content-type': 'text/javascript' } })` */
-  js(js: string, init: ResponseInit = {}) {
+  js = (js: string, init: ResponseInit = {}) => {
     return textJs.call(this, js, init);
-  }
+  };
   /** A shorthand for `new Response(html, { headers: { 'Content-type': 'text/html' } })` */
-  html(html: string, init: ResponseInit = {}) {
+  html = (html: string, init: ResponseInit = {}) => {
     return textHtml.call(this, html, init);
-  }
+  };
   /** A shorthand for `new Response(html, { headers: { 'Content-type': 'text/css' } })` */
-  css(css: string, init: ResponseInit = {}) {
+  css = (css: string, init: ResponseInit = {}) => {
     return textCss.call(this, css, init);
-  }
+  };
   /** A shorthand for `new Response(xml, { headers: { 'Content-type': 'text/xml' } })` */
-  xml(xml: string, init: ResponseInit = {}) {
+  xml = (xml: string, init: ResponseInit = {}) => {
     return textXml.call(this, xml, init);
-  }
+  };
   /** A shorthand for `new Response(JSON.stringify(data), { headers: { 'Content-type': 'application/json' } })` */
-  json(data: any, init: ResponseInit = {}) {
+  json = (data: any, init: ResponseInit = {}) => {
     return json.call(this, data, init);
-  }
+  };
   /** A shorthand for `new Response(null, { headers: { Location: url }, status: 301 })` */
-  redirect(url: string, status = 302) {
+  redirect = (url: string, status = 302) => {
     return redirect(url, status);
-  }
+  };
   /** A shorthand for `new Response(bunFile, fileHeaders)` */
-  async file(
+  file = async (
     filenameOrBunFile: string | BunFile,
     fileOptions: FileResponseOptions = {}
-  ) {
+  ) => {
     return file(filenameOrBunFile, {
       range: this.request.headers.get('Range') || undefined,
       ...fileOptions,
     });
-  }
+  };
   /** A shorthand for `new Response({ headers: { 'Content-type': 'text/event-stream' } })` */
-  sse(setup: SseSetupFunction, init: ResponseInit = {}) {
+  sse = (setup: SseSetupFunction, init: ResponseInit = {}) => {
     return sse(this.request.signal, setup, init);
-  }
+  };
 }

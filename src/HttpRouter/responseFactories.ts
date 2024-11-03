@@ -2,30 +2,16 @@ import { BunFile } from 'bun';
 import path from 'node:path';
 import Context from '../Context/Context.ts';
 import getMimeType from '../getMimeType/getMimeType.ts';
-import { gzipString } from '../gzip/gzip.ts';
 
 export type Factory = (body: string, init?: ResponseInit) => Response;
 
 const textEncoder = new TextEncoder();
 
-// body must be large enough to be worth compressing
-// (54 is minimum size of gzip after metadata; 100 is arbitrary choice)
-// see benchmarks/gzip.ts for more information
-export let minGzipSize = 100;
-
 export function json(this: Context, data: any, init: ResponseInit = {}) {
   let body: string | Uint8Array = JSON.stringify(data);
   init.headers = new Headers(init.headers || {});
   if (!init.headers.has('Content-Type')) {
-    init.headers.set('Content-type', `application/json; charset=utf-8`);
-  }
-  if (!init.headers.has('Content-Encoding')) {
-    // body must be large enough to be worth compressing
-    if (body.length >= minGzipSize) {
-      body = gzipString(body);
-      init.headers.set('Content-Encoding', 'gzip');
-      init.headers.set('Content-Length', String(body.length));
-    }
+    init.headers.set('Content-Type', `application/json; charset=utf-8`);
   }
   return new Response(body, init);
 }
@@ -34,19 +20,7 @@ export function factory(contentType: string): Factory {
   return function (this: Context, body: string, init: ResponseInit = {}) {
     init.headers = new Headers(init.headers || {});
     if (!init.headers.has('Content-Type')) {
-      init.headers.set('Content-type', `${contentType}; charset=utf-8`);
-    }
-    if (!init.headers.has('Content-Encoding')) {
-      if (
-        // client must expect gzip
-        this.request.headers.get('Accept-Encoding')?.includes('gzip') &&
-        // body must be large enough to be worth compressing
-        body.length >= minGzipSize
-      ) {
-        // @ts-expect-error
-        body = gzipString(body);
-        init.headers.set('Content-Encoding', 'gzip');
-      }
+      init.headers.set('Content-Type', `${contentType}; charset=utf-8`);
     }
     init.headers.set('Content-Length', String(body.length));
     return new Response(body, init);
@@ -65,7 +39,6 @@ export const redirect = (url: string, status = 302) => {
 export type FileResponseOptions = {
   range?: string;
   chunkSize?: number;
-  gzip?: boolean;
   disposition?: 'inline' | 'attachment';
   acceptRanges?: boolean;
 };
@@ -86,7 +59,6 @@ export const file = async (
     chunkSize: fileOptions.chunkSize,
     rangeHeader: fileOptions.range,
     method: 'GET',
-    gzip: fileOptions.gzip,
   });
   if (fileOptions.acceptRanges !== false) {
     // tell the client that we are capable of handling range requests
@@ -206,14 +178,12 @@ export async function buildFileResponse({
   chunkSize,
   rangeHeader,
   method,
-  gzip,
 }: {
   file: BunFile;
   acceptRanges: boolean;
   chunkSize?: number;
   rangeHeader?: string | null;
   method: string;
-  gzip?: boolean;
 }) {
   let response: Response;
   const rangeMatch = String(rangeHeader).match(/^bytes=(\d*)-(\d*)$/);

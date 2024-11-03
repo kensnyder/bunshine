@@ -2,6 +2,20 @@ import { promisify } from 'node:util';
 import { brotliCompress, deflate, gzip } from 'node:zlib';
 import { runBenchmarks } from './runBenchmarks.ts';
 
+/*
+Conclusion:
+Gzip is a tradeoff between bandwidth vs. CPU time.
+
+Gzipping HTML of various sizes on my MacBook M2:
+Unzipped Size   Duration   Gzipped Size
+1kb             8 µs       343 bytes
+10kb            48 µs      3.2kb
+100kb           463 µs     12kb
+
+Brotli provides 2-8% size savings but at the cost of milliseconds,
+about 7-10x as much CPU time.
+*/
+
 const brPromise = promisify(brotliCompress);
 const gzipPromise = promisify(gzip);
 const deflatePromise = promisify(deflate);
@@ -13,17 +27,6 @@ const html = await fetch('https://www.npmjs.com/package/bunshine').then(res =>
 const t1k = html.slice(1000, 2000);
 const t10k = html.slice(1000, 11000);
 const t100k = html.slice(1000, 101000);
-
-/*
-Conclusion:
-Gzip is a tradeoff between bandwidth vs. CPU time.
-
-Gzipping HTML of various sizes on my MacBook M2:
-Unzipped Size   Duration   Gzipped Size
-1kb             8 µs       343 bytes
-10kb            48 µs      3.2kb
-100kb           463 µs     12kb
-*/
 
 await savings();
 await benchmarks();

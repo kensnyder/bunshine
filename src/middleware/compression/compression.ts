@@ -25,7 +25,7 @@ export const defaultOptions = {
 };
 
 export default function compression(
-  options: Partial<CompressionOptions>
+  options: Partial<CompressionOptions> = {}
 ): Middleware {
   if (options.prefer === 'none') {
     return () => {};
@@ -35,11 +35,16 @@ export default function compression(
     const resp = await next();
     try {
       if (!isCompressibleMime(context.request.headers.get('Content-Type'))) {
+        console.log(
+          'not compressible mime:',
+          context.request.headers.get('Content-Type')
+        );
         return resp;
       }
       const accept = context.request.headers.get('Accept-Encoding') ?? '';
       const canBr = /\bbr\b/.test(accept);
       const canGz = /\bgzip\b/.test(accept);
+      console.log({ accept, canBr, canGz });
       if (!canBr && !canGz) {
         return resp;
       }

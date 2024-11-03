@@ -3,7 +3,7 @@ import { runBenchmarks } from './runBenchmarks.ts';
 /*
 Conclusion:
 Class functions are
-1.17x faster than bound functions
+1.03x faster than bound functions
 */
 
 class TheClass {

@@ -25,6 +25,26 @@ export {
   type SseSend,
   type SseSetupFunction,
 } from './src/HttpRouter/responseFactories';
+export { cors, type CorsOptions } from './src/middleware/cors/cors';
+export { devLogger } from './src/middleware/devLogger/devLogger';
+export { performanceHeader } from './src/middleware/performanceHeader/performanceHeader.ts';
+export { prodLogger } from './src/middleware/prodLogger/prodLogger';
+export { securityHeaders } from './src/middleware/securityHeaders/securityHeaders';
+export type {
+  CSPDirectives,
+  CSPSource,
+  PermittedApis,
+  ReportOptions,
+  SandboxOptions,
+  SecurityHeaderOptions,
+  SecurityHeaderValue,
+} from './src/middleware/securityHeaders/securityHeaders.types.ts';
+export {
+  serveFiles,
+  type GzipOptions,
+  type StaticOptions,
+} from './src/middleware/serveFiles/serveFiles';
+export { trailingSlashes } from './src/middleware/trailingSlashes/trailingSlashes';
 export {
   default as SocketRouter,
   type BunHandlers,
@@ -37,23 +57,3 @@ export {
   type SocketUpgradeHandler,
   type WsDataShape,
 } from './src/SocketRouter/SocketRouter.ts';
-export { cors, type CorsOptions } from './src/middleware/cors/cors';
-export { devLogger } from './src/middleware/devLogger/devLogger';
-export { performanceHeader } from './src/middleware/performanceHeader/performanceHeader.ts';
-export { prodLogger } from './src/middleware/prodLogger/prodLogger';
-export { securityHeaders } from './src/middleware/securityHeaders/securityHeaders';
-export type {
-  AllowedApis,
-  CSPDirectives,
-  CSPSource,
-  ReportOptions,
-  SandboxOptions,
-  SecurityHeaderOptions,
-  SecurityHeaderValue,
-} from './src/middleware/securityHeaders/securityHeaders.types.ts';
-export {
-  serveFiles,
-  type GzipOptions,
-  type StaticOptions,
-} from './src/middleware/serveFiles/serveFiles';
-export { trailingSlashes } from './src/middleware/trailingSlashes/trailingSlashes';

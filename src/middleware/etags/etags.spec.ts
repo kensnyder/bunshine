@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import HttpRouter from '../../HttpRouter/HttpRouter.ts';
 import etags from './etags.ts';
 
-describe('etags body processor', () => {
+describe('etags middleware', () => {
   const helloWorldEtag = '"c6a1dfa4103602ad"';
   let server: Server;
   let app: HttpRouter;
