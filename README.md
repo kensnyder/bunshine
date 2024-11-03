@@ -48,9 +48,11 @@ _Or to run Bunshine on Node,
 8. [Server Sent Events](#server-sent-events)
 9. [Route Matching](#route-matching)
 10. [Included middleware](#included-middleware)
-    - [serveFiles](#servefiles)
+    - [compression](#compression)
     - [cors](#cors)
     - [devLogger & prodLogger](#devlogger--prodlogger)
+    - [etags](#etags)
+    - [serveFiles](#servefiles)
     - [performanceHeader](#performanceheader)
     - [securityHeaders](#securityheaders)
 11. [TypeScript pro-tips](#typescript-pro-tips)
@@ -59,12 +61,16 @@ _Or to run Bunshine on Node,
 
 ## Upgrading from 1.x to 2.x
 
-RegExp symbols are not allowed in route definitions.
+RegExp symbols are not allowed in route definitions to avoid ReDoS vulnerabilities.
 
 ## Upgrading from 2.x to 3.x
 
-The `securityHeaders` middleware has been dropped. Use
-[@side/fortifyjs](https://www.npmjs.com/package/@side/fortifyjs) instead.
+- The `securityHeaders` middleware has been dropped. Use a library such as
+  [@side/fortifyjs](https://www.npmjs.com/package/@side/fortifyjs) instead.
+- The `serveFiles` middleware no longer accepts options for `etags` or `gzip`.
+  Instead, compose the `etags` and `compression` middleware:
+  `app.headGet('/files/*', etags(), compression(), serveFiles(...))`
+-
 
 ## Basic example
 

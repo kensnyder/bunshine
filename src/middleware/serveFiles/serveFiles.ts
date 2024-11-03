@@ -1,8 +1,6 @@
-import { ZlibCompressionOptions } from 'bun';
 import path from 'path';
 import type { Middleware } from '../../HttpRouter/HttpRouter.ts';
 import { buildFileResponse } from '../../HttpRouter/responseFactories.ts';
-import { FileGzipper } from '../../gzip/FileGzipper.ts';
 import ms from '../../ms/ms.ts';
 
 // see https://expressjs.com/en/4x/api.html#express.static
@@ -10,43 +8,12 @@ import ms from '../../ms/ms.ts';
 export type StaticOptions = {
   acceptRanges?: boolean;
   dotfiles?: 'allow' | 'deny' | 'ignore';
-  etag?: boolean;
   extensions?: string[];
   fallthrough?: boolean;
   immutable?: boolean;
   index?: string[];
   lastModified?: boolean;
   maxAge?: number | string;
-  gzip?: GzipOptions;
-};
-
-export type GzipOptions = {
-  minFileSize?: number;
-  maxFileSize?: number;
-  mimeTypes?: Array<string | RegExp>;
-  zlibOptions?: ZlibCompressionOptions;
-  cache:
-    | false
-    | {
-        type: 'file' | 'precompress' | 'memory' | 'never';
-        maxBytes?: number;
-        path?: string;
-      };
-};
-
-const defaultGzipOptions: GzipOptions = {
-  minFileSize: 1024,
-  maxFileSize: 1024 * 1024 * 25,
-  mimeTypes: [
-    /^text\/.*/,
-    /^application\/json/,
-    /^image\/svg/,
-    /^font\/(otf|ttf|eot)/,
-  ],
-  zlibOptions: {},
-  cache: {
-    type: 'never',
-  },
 };
 
 export function serveFiles(
@@ -54,27 +21,17 @@ export function serveFiles(
   {
     acceptRanges = true,
     dotfiles = 'ignore',
-    // etag is Not yet implemented
-    etag = true,
     extensions = [],
     fallthrough = true,
     immutable = false,
     index = [],
     lastModified = true,
     maxAge = undefined,
-    gzip = undefined,
   }: StaticOptions = {}
 ): Middleware {
   const cacheControlHeader =
     maxAge === undefined ? null : getCacheControl(maxAge, immutable);
-  const gzipper = gzip
-    ? new FileGzipper(directory, { ...defaultGzipOptions, ...gzip })
-    : undefined;
   return async c => {
-    if (gzipper) {
-      // wait for setup cache if not done already
-      await gzipper.setupPromise;
-    }
     const filename = c.params[0] || c.url.pathname;
     if (filename.startsWith('.')) {
       if (dotfiles === 'ignore') {
@@ -118,22 +75,13 @@ export function serveFiles(
       return new Response('404 Not Found', { status: 404 });
     }
     const rangeHeader = c.request.headers.get('range');
-    let response: Response;
-    if (rangeHeader || !gzipper) {
-      // get base response
-      response = await buildFileResponse({
-        file,
-        acceptRanges,
-        chunkSize: 0,
-        rangeHeader,
-        method: c.request.method,
-        gzip: false,
-      });
-    } else {
-      response = await gzipper.fetch(file);
-    }
-    // add current date
-    response.headers.set('Date', new Date().toUTCString());
+    const response = await buildFileResponse({
+      file,
+      acceptRanges,
+      chunkSize: 0,
+      rangeHeader,
+      method: c.request.method,
+    });
     // add last modified
     if (lastModified) {
       response.headers.set(

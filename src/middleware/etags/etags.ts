@@ -1,10 +1,11 @@
+import { TypedArray } from 'type-fest';
 import type Context from '../../Context/Context.ts';
 import type { Middleware, NextFunction } from '../../HttpRouter/HttpRouter.ts';
 
 export type EtagHashCalculator = (
   context: Context,
   response: Response
-) => Promise<{ buffer: ArrayBuffer; hash: string }>;
+) => Promise<{ buffer: ArrayBuffer | TypedArray | Buffer; hash: string }>;
 
 export type EtagOptions = {
   calculator?: EtagHashCalculator;
@@ -15,27 +16,25 @@ export default function etags({
 }: EtagOptions = {}): Middleware {
   return async (context: Context, next: NextFunction) => {
     const resp = await next();
-    if (context.request.method === 'GET' && resp.status === 200) {
-      const ifNoneMatch = context.request.headers.get('if-none-match');
-      const { buffer, hash } = await calculator(context, resp);
-      const etag = `"${hash}"`;
-      resp.headers.set('Etag', etag);
-      if (ifNoneMatch && ifNoneMatch === etag) {
-        return new Response('', {
-          headers: resp.headers,
-          status: 304,
-          statusText: '',
-        });
-      }
-      return new Response(buffer, {
-        headers: resp.headers,
-        status: 200,
-        statusText: '',
-      });
-    } else {
-      // error response or non-GET request
+    if (context.request.method !== 'GET' || resp.status !== 200) {
       return resp;
     }
+    const ifNoneMatch = context.request.headers.get('if-none-match');
+    const { buffer, hash } = await calculator(context, resp);
+    const etag = `"${hash}"`;
+    resp.headers.set('Etag', etag);
+    if (ifNoneMatch && ifNoneMatch === etag) {
+      return new Response('', {
+        headers: resp.headers,
+        status: 304,
+        statusText: '',
+      });
+    }
+    return new Response(buffer, {
+      headers: resp.headers,
+      status: 200,
+      statusText: '',
+    });
   };
 }
 
