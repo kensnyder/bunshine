@@ -5,7 +5,7 @@ export default class MatcherWithCache<
   Target = any,
 > extends RouteMatcher<Target> {
   cache: LRUCache<string, any>;
-  constructor(size: number = 5000) {
+  constructor(size: number = 4000) {
     super();
     this.cache = new LRUCache<string, any>({ max: size });
   }

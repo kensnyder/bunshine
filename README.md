@@ -68,9 +68,8 @@ RegExp symbols are not allowed in route definitions to avoid ReDoS vulnerabiliti
 - The `securityHeaders` middleware has been dropped. Use a library such as
   [@side/fortifyjs](https://www.npmjs.com/package/@side/fortifyjs) instead.
 - The `serveFiles` middleware no longer accepts options for `etags` or `gzip`.
-  Instead, compose the `etags` and `compression` middleware:
+  Instead, compose the `etags` and `compression` middlewares:
   `app.headGet('/files/*', etags(), compression(), serveFiles(...))`
--
 
 ## Basic example
 
@@ -83,7 +82,7 @@ app.get('/', c => {
   return new Response('Hello at ' + c.url.pathname);
 });
 
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 ```
 
 ## Full example
@@ -118,7 +117,7 @@ app.on500(c => {
   return c.json({ error: 'Internal server error' }, { status: 500 });
 });
 
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 
 function authorize(authHeader: string) {
   if (!authHeader) {
@@ -127,6 +126,26 @@ function authorize(authHeader: string) {
     throw redirect('/not-allowed');
   }
 }
+```
+
+You can also make a path-specific error catcher like this:
+
+```ts
+import { HttpRouter, redirect, compression } from 'bunshine';
+
+const app = new HttpRouter();
+
+app.get('/api/*', async (c, next) => {
+  try {
+    return await next();
+  } catch (e) {
+    // do something with error
+    // maybe return json
+  }
+});
+
+// attach other routes
+app.get('/api/v1/posts', handler);
 ```
 
 ### What is `c` here?
@@ -141,13 +160,13 @@ const app = new HttpRouter();
 app.get('/hello', (c: Context, next: NextFunction) => {
   // Properties of the Context object
   c.request; // The raw Request object
-  c.url; // The URL object
+  c.url; // The URL object (get url string with c.url.href, or query with c.url.searchParams)
   c.params; // The request params from route placeholders
   c.server; // The Bun server instance (useful for pub-sub)
   c.app; // The HttpRouter instance
   c.locals; // A place to persist data between handlers for the duration of the request
   c.error; // An error object available to handlers registered with app.on500()
-  c.ip; // The IP address of the client (not necessarily the end user)
+  c.ip; // The IP address of the client or load balancer (not necessarily the end user)
   c.date; // The date of the request
   c.now; // The result of performance.now() at the start of the request
 
@@ -178,7 +197,7 @@ const app = new HttpRouter();
 
 app.get('/public/*', serveFiles(`${import.meta.dir}/public`));
 
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 ```
 
 See the [serveFiles](#serveFiles) section for more info.
@@ -252,7 +271,7 @@ app.get('/users/:id', [
 // handler affected by middleware defined above
 app.get('/', c => c.text('Hello World!'));
 
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 ```
 
 Note that because every handler is treated like middleware,
@@ -263,6 +282,28 @@ you must register handlers in order of desired specificity. For example:
 app.get('/users/me', handler1);
 app.get('/users/:id', handler2); // runs only if id is not "me" or handler1 doesn't respond
 app.get('*', http404Handler);
+```
+
+And to illustrate the wrap-like behavior of `await`ing the `next` function:
+
+```ts
+app.get('/', async (c, next) => {
+  console.log(1);
+  const resp = await next();
+  console.log(5);
+  return resp;
+});
+app.get('/', async (c, next) => {
+  console.log(2);
+  const resp = await next();
+  console.log(4);
+  return resp;
+});
+app.get('/', async (c, next) => {
+  console.log(3);
+  return c.text('Hello');
+});
+// logs 1, 2, 3, 4, then 5
 ```
 
 ### What does it mean that "every handler is treated like middleware"?
@@ -369,7 +410,7 @@ app.post('/posts', async c => {
 });
 
 // start the server
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 ```
 
 ## WebSockets
@@ -424,7 +465,7 @@ app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
 });
 
 // start the server
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 
 //
 // Browser side:
@@ -478,14 +519,14 @@ app.socket.at<ParamsShape, DataShape>('/chat/:room', {
   },
   close(sc, code, message) {
     const msg = `${sc.data.username} has left the chat`;
-    ws.publish(`chat-room-${sc.params.room}`, msg);
-    ws.unsubscribe(`chat-room-${sc.params.room}`);
+    sc.publish(`chat-room-${sc.params.room}`, msg);
+    sc.unsubscribe(`chat-room-${sc.params.room}`);
   },
 });
 
-const server = app.listen({ port: 3100 });
+const server = app.listen({ port: 3100, reusePort: true });
 
-// at a later time, you can also publish a message from another source
+// at a later time, you can also publish a message from another part of your code
 server.publish(channel, message);
 ```
 
@@ -511,7 +552,7 @@ app.get<{ symbol: string }>('/stock/:symbol', c => {
 });
 
 // start the server
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 
 //
 // Browser side:
@@ -552,7 +593,7 @@ app.get<{ videoId: string }>('/convert-video/:videoId', c => {
 });
 
 // start the server
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 
 //
 // Browser side:
@@ -597,7 +638,7 @@ events.addEventListener('event2', listener2);
 Bunshine v1 used the `path-to-regexp` package for processing path routes.
 Due to a discovered
 [RegExp Denial of Service vulnerability](https://security.snyk.io/vuln/SNYK-JS-PATHTOREGEXP-7925106),
-Bunshine no longer uses
+Bunshine v2+ no longer uses
 [path-to-regexp docs](https://www.npmjs.com/package/path-to-regexp).
 
 ### Support
@@ -632,11 +673,11 @@ Note that all regular-expression special characters including
 `\ ^ $ * + ? . ( ) | { } [ ]` will be escaped. If you need any of these
 behaviors, you'll need to pass in a `RegExp`.
 
-For example, the dot in `/assets/*.js` will not match all characters--only dots.™™
+For example, the dot in `/assets/*.js` will not match all characters--only dots.
 
 ### Not supported
 
-Support for regex-like syntax has been dropped in v2 due to a
+Support for regex-like syntax has been dropped in v2 due to the aforementioned
 [RegExp Denial of Service vulnerability](https://security.snyk.io/vuln/SNYK-JS-PATHTOREGEXP-7925106).
 For cases where you need to limit by character or specify optional segments,
 you'll need to pass in a `RegExp`. Be sure to check your `RegExp` with a ReDoS
@@ -650,7 +691,19 @@ checker such as [Devina](https://devina.io/redos-checker) or
 | `/(users\|u)/:id`   | Pipes are not supported                   | `^\/(users\|u)/([^/]+)$` |
 | `/:a/:b?`           | Optional params are not supported         | `^\/([^/]*)\/(.*)$`      |
 
-### Caching
+If you want to double check all your routes, you can use code like the following:
+
+```ts
+import { HttpRouter } from 'bunshine';
+import { isSafe } from 'redos-detector';
+
+const app = new HttpRouter();
+app.get('/', home);
+// ... all my routes
+
+// detectPotentialDos() calls console.warn with() details of each unsafe pattern
+app.matcher.detectPotentialDos(isSafe);
+```
 
 ### HTTP methods
 
@@ -677,7 +730,7 @@ app.on(['POST', 'PATCH'], '/posts/:id', addEditPost);
 // regular expression matchers are supported
 app.get(/^\/author\/([a-z]+)$/i, getPost);
 
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 ```
 
 ## Included middleware
@@ -695,7 +748,7 @@ const app = new HttpRouter();
 
 app.get('/public/*', serveFiles(`${import.meta.dir}/public`));
 
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 ```
 
 How to respond to both GET and HEAD requests:
@@ -709,7 +762,7 @@ app.on(['HEAD', 'GET'], '/public/*', serveFiles(`${import.meta.dir}/public`));
 // or
 app.headGet('/public/*', serveFiles(`${import.meta.dir}/public`));
 
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 ```
 
 How to alter the response provided by another handler:
@@ -727,7 +780,7 @@ const addFooHeader = async (_, next) => {
 
 app.get('/public/*', addFooHeader, serveFiles(`${import.meta.dir}/public`));
 
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 ```
 
 serveFiles accepts an optional second parameter for options:
@@ -745,7 +798,7 @@ app.get(
   })
 );
 
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 ```
 
 All options for serveFiles:
@@ -754,7 +807,6 @@ All options for serveFiles:
 | ------------ | ----------- | ----------------------------------------------------------------------------------------- |
 | acceptRanges | `true`      | If true, accept ranged byte requests                                                      |
 | dotfiles     | `"ignore"`  | How to handle dotfiles; allow=>serve normally, deny=>return 403, ignore=>run next handler |
-| etag         | N/A         | Not yet implemented                                                                       |
 | extensions   | `[]`        | If given, a list of file extensions to allow                                              |
 | fallthrough  | `true`      | If false, issue a 404 when a file is not found, otherwise proceed to next handler         |
 | maxAge       | `undefined` | If given, add a Cache-Control header with max-age†                                        |
@@ -763,6 +815,30 @@ All options for serveFiles:
 | lastModified | `true`      | If true, set the Last-Modified header                                                     |
 
 † _A number in milliseconds or expression such as '30min', '14 days', '1y'._
+
+### responseCache
+
+Simple caching can be accomplished with the `responseCache()` middleware. It
+saves responses to a cache you supply, based on URL. This can be useful for
+builds, where your assets aren't changing. In the example below, `lru-cache` is
+used to store assets in memory. Any cache that implements `has(url: string)`,
+`get(url: string)` and `set(url: string, resp: Response)` methods can be used.
+Your cache can also serialize responses to save them to an external system.
+Keep in mind that your `set()` function will receive a `Response` object and
+your `get()` function should be an object with a `clone()` method that returns
+a `Response` object.
+
+```ts
+import { LRUCache } from 'lru-cache';
+import { HttpRouter, responseCache, serveFiles } from 'bunshine';
+
+const app = new HttpRouter();
+app.headGet(
+  '/public/*',
+  responseCache(new LRUCache({ max: 100 })),
+  serveFiles(`${import.meta.dir}/build/public`)
+);
+```
 
 ### cors
 
@@ -780,7 +856,7 @@ app.use(cors({ origin: 'https://example.com' }));
 app.use(cors({ origin: /^https:\/\// }));
 app.use(cors({ origin: ['https://example.com', 'https://stuff.com'] }));
 app.use(cors({ origin: ['https://example.com', /https:\/\/stuff.[a-z]+/i] }));
-app.use(cors({ origin: incomingOrigin => incomingOrigin }));
+app.use(cors({ origin: incomingOrigin => incomingOrigin })); // This may be preferred to *
 app.use(cors({ origin: incomingOrigin => getAllowedOrigins(incomingOrigin) }));
 
 // All options
@@ -801,7 +877,7 @@ app.all('/api', cors({ origin: '*' }));
 // then add your endpoints
 app.get('/api/hello', c => c.json({ hello: 'world' }));
 
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 ```
 
 Options details:
@@ -811,7 +887,7 @@ _allowMethods_: an array of HTTP verbs to allow clients to make
 _allowHeaders_: an array of HTTP headers to allow clients to send
 _exposeHeaders_: an array of HTTP headers to expose to clients
 _maxAge_: the number of seconds clients should cache the CORS headers
-_credentials_: whether to allow credentials (e.g. cookies or auth headers)
+_credentials_: whether to allow clients to send credentials (e.g. cookies or auth headers)
 
 ### devLogger & prodLogger
 
@@ -837,7 +913,7 @@ Request log:
   "host": "example.com",
   "method": "GET",
   "pathname": "/",
-  "runtime": "Bun v1.1.4",
+  "runtime": "Bun v1.1.33",
   "poweredBy": "Bunshine v3.0.0",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
@@ -856,7 +932,7 @@ Response log:
   "host": "example.com",
   "method": "GET",
   "pathname": "/",
-  "runtime": "Bun v1.1.4",
+  "runtime": "Bun v1.1.3",
   "poweredBy": "Bunshine v3.0.0",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
@@ -864,6 +940,8 @@ Response log:
   "took": 5
 }
 ```
+
+Note that `id` correlates between a request log and response log.
 
 To use these loggers, simply attach them as middleware.
 
@@ -877,7 +955,7 @@ app.use(logger());
 // or at a specific path
 app.use('/api/*', logger());
 
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 ```
 
 ### performanceHeader
@@ -894,98 +972,7 @@ app.use(performanceHeader());
 // Or use a custom header name
 app.use(performanceHeader('X-Time-Milliseconds'));
 
-app.listen({ port: 3100 });
-```
-
-### securityHeaders
-
-You can add security-related headers to responses with the `securityHeaders`
-middleware. For more information about security headers, checkout these
-resources:
-
-- [securityheaders.com](https://securityheaders.com)
-- [MDN Security on the Web](https://developer.mozilla.org/en-US/docs/Web/Security)
-- [MDN Content-Security-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy)
-
-```ts
-import { HttpRouter, securityHeaders } from 'bunshine';
-
-const app = new HttpRouter();
-
-app.use(securityHeaders());
-// The following are defaults that you can override
-app.use(
-  securityHeaders({
-    contentSecurityPolicy: {
-      frameSrc: ["'self'"],
-      workerSrc: ["'self'"],
-      connectSrc: ["'self'"],
-      defaultSrc: ["'self'"],
-      fontSrc: ['*'],
-      imgSrc: ['*'],
-      manifestSrc: ["'self'"],
-      mediaSrc: ["'self' data:"],
-      objectSrc: ["'self' data:"],
-      prefetchSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      scriptSrcElem: ["'self' 'unsafe-inline'"],
-      scriptSrcAttr: ["'none'"],
-      styleSrcAttr: ["'self' 'unsafe-inline'"],
-      baseUri: ["'self'"],
-      formAction: ["'self'"],
-      frameAncestors: ["'self'"],
-      sandbox: {},
-    },
-    crossOriginEmbedderPolicy: 'unsafe-none',
-    crossOriginOpenerPolicy: 'same-origin',
-    crossOriginResourcePolicy: 'same-origin',
-    permissionsPolicy: {
-      // only include special APIs that you use
-      accelerometer: [],
-      ambientLightSensor: [],
-      autoplay: ['self'],
-      battery: [],
-      camera: [],
-      displayCapture: [],
-      documentDomain: [],
-      encryptedMedia: [],
-      executionWhileNotRendered: [],
-      executionWhileOutOfViewport: [],
-      fullscreen: [],
-      gamepad: [],
-      geolocation: [],
-      gyroscope: [],
-      hid: [],
-      identityCredentialsGet: [],
-      idleDetection: [],
-      localFonts: [],
-      magnetometer: [],
-      midi: [],
-      otpCredentials: [],
-      payment: [],
-      pictureInPicture: [],
-      publickeyCredentialsCreate: [],
-      publickeyCredentialsGet: [],
-      screenWakeLock: [],
-      serial: [],
-      speakerSelection: [],
-      storageAccess: [],
-      usb: [],
-      webShare: ['self'],
-      windowManagement: [],
-      xrSpacialTracking: [],
-    },
-    referrerPolicy: 'strict-origin',
-    server: false,
-    strictTransportSecurity: 'max-age=86400; includeSubDomains; preload',
-    xContentTypeOptions: 'nosniff',
-    xFrameOptions: 'SAMEORIGIN',
-    xPoweredBy: false,
-    xXssProtection: '1; mode=block',
-  })
-);
-
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 ```
 
 ## TypeScript pro-tips
@@ -1010,7 +997,7 @@ app.get<{ 0: string }>('/auth/*', async c => {
   // TypeScript now knows that c.params['0'] is a string
 });
 
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
 ```
 
 ### Typing WebSocket data
@@ -1035,7 +1022,7 @@ app.socket.at<{ room: string }, { user: User }>('/games/rooms/:room', {
   upgrade: ({ request, params, url }) => {
     // Typescript knows that ws.data.params.room is a string
     const cookies = req.headers.get('cookie');
-    const user = getUserFromCookies(cookies);
+    const user: User = getUserFromCookies(cookies);
     // here user is typed as User
     return { user };
   },
@@ -1054,13 +1041,100 @@ app.socket.at<{ room: string }, { user: User }>('/games/rooms/:room', {
 });
 
 // start the server
-app.listen({ port: 3100 });
+app.listen({ port: 3100, reusePort: true });
+```
+
+## Examples of common use cases
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+
+// block dotfile access (e.g. .env, .git, .svn, .htaccess)
+app.get(/^\./, c => c.text('Not found', { status: 404 }));
+// block URLs that end with .env and other dumb endings
+app.all(/\.(env|bak|old|tmp|backup|log|ini|conf)$/, respondWith404);
+// block WordPress URLs such as /wordpress/wp-includes/wlwmanifest.xml
+app.all(/(^wordpress\/|\/wp-includes\/)/, respondWith404);
+// block Other language URLs such as /phpinfo.php and /admin.cgi
+app.all(/^[^/]+\.(php|cgi)$/, respondWith404);
+// block Commonly probed application paths
+app.all(/^(phpmyadmin|mysql|cgi-bin|cpanel|plesk)/i, respondWith404);
+
+// add CSP
+app.headGet(async (c, next) => {
+  const resp = await next();
+  if (
+    response.headers.get('content-type')?.includes('text/html') &&
+    !response.headers.has('Content-Security-Headers')
+  ) {
+    resp.headers.set(
+      'Content-Security-Headers',
+      "frame-src 'self'; frame-ancestors 'self'; worker-src 'self'; connect-src 'self'; default-src 'self'; font-src *; img-src *; manifest-src 'self'; media-src 'self' data:; object-src 'self' data:; prefetch-src 'self'; script-src 'self'; script-src-elem 'self' 'unsafe-inline'; script-src-attr 'none'; style-src-attr 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'"
+    );
+  }
+  return resp;
+});
+// modify CSP at a certain route
+app.headGet('/embeds/*', async (c, next) => {
+  const resp = await next();
+  const csp = response.headers.get('Content-Security-Headers');
+  if (csp) {
+    resp.headers.set(
+      'Content-Security-Headers',
+      csp.replace(/frame-ancestors .+;/, 'frame-ancestors *;')
+    );
+  }
+  return resp;
+});
+
+// Persist data in c.locals
+app.get('/api/*', async (c, next) => {
+  const authValue = c.request.headers.get('Authorization');
+  c.locals.auth = {
+    identity: await getUser(authValue),
+    permission: await getPermissions(authValue),
+  };
+  // return nothing so that subsequent handlers get called
+});
 ```
 
 ## Decisions
 
-The following decisions are based on scripts in /benchmarks.
+The following decisions are based on scripts in /benchmarks:
 
+- bound-functions.ts - The Context object created for each request has its
+  methods automatically bound to the instance. It is convenient for developers
+  and adds only a tiny overhead.
+- inner-functions.ts - The Context is a class, not a set of functions in an
+  enclosure which saves about 3% of time.
+- compression.ts - gzip is the default preferred format for the compression
+  middleware. Deflate provides no advantage, and Brotli provides 2-8% additional
+  size savings at the cost of 7-10x as much CPU time as gzip. Brotli takes on
+  the order of 100ms to compress 100kb of html, compared to sub-milliseconds
+  for gzip.
+- etags - etag calculation is very fast. On the order of tens of microseconds
+  for 100kb of html.
+- lru-matcher.ts - The default LRU cache size used for the router is 4000.
+  Cache sizes of 4000+ are all about 1.4x faster than no cache.
+- response-reencoding.ts - Both the etags middleware and compression middleware
+  convert the response body to an ArrayBuffer, process it, then create a new
+  Response object. The decode/reencode process takes only 10s of microseconds.
+- TextEncoder-reuse.ts - The Context object's response factories (c.json(),
+  c.html(), etc.) reuse a single TextEncoder object. That gains about 18% which
+  turns out to be only on the order of 10s of nanoseconds.
+- timer-resolution.ts - performance.now() is faster than Date.now() even though
+  it provides additional precision. The performanceHeader uses performance.now()
+  when it sets the X-Took header, which is rounded to 3 decimal places.
+
+Some additional design decisions:
+
+- I decided to use LRUCache and a custom router. I looked into trie routers and
+  compile RegExp routers, but they didn't easily support the concept of matching
+  multiple handlers and running each one in order of registration. Bunshine v1
+  did use `path-to-regexp`, but that recently stopped supporting `*` in route
+  registration.
 -
 
 ## Roadmap
@@ -1069,25 +1143,21 @@ The following decisions are based on scripts in /benchmarks.
 - ✅ SocketRouter
 - ✅ Context
 - ✅ examples/server.ts
-- ✅ middleware > serveFiles
+- ✅ middleware > compression
 - ✅ middleware > cors
 - ✅ middleware > devLogger
-- ✅ middleware > prodLogger
+- ✅ middleware > etags
+- ✅ middleware > headers
 - ✅ middleware > performanceHeader
-- ✅ middleware > securityHeaders
+- ✅ middleware > prodLogger
+- ✅ middleware > responseCache
+- ✅ middleware > serveFiles
 - ✅ middleware > trailingSlashes
-- 🔲 middleware > html rewriter
-- 🔲 middleware > hmr
-- 🔲 middleware > directoryListing
-- 🔲 middleware > rate limiter
-- 🔲 document headers middleware
-- 🔲 move some middleware to `@bunshine/\*`?
-- ✅ gzip compression
+- 🔲 document the headers middleware
 - ✅ options for serveFiles
-- 🔲 tests for cors
+- ✅ tests for cors
 - 🔲 tests for devLogger
 - 🔲 tests for prodLogger
-- 🔲 tests for gzip
 - 🔲 tests for responseFactories
 - ✅ tests for serveFiles
 - 🔲 100% test coverage
@@ -1097,8 +1167,6 @@ The following decisions are based on scripts in /benchmarks.
 - 🔲 GitHub Actions to run tests and coverage
 - 🔲 Support server clusters
 - ✅ Replace "ms" with a small and simple implementation
-- ✅ Export functions to gzip strings and files
-- ✅ Gzip performance testing (to get min/max defaults)
 
 ## License
 

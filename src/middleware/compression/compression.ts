@@ -24,7 +24,7 @@ export const defaultOptions = {
   minSize: 100,
 };
 
-export default function compression(
+export function compression(
   options: Partial<CompressionOptions> = {}
 ): Middleware {
   if (options.prefer === 'none') {

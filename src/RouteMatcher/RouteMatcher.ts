@@ -60,7 +60,7 @@ export default class RouteMatcher<Target extends any> {
       this.registered.push({
         methodFilter,
         pattern,
-        regex: /\/(.+)/,
+        regex: /^\/(.+)$/,
         matcher: subject => ({ '0': subject.slice(1) }),
         target,
       });
@@ -69,7 +69,7 @@ export default class RouteMatcher<Target extends any> {
       this.registered.push({
         methodFilter,
         pattern,
-        regex: /(.+)/,
+        regex: /^(.+)$/,
         matcher: subject => ({ '0': subject }),
         target,
       });
@@ -133,8 +133,8 @@ export default class RouteMatcher<Target extends any> {
   detectPotentialDos(detector: any, config?: any) {
     for (const reg of this.registered) {
       if (detector(reg.regex, config).safe === false) {
-        throw new Error(
-          `Potential ReDoS detected for pattern ${reg.pattern}. Consider using a `
+        console.warn(
+          `Bunshine: Potential ReDoS detected for pattern "${reg.pattern}" => ${reg.regex.source}`
         );
       }
     }

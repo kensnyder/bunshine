@@ -4,7 +4,7 @@ import { runBenchmarks } from './runBenchmarks.ts';
 
 /*
 Conclusion:
-Cache sizes of 4000+ are all about 41x faster than no cache
+Cache sizes of 4000+ are all about 1.4x faster than no cache
 */
 
 function withCacheSize(size: number) {
