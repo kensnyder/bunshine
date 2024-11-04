@@ -1,4 +1,4 @@
-import { defaultHashCalculator } from '../src/middleware/etags/etags.ts';
+import { defaultEtagsCalculator } from '../src/middleware/etags/etags.ts';
 import { runBenchmarks } from './runBenchmarks.ts';
 
 /*
@@ -28,7 +28,7 @@ async function getResponse(input: string) {
 }
 
 async function computeEtags(input: string) {
-  await defaultHashCalculator(
+  await defaultEtagsCalculator(
     // @ts-ignore
     null,
     await getResponse(input)

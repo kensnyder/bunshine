@@ -7,7 +7,7 @@ import SocketContext, { SocketMessage } from './SocketContext.ts';
 
 // U = UpgradeShape
 // P = ParamsShape
-// T = Type i.e. EventName
+// T = Type i.e. SocketEventType
 
 export type WsDataShape<U = any, P = Record<string, any>> = {
   sc: SocketContext<U, P>;
@@ -20,7 +20,7 @@ export type SocketUpgradeHandler<
 
 export type SocketPlainHandler<U, P> = (context: SocketContext<U, P>) => void;
 
-export type SocketMessageHandler<U, P, T extends SocketEventName> = (
+export type SocketMessageHandler<U, P, T extends SocketEventType> = (
   context: SocketContext<U, P>,
   message: SocketMessage<T>
 ) => void;
@@ -63,7 +63,7 @@ export type BunHandlers = {
   pong: (ws: ServerWebSocket<WsDataShape>, data: any) => void;
 };
 
-export type SocketEventName =
+export type SocketEventType =
   | 'open'
   | 'message'
   | 'close'
@@ -100,7 +100,6 @@ export default class SocketRouter {
     // capture the matcher details
     // @ts-expect-error  Handlers are more specific than any
     this.routeMatcher.add('ALL', path, handlers);
-    // console.log('ws handlers registered!', path);
     // create a router path that upgrades to a socket
     this.httpRouter.get<P>(path, async (c, next) => {
       const upgradeData = await handlers.upgrade?.(c, next);
@@ -135,7 +134,7 @@ export default class SocketRouter {
       `Unhandled WebSocket handler error at "${context.url.pathname}" in handler "${context.type}": ${error.message}`
     );
   };
-  private _createHandler = (eventName: SocketEventName) => {
+  private _createHandler = (eventName: SocketEventType) => {
     return async (ws: ServerWebSocket<WsDataShape>, ...args: any) => {
       const sc = ws.data.sc as SocketContext;
       sc.ws = ws;

@@ -12,16 +12,18 @@ export type CompressionOptions = {
   br: BrotliOptions;
   gzip: ZlibCompressionOptions;
   minSize: number;
+  maxSize: number;
 };
 
-export const defaultOptions = {
+export const compressionDefaults = {
   prefer: 'gzip' as const,
   br: {} as BrotliOptions,
   gzip: {} as ZlibCompressionOptions,
   // body must be large enough to be worth compressing
-  // (54 is minimum size of gzip after metadata; 100 is arbitrary choice)
+  // (54 bytes is minimum size of gzip after metadata; 100 is arbitrary choice)
   // see benchmarks/gzip.ts for more information
   minSize: 100,
+  maxSize: 1024 * 1024 * 500, // 500 MB
 };
 
 export function compression(
@@ -30,31 +32,34 @@ export function compression(
   if (options.prefer === 'none') {
     return () => {};
   }
-  const resolvedOptions = { ...defaultOptions, ...options };
+  const resolvedOptions = { ...compressionDefaults, ...options };
   return async (context, next) => {
     const resp = await next();
     try {
-      if (!isCompressibleMime(context.request.headers.get('Content-Type'))) {
-        console.log(
-          'not compressible mime:',
-          context.request.headers.get('Content-Type')
-        );
+      if (!isCompressibleMime(resp.headers.get('Content-Type'))) {
         return resp;
       }
       const accept = context.request.headers.get('Accept-Encoding') ?? '';
       const canBr = /\bbr\b/.test(accept);
       const canGz = /\bgzip\b/.test(accept);
-      console.log({ accept, canBr, canGz });
       if (!canBr && !canGz) {
         return resp;
       }
+      const oldBody = await resp.arrayBuffer();
+      if (
+        oldBody.byteLength < resolvedOptions.minSize ||
+        oldBody.byteLength > resolvedOptions.maxSize
+      ) {
+        return new Response(oldBody, {
+          status: resp.status,
+          statusText: resp.statusText,
+          headers: resp.headers,
+        });
+      }
       const encoding = resolvedOptions.prefer === 'br' && canBr ? 'br' : 'gzip';
-      const newBody = await compressBytes(
-        await resp.arrayBuffer(),
-        encoding,
-        resolvedOptions
-      );
+      const newBody = await compressBytes(oldBody, encoding, resolvedOptions);
       resp.headers.set('Content-Encoding', encoding);
+      resp.headers.delete('Content-Length');
       return new Response(newBody, {
         status: resp.status,
         statusText: resp.statusText,
@@ -70,12 +75,9 @@ export function compression(
 
 async function compressBytes(
   buffer: ArrayBuffer,
-  type: string,
+  type: 'br' | 'gzip',
   options: CompressionOptions
 ) {
-  if (buffer.byteLength < options.minSize) {
-    return buffer;
-  }
   if (type === 'br') {
     return brPromise(buffer, options.br);
   } else {

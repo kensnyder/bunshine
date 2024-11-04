@@ -4,14 +4,14 @@ import type { Middleware, NextFunction } from '../../HttpRouter/HttpRouter.ts';
 export type HeaderValue =
   | string
   | ((c: Context, resp: Response) => string | null | Promise<string | null>);
-export type HeadersInit = Record<string, HeaderValue>;
+export type HeaderValues = Record<string, HeaderValue>;
 export type HeaderCondition = (
   c: Context,
   resp: Response
 ) => boolean | Promise<boolean>;
 
 export function headers(
-  headers: HeadersInit,
+  headers: HeaderValues,
   condition?: HeaderCondition
 ): Middleware {
   return async (context: Context, next: NextFunction) => {

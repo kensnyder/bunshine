@@ -2,7 +2,8 @@
 
 import { BunFile, ServeOptions, Server, ServerWebSocket, ServerWebSocketSendStatus, ZlibCompressionOptions } from 'bun';
 import { LRUCache } from 'lru-cache';
-import { RequireAtLeastOne } from 'type-fest';
+import { BrotliOptions } from 'node:zlib';
+import { RequireAtLeastOne, TypedArray } from 'type-fest';
 
 export type Registration<T> = {
 	matcher: (subject: string) => null | Record<string, string>;
@@ -67,7 +68,7 @@ export type WsDataShape<U = any, P = Record<string, any>> = {
 };
 export type SocketUpgradeHandler<U, P extends Record<string, any> = Record<string, any>> = (context: Context<P>, next: NextFunction) => U | Promise<U>;
 export type SocketPlainHandler<U, P> = (context: SocketContext<U, P>) => void;
-export type SocketMessageHandler<U, P, T extends SocketEventName$1> = (context: SocketContext<U, P>, message: SocketMessage<T>) => void;
+export type SocketMessageHandler<U, P, T extends SocketEventType> = (context: SocketContext<U, P>, message: SocketMessage<T>) => void;
 export type SocketErrorHandler<U, P> = (context: SocketContext<U, P>, error: Error) => void;
 export type SocketCloseHandler<U, P> = (context: SocketContext<U, P>, status: number, reason: string) => void;
 export type BunshineHandlers<U, P extends Record<string, string> = Record<string, string>> = RequireAtLeastOne<{
@@ -88,7 +89,7 @@ export type BunHandlers = {
 	ping: (ws: ServerWebSocket<WsDataShape>, data: any) => void;
 	pong: (ws: ServerWebSocket<WsDataShape>, data: any) => void;
 };
-type SocketEventName$1 = "open" | "message" | "close" | "drain" | "ping" | "pong";
+export type SocketEventType = "open" | "message" | "close" | "drain" | "ping" | "pong";
 export declare class SocketRouter {
 	httpRouter: HttpRouter;
 	routeMatcher: RouteMatcher<BunshineHandlers<any>>;
@@ -144,20 +145,27 @@ export declare class HttpRouter {
 	fetch: (request: Request, server: Server) => Promise<Response>;
 }
 export type Factory = (body: string, init?: ResponseInit) => Response;
-export declare let minGzipSize: number;
 export declare function json(this: Context, data: any, init?: ResponseInit): Response;
 export declare function factory(contentType: string): Factory;
 export declare const redirect: (url: string, status?: number) => Response;
 export type FileResponseOptions = {
 	range?: string;
 	chunkSize?: number;
-	gzip?: boolean;
 	disposition?: "inline" | "attachment";
 	acceptRanges?: boolean;
 };
+export declare const file: (filenameOrBunFile: string | BunFile, fileOptions?: FileResponseOptions) => Promise<Response>;
 export type SseSend = (eventName: string, data?: string | object, id?: string, retry?: number) => void | Promise<void>;
 export type SseClose = () => void | Promise<void>;
 export type SseSetupFunction = (send: SseSend, close: SseClose) => void | (() => void);
+export declare const sse: (signal: AbortSignal, setup: SseSetupFunction, init?: ResponseInit) => Response;
+export declare function buildFileResponse({ file, acceptRanges, chunkSize, rangeHeader, method, }: {
+	file: BunFile;
+	acceptRanges: boolean;
+	chunkSize?: number;
+	rangeHeader?: string | null;
+	method: string;
+}): Promise<Response>;
 export type ContextWithError<ParamsShape extends Record<string, string> = Record<string, string>> = Context<ParamsShape> & {
 	error: Error;
 };
@@ -190,24 +198,39 @@ export declare class Context<ParamsShape extends Record<string, string> = Record
 		port: number;
 	} | null;
 	/** A shorthand for `new Response(text, { headers: { 'Content-type': 'text/plain' } })` */
-	text(text: string, init?: ResponseInit): Response;
+	text: (text: string, init?: ResponseInit) => Response;
 	/** A shorthand for `new Response(js, { headers: { 'Content-type': 'text/javascript' } })` */
-	js(js: string, init?: ResponseInit): Response;
+	js: (js: string, init?: ResponseInit) => Response;
 	/** A shorthand for `new Response(html, { headers: { 'Content-type': 'text/html' } })` */
-	html(html: string, init?: ResponseInit): Response;
+	html: (html: string, init?: ResponseInit) => Response;
 	/** A shorthand for `new Response(html, { headers: { 'Content-type': 'text/css' } })` */
-	css(css: string, init?: ResponseInit): Response;
+	css: (css: string, init?: ResponseInit) => Response;
 	/** A shorthand for `new Response(xml, { headers: { 'Content-type': 'text/xml' } })` */
-	xml(xml: string, init?: ResponseInit): Response;
+	xml: (xml: string, init?: ResponseInit) => Response;
 	/** A shorthand for `new Response(JSON.stringify(data), { headers: { 'Content-type': 'application/json' } })` */
-	json(data: any, init?: ResponseInit): Response;
+	json: (data: any, init?: ResponseInit) => Response;
 	/** A shorthand for `new Response(null, { headers: { Location: url }, status: 301 })` */
-	redirect(url: string, status?: number): Response;
+	redirect: (url: string, status?: number) => Response;
 	/** A shorthand for `new Response(bunFile, fileHeaders)` */
-	file(filenameOrBunFile: string | BunFile, fileOptions?: FileResponseOptions): Promise<Response>;
+	file: (filenameOrBunFile: string | BunFile, fileOptions?: FileResponseOptions) => Promise<Response>;
 	/** A shorthand for `new Response({ headers: { 'Content-type': 'text/event-stream' } })` */
-	sse(setup: SseSetupFunction, init?: ResponseInit): Response;
+	sse: (setup: SseSetupFunction, init?: ResponseInit) => Response;
 }
+export type CompressionOptions = {
+	prefer: "br" | "gzip" | "none";
+	br: BrotliOptions;
+	gzip: ZlibCompressionOptions;
+	minSize: number;
+	maxSize: number;
+};
+export declare const compressionDefaults: {
+	prefer: "gzip";
+	br: BrotliOptions;
+	gzip: ZlibCompressionOptions;
+	minSize: number;
+	maxSize: number;
+};
+export declare function compression(options?: Partial<CompressionOptions>): Middleware;
 export type CorsOptions = {
 	origin?: string | RegExp | Array<string | RegExp> | boolean | ((incomingOrigin: string, context: Context) => string | string[] | boolean | undefined | null);
 	allowMethods?: string[];
@@ -216,148 +239,51 @@ export type CorsOptions = {
 	credentials?: boolean;
 	exposeHeaders?: string[];
 };
+export declare const corsDefaults: {
+	origin: string;
+	allowMethods: string[];
+	allowHeaders: never[];
+	exposeHeaders: never[];
+};
 export declare function cors(options?: CorsOptions): Middleware;
 export declare function devLogger(): Middleware;
+export type EtagHashCalculator = (context: Context, response: Response) => Promise<{
+	buffer: ArrayBuffer | TypedArray | Buffer;
+	hash: string;
+}>;
+export type EtagOptions = {
+	calculator?: EtagHashCalculator;
+};
+export declare function etags({ calculator, }?: EtagOptions): Middleware;
+export declare function defaultEtagsCalculator(_: Context, resp: Response): Promise<{
+	buffer: ArrayBuffer;
+	hash: string;
+}>;
+export type HeaderValue = string | ((c: Context, resp: Response) => string | null | Promise<string | null>);
+export type HeaderValues = Record<string, HeaderValue>;
+export type HeaderCondition = (c: Context, resp: Response) => boolean | Promise<boolean>;
+export declare function headers(headers: HeaderValues, condition?: HeaderCondition): Middleware;
 export declare function performanceHeader(headerName?: string): Middleware;
 export declare function prodLogger(): Middleware;
-export type SecurityHeaderValue = string | null | undefined | boolean;
-export type SecurityHeader = SecurityHeaderValue | ((context: Context) => SecurityHeaderValue) | ((context: Context) => Promise<SecurityHeaderValue>);
-export type SecurityHeaderOptions = {
-	accessControlAllowOrigin?: SecurityHeader | true;
-	contentSecurityPolicy?: CSPDirectives | true;
-	crossOriginEmbedderPolicy?: SecurityHeader | true;
-	crossOriginOpenerPolicy?: SecurityHeader | true;
-	crossOriginResourcePolicy?: SecurityHeader | true;
-	permissionsPolicy?: AllowedApis | true;
-	referrerPolicy?: SecurityHeader | true;
-	server?: SecurityHeader | true;
-	strictTransportSecurity?: SecurityHeader | true;
-	xContentTypeOptions?: SecurityHeader | true;
-	xFrameOptions?: SecurityHeader | true;
-	xPoweredBy?: SecurityHeader | true;
-	xXssProtection?: SecurityHeader | true;
-};
-export type SandboxOptions = {
-	allowForms?: boolean;
-	allowModals?: boolean;
-	allowOrientationLock?: boolean;
-	allowPointerLock?: boolean;
-	allowPopups?: boolean;
-	allowPopupsToEscapeSandbox?: boolean;
-	allowPresentation?: boolean;
-	allowSameOrigin?: boolean;
-	allowScripts?: boolean;
-	allowTopNavigation?: boolean;
-};
-export type ReportOptions = {
-	uri?: string;
-	to?: string;
-};
-export type CSPDirectives = {
-	frameSrc?: CSPSource[];
-	workerSrc?: CSPSource[];
-	connectSrc?: CSPSource[];
-	defaultSrc?: CSPSource[];
-	fontSrc?: CSPSource[];
-	imgSrc?: CSPSource[];
-	manifestSrc?: CSPSource[];
-	mediaSrc?: CSPSource[];
-	objectSrc?: CSPSource[];
-	prefetchSrc?: CSPSource[];
-	scriptSrc?: CSPSource[];
-	scriptSrcElem?: CSPSource[];
-	scriptSrcAttr?: CSPSource[];
-	styleSrcAttr?: CSPSource[];
-	baseUri?: CSPSource[];
-	formAction?: CSPSource[];
-	frameAncestors?: CSPSource[];
-	sandbox?: SandboxOptions | true;
-	report?: ReportOptions | true;
-};
-export type ApiSource = "*" | "\"data:*\"" | "\"mediastream:*\"" | "\"blob:*\"" | "\"filesystem:*\"" | "self" | "unsafe-eval" | "wasm-unsafe-eval" | "unsafe-hashes" | "unsafe-inline" | "none" | {
-	urls: string[];
-} | {
-	nonces: string[];
-} | {
-	hashes: string[];
-};
-export type AllowedApis = {
-	accelerometer?: ApiSource[];
-	ambientLightSensor?: ApiSource[];
-	autoplay?: ApiSource[];
-	battery?: ApiSource[];
-	camera?: ApiSource[];
-	displayCapture?: ApiSource[];
-	documentDomain?: ApiSource[];
-	encryptedMedia?: ApiSource[];
-	executionWhileNotRendered?: ApiSource[];
-	executionWhileOutOfViewport?: ApiSource[];
-	fullscreen?: ApiSource[];
-	gamepad?: ApiSource[];
-	geolocation?: ApiSource[];
-	gyroscope?: ApiSource[];
-	hid?: ApiSource[];
-	identityCredentialsGet?: ApiSource[];
-	idleDetection?: ApiSource[];
-	localFonts?: ApiSource[];
-	magnetometer?: ApiSource[];
-	midi?: ApiSource[];
-	otpCredentials?: ApiSource[];
-	payment?: ApiSource[];
-	pictureInPicture?: ApiSource[];
-	publickeyCredentialsCreate?: ApiSource[];
-	publickeyCredentialsGet?: ApiSource[];
-	screenWakeLock?: ApiSource[];
-	serial?: ApiSource[];
-	speakerSelection?: ApiSource[];
-	storageAccess?: ApiSource[];
-	usb?: ApiSource[];
-	webShare?: ApiSource[];
-	windowManagement?: ApiSource[];
-	xrSpacialTracking?: ApiSource[];
-};
-export type CSPSource = "*" | "data:" | "mediastream:" | "blob:" | "filesystem:" | "'self'" | "'unsafe-eval'" | "'wasm-unsafe-eval'" | "'unsafe-hashes'" | "'unsafe-inline'" | "'none'" | {
-	uri: string;
-} | {
-	uris: string[];
-} | {
-	nonce: string;
-} | {
-	nonces: string[];
-} | {
-	hash: string;
-} | {
-	hashes: string[];
-} | "'strict-dynamic'" | "'report-sample'" | "'inline-speculation-rules'" | string;
-export declare function securityHeaders(options?: SecurityHeaderOptions): Middleware;
-export type StaticOptions = {
+export interface ResponseCache {
+	get(key: string): {
+		clone: () => Response;
+	};
+	set(key: string, value: Response): void;
+	has(key: string): boolean;
+}
+export declare function responseCache(cache: ResponseCache): Middleware;
+export type ServeFilesOptions = {
 	acceptRanges?: boolean;
 	dotfiles?: "allow" | "deny" | "ignore";
-	etag?: boolean;
 	extensions?: string[];
 	fallthrough?: boolean;
 	immutable?: boolean;
 	index?: string[];
 	lastModified?: boolean;
 	maxAge?: number | string;
-	gzip?: GzipOptions;
 };
-export type GzipOptions = {
-	minFileSize?: number;
-	maxFileSize?: number;
-	mimeTypes?: Array<string | RegExp>;
-	zlibOptions?: ZlibCompressionOptions;
-	cache: false | {
-		type: "file" | "precompress" | "memory" | "never";
-		maxBytes?: number;
-		path?: string;
-	};
-};
-export declare function serveFiles(directory: string, { acceptRanges, dotfiles, etag, extensions, fallthrough, immutable, index, lastModified, maxAge, gzip, }?: StaticOptions): Middleware;
+export declare function serveFiles(directory: string, { acceptRanges, dotfiles, extensions, fallthrough, immutable, index, lastModified, maxAge, }?: ServeFilesOptions): Middleware;
 export declare function trailingSlashes(mode: "add" | "remove"): Middleware;
-
-export {
-	SocketEventName$1 as SocketEventName,
-};
 
 export {};

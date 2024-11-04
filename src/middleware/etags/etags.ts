@@ -11,8 +11,8 @@ export type EtagOptions = {
   calculator?: EtagHashCalculator;
 };
 
-export default function etags({
-  calculator = defaultHashCalculator,
+export function etags({
+  calculator = defaultEtagsCalculator,
 }: EtagOptions = {}): Middleware {
   return async (context: Context, next: NextFunction) => {
     const resp = await next();
@@ -38,7 +38,7 @@ export default function etags({
   };
 }
 
-export async function defaultHashCalculator(_: Context, resp: Response) {
+export async function defaultEtagsCalculator(_: Context, resp: Response) {
   const buffer = await resp.arrayBuffer();
   if (buffer.byteLength === 0) {
     // empty Blob hash

@@ -6,7 +6,7 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
 [![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.0.0)](https://npmjs.com/package/bunshine)
 [![Language](https://badgen.net/static/language/TS?v=3.0.0)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
-![Test Coverage: 92%](https://badgen.net/static/test%20coverage/92%25/green?v=3.0.0)
+![Test Coverage: 96%](https://badgen.net/static/test%20coverage/92%25/green?v=3.0.0)
 [![Gzipped Size](https://badgen.net/bundlephobia/minzip/bunshine?label=minzipped&v=3.0.0)](https://bundlephobia.com/package/bunshine@3.0.0)
 [![Dependency details](https://badgen.net/bundlephobia/dependency-count/bunshine?v=3.0.0)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
 [![Tree shakeable](https://badgen.net/bundlephobia/tree-shaking/bunshine?v=3.0.0)](https://www.npmjs.com/package/bunshine)
@@ -48,13 +48,13 @@ _Or to run Bunshine on Node,
 8. [Server Sent Events](#server-sent-events)
 9. [Route Matching](#route-matching)
 10. [Included middleware](#included-middleware)
+    - [serveFiles](#servefiles)
+    - [responseCache](#responseCache)
     - [compression](#compression)
     - [cors](#cors)
     - [devLogger & prodLogger](#devlogger--prodlogger)
-    - [etags](#etags)
-    - [serveFiles](#servefiles)
     - [performanceHeader](#performanceheader)
-    - [securityHeaders](#securityheaders)
+    - [etags](#etags)
 11. [TypeScript pro-tips](#typescript-pro-tips)
 12. [Roadmap](#roadmap)
 13. [License](./LICENSE.md)
@@ -840,6 +840,32 @@ app.headGet(
 );
 ```
 
+### compression
+
+To add Gzip compression:
+
+```ts
+import { HttpRouter, compression, serveFiles } from 'bunshine';
+
+const app = new HttpRouter();
+
+app.get('/public/*', compression(), serveFiles(`${import.meta.dir}/public`));
+
+app.listen({ port: 3100, reusePort: true });
+```
+
+The compression middleware takes an object with options:
+
+```ts
+type CompressionOptions = {
+  prefer: 'br' | 'gzip' | 'none'; // default gzip
+  br: BrotliOptions; // default from node:zlib
+  gzip: ZlibCompressionOptions; // default from node:zlib
+  minSize: number; // files smaller than this will not be compressed
+  maxSize: number; // files larger than this will not be compressed
+};
+```
+
 ### cors
 
 To add CORS headers to some/all responses, use the `cors` middleware.
@@ -975,6 +1001,21 @@ app.use(performanceHeader('X-Time-Milliseconds'));
 app.listen({ port: 3100, reusePort: true });
 ```
 
+### etags
+
+You can add etag headers and respond to `If-None-Match` headers.
+
+```ts
+import { HttpRouter, etags } from 'bunshine';
+
+const app = new HttpRouter();
+
+app.use(etags());
+app.get('/resource1', c => c.text(someBigThing));
+
+app.listen({ port: 3100, reusePort: true });
+```
+
 ## TypeScript pro-tips
 
 Bun embraces TypeScript and so does Bunshine. Here are some tips for getting
@@ -1083,7 +1124,7 @@ app.headGet('/embeds/*', async (c, next) => {
   if (csp) {
     resp.headers.set(
       'Content-Security-Headers',
-      csp.replace(/frame-ancestors .+;/, 'frame-ancestors *;')
+      csp.replace(/frame-ancestors .+?;/, 'frame-ancestors *;')
     );
   }
   return resp;
@@ -1097,6 +1138,12 @@ app.get('/api/*', async (c, next) => {
     permission: await getPermissions(authValue),
   };
   // return nothing so that subsequent handlers get called
+});
+
+// Destructure context object
+app.get('/api/*', async ({ url, request, text }) => {
+  // do stuff with url and request
+  return text('my text response');
 });
 ```
 
@@ -1135,7 +1182,6 @@ Some additional design decisions:
   multiple handlers and running each one in order of registration. Bunshine v1
   did use `path-to-regexp`, but that recently stopped supporting `*` in route
   registration.
--
 
 ## Roadmap
 
@@ -1165,7 +1211,6 @@ Some additional design decisions:
 - 🔲 more files in examples folder
 - 🔲 example of mini app that uses bin/serve.ts (maybe our own docs?)
 - 🔲 GitHub Actions to run tests and coverage
-- 🔲 Support server clusters
 - ✅ Replace "ms" with a small and simple implementation
 
 ## License

@@ -16,9 +16,6 @@ app.headGet(
   '*',
   serveFiles(folder, {
     index: ['index.html'],
-    gzip: {
-      cache: false,
-    },
   })
 );
 app.listen();

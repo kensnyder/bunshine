@@ -18,7 +18,7 @@ export type CorsOptions = {
   exposeHeaders?: string[];
 };
 
-export const CorsDefaults = {
+export const corsDefaults = {
   origin: '*',
   allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'PATCH', 'DELETE'],
   allowHeaders: [],
@@ -27,7 +27,7 @@ export const CorsDefaults = {
 
 export function cors(options: CorsOptions = {}): Middleware {
   const opts = {
-    ...CorsDefaults,
+    ...corsDefaults,
     ...options,
   };
   const findAllowOrigin = (optsOrigin => {

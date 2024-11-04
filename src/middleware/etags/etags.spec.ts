@@ -1,7 +1,7 @@
 import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import HttpRouter from '../../HttpRouter/HttpRouter.ts';
-import etags from './etags.ts';
+import { etags } from './etags.ts';
 
 describe('etags middleware', () => {
   const helloWorldEtag = '"c6a1dfa4103602ad"';

@@ -5,7 +5,7 @@ import ms from '../../ms/ms.ts';
 
 // see https://expressjs.com/en/4x/api.html#express.static
 // and https://www.npmjs.com/package/send#dotfiles
-export type StaticOptions = {
+export type ServeFilesOptions = {
   acceptRanges?: boolean;
   dotfiles?: 'allow' | 'deny' | 'ignore';
   extensions?: string[];
@@ -27,7 +27,7 @@ export function serveFiles(
     index = [],
     lastModified = true,
     maxAge = undefined,
-  }: StaticOptions = {}
+  }: ServeFilesOptions = {}
 ): Middleware {
   const cacheControlHeader =
     maxAge === undefined ? null : getCacheControl(maxAge, immutable);

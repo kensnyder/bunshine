@@ -11,7 +11,7 @@ describe('compression middleware', () => {
   testWithOptions('should support "gzip"', { prefer: 'gzip' });
   testWithOptions('should support "br"', { prefer: 'br' });
   testWithOptions('should support "none"', { prefer: 'none' });
-  describe('small payloads', () => {
+  describe('minSize', () => {
     let server: Server;
     let app: HttpRouter;
     beforeEach(() => {
@@ -57,13 +57,13 @@ function testWithOptions(
         },
       });
       expect(resp.status).toBe(200);
+      const text = await resp.text();
+      expect(text).toBe(html);
       if (options.prefer === 'none') {
         expect(resp.headers.get('Content-encoding')).toBe(null);
       } else {
         expect(resp.headers.get('Content-encoding')).toBe(options.prefer!);
       }
-      const text = await resp.text();
-      expect(text).toBe(html);
     });
   });
 }

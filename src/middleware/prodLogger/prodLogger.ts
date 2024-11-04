@@ -1,13 +1,12 @@
 import os from 'os';
-// @ts-ignore
-import bunshine from '../../../package.json';
+import bunshinePkg from '../../../package.json';
 import type { Middleware } from '../../HttpRouter/HttpRouter.ts';
 
 const machine = os.hostname();
 const runtime = process.versions.bun
   ? `Bun v${process.versions.bun}`
   : `Node v${process.versions.node}`;
-const poweredBy = `Bunshine v${bunshine.version}`;
+const poweredBy = `Bunshine v${bunshinePkg.version}`;
 
 export function prodLogger(): Middleware {
   return async (c, next) => {
