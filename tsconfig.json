@@ -8,7 +8,7 @@
     "outDir": "./dist",
     "declaration": true,
     "removeComments": false,
-    "noEmit": false,
+    "noEmit": true,
     "pretty": true,
     "isolatedModules": true,
     "sourceMap": false,

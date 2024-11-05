@@ -1,6 +1,6 @@
 import type { ServeOptions, Server } from 'bun';
-import os from 'os';
-import bunshine from '../../package.json';
+import os from 'node:os';
+import bunshine from '../../package.json' assert { type: 'json' };
 import Context, { type ContextWithError } from '../Context/Context';
 import MatcherWithCache from '../MatcherWithCache/MatcherWithCache';
 import SocketRouter from '../SocketRouter/SocketRouter';

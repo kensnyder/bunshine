@@ -4,11 +4,11 @@
   "module": "server/server.ts",
   "type": "module",
   "main": "index.ts",
-  "types": "index.d.ts",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test-watch": "bun test --watch",
     "coverage": "bun test --coverage",
-    "lint": "tsc --noEmit",
+    "lint": "tsc",
     "build:esm": "yes | npx esbuild index.ts --bundle --platform=node --format=esm --external:./package.json --outfile=dist/index.mjs",
     "build:dts": "yes | bunx dts-bundle-generator -o dist/index.d.ts index.ts",
     "example": "bun --watch ./examples/server.ts"
@@ -46,10 +46,10 @@
   },
   "homepage": "https://github.com/kensnyder/bunshine#readme",
   "dependencies": {
-    "bun-types": "1.1.34",
     "lru-cache": "11.0.2"
   },
   "devDependencies": {
+    "@types/bun": "1.1.13",
     "eventsource": "2.0.2",
     "globby": "14.0.2",
     "prettier": "3.3.3",

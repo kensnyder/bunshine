@@ -1,5 +1,5 @@
 import os from 'os';
-import bunshinePkg from '../../../package.json';
+import bunshinePkg from '../../../package.json' assert { type: 'json' };
 import type { Middleware } from '../../HttpRouter/HttpRouter';
 
 const machine = os.hostname();
