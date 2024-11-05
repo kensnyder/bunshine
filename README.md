@@ -53,6 +53,7 @@ _Or to run Bunshine on Node,
     - [compression](#compression)
     - [cors](#cors)
     - [devLogger & prodLogger](#devlogger--prodlogger)
+    - [headers](#headers)
     - [performanceHeader](#performanceheader)
     - [etags](#etags)
 11. [TypeScript pro-tips](#typescript-pro-tips)
@@ -304,6 +305,9 @@ app.get('/', async (c, next) => {
   return c.text('Hello');
 });
 // logs 1, 2, 3, 4, then 5
+
+// Same goes for a list of handlers:
+app.get('/', runs1stAnd5th, runs2ndAnd4th, runs3rd);
 ```
 
 ### What does it mean that "every handler is treated like middleware"?
@@ -915,6 +919,32 @@ _exposeHeaders_: an array of HTTP headers to expose to clients
 _maxAge_: the number of seconds clients should cache the CORS headers
 _credentials_: whether to allow clients to send credentials (e.g. cookies or auth headers)
 
+### headers
+
+The `headers` middleware adds headers to outgoing responses.
+
+```ts
+import { HttpRouter, headers } from '../index';
+
+const app = new HttpRouter();
+
+const htmlSecurityHeaders = headers({
+  'Content-Security-Policy': `default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;`,
+  'Referrer-Policy': 'strict-origin',
+  'Permissions-Policy':
+    'accelerometer=(), ambient-light-sensor=(), autoplay=(*), battery=(), camera=(), display-capture=(), document-domain=(), encrypted-media=(), execution-while-not-rendered=(), execution-while-out-of-viewport=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), local-fonts=(), magnetometer=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-create=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), web-share=(self)',
+});
+
+app.get('/login', htmlSecurityHeaders, loginHandler);
+app.get('/cms/*', htmlSecurityHeaders);
+
+const neverCache = headers({
+  'Cache-control': 'no-store, must-revalidate',
+  Expires: '0',
+});
+app.get('/api/*', neverCache);
+```
+
 ### devLogger & prodLogger
 
 `devLogger` outputs colorful logs in the form below.
@@ -967,7 +997,7 @@ Response log:
 }
 ```
 
-Note that `id` correlates between a request log and response log.
+Note that `id` correlates between a request and its response.
 
 To use these loggers, simply attach them as middleware.
 
@@ -1085,15 +1115,36 @@ app.socket.at<{ room: string }, { user: User }>('/games/rooms/:room', {
 app.listen({ port: 3100, reusePort: true });
 ```
 
-## Examples of common use cases
+### Typing middleware
+
+```ts
+function myMiddleware(options: Options): Middleware {
+  return (c, next) => {
+    // TypeScript infers c and next because of Middleware
+  };
+}
+```
+
+## Examples of common http server tasks
 
 ```ts
 import { HttpRouter } from 'bunshine';
+import { Middleware } from './HttpRouter';
 
 const app = new HttpRouter();
 
+// how to read query params
+app.get('/', c => {
+  c.url.searchParams; // URLSearchParams object
+  Object.fromEntries(c.url.searchParams); // as plain object (but repeated keys are dropped)
+  for (const [key, value] of c.url.searchParams) {
+  } // iterate params
+});
+
+// create small functions that always return the same thing
+const respondWith404 = c => c.text('Not found', { status: 404 });
 // block dotfile access (e.g. .env, .git, .svn, .htaccess)
-app.get(/^\./, c => c.text('Not found', { status: 404 }));
+app.get(/^\./, respondWith404);
 // block URLs that end with .env and other dumb endings
 app.all(/\.(env|bak|old|tmp|backup|log|ini|conf)$/, respondWith404);
 // block WordPress URLs such as /wordpress/wp-includes/wlwmanifest.xml
@@ -1103,12 +1154,12 @@ app.all(/^[^/]+\.(php|cgi)$/, respondWith404);
 // block Commonly probed application paths
 app.all(/^(phpmyadmin|mysql|cgi-bin|cpanel|plesk)/i, respondWith404);
 
-// add CSP
-app.headGet(async (c, next) => {
+// middleware to add CSP
+app.use(async (c, next) => {
   const resp = await next();
   if (
-    response.headers.get('content-type')?.includes('text/html') &&
-    !response.headers.has('Content-Security-Headers')
+    resp.headers.get('content-type')?.includes('text/html') &&
+    !resp.headers.has('Content-Security-Headers')
   ) {
     resp.headers.set(
       'Content-Security-Headers',
@@ -1117,7 +1168,7 @@ app.headGet(async (c, next) => {
   }
   return resp;
 });
-// modify CSP at a certain route
+// Later modify CSP at a certain route
 app.headGet('/embeds/*', async (c, next) => {
   const resp = await next();
   const csp = response.headers.get('Content-Security-Headers');
@@ -1140,10 +1191,22 @@ app.get('/api/*', async (c, next) => {
   // return nothing so that subsequent handlers get called
 });
 
+// Middleware to cast incoming json payload to zod schema
+function castSchema(zodSchema: ZodObject): Middleware {
+  return async c => {
+    const result = zodSchema.safeParse(await c.json());
+    if (result.error) {
+      return c.json(result.error, { status: 400 });
+    }
+    c.locals.safePayload = result.data;
+  };
+}
+app.post('/api/users', castSchema(userCreateSchema), createUser);
+
 // Destructure context object
-app.get('/api/*', async ({ url, request, text }) => {
+app.get('/api/*', async ({ url, request, json }) => {
   // do stuff with url and request
-  return text('my text response');
+  return text('my json response');
 });
 ```
 
@@ -1199,7 +1262,7 @@ Some additional design decisions:
 - ✅ middleware > responseCache
 - ✅ middleware > serveFiles
 - ✅ middleware > trailingSlashes
-- 🔲 document the headers middleware
+- ✅ document the headers middleware
 - ✅ options for serveFiles
 - ✅ tests for cors
 - 🔲 tests for devLogger
