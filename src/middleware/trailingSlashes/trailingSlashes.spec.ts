@@ -1,7 +1,7 @@
 import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import HttpRouter from '../../HttpRouter/HttpRouter.ts';
-import { trailingSlashes } from './trailingSlashes.ts';
+import HttpRouter from '../../HttpRouter/HttpRouter';
+import { trailingSlashes } from './trailingSlashes';
 
 describe('trailingSlashes middleware', () => {
   let app: HttpRouter;

@@ -2,15 +2,15 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=3.0.0" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=3.0.0-rc.1" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.0.0)](https://npmjs.com/package/bunshine)
-[![Language](https://badgen.net/static/language/TS?v=3.0.0)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
-![Test Coverage: 96%](https://badgen.net/static/test%20coverage/92%25/green?v=3.0.0)
-[![Gzipped Size](https://badgen.net/bundlephobia/minzip/bunshine?label=minzipped&v=3.0.0)](https://bundlephobia.com/package/bunshine@3.0.0)
-[![Dependency details](https://badgen.net/bundlephobia/dependency-count/bunshine?v=3.0.0)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
-[![Tree shakeable](https://badgen.net/bundlephobia/tree-shaking/bunshine?v=3.0.0)](https://www.npmjs.com/package/bunshine)
-[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.0.0)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.0.0-rc.1)](https://npmjs.com/package/bunshine)
+[![Language](https://badgen.net/static/language/TS?v=3.0.0-rc.1)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
+![Test Coverage: 96%](https://badgen.net/static/test%20coverage/92%25/green?v=3.0.0-rc.1)
+[![Gzipped Size](https://badgen.net/bundlephobia/minzip/bunshine?label=minzipped&v=3.0.0-rc.1)](https://bundlephobia.com/package/bunshine@3.0.0-rc.1)
+[![Dependency details](https://badgen.net/bundlephobia/dependency-count/bunshine?v=3.0.0-rc.1)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
+[![Tree shakeable](https://badgen.net/bundlephobia/tree-shaking/bunshine?v=3.0.0-rc.1)](https://www.npmjs.com/package/bunshine)
+[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.0.0-rc.1)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
@@ -970,9 +970,9 @@ Request log:
   "method": "GET",
   "pathname": "/",
   "runtime": "Bun v1.1.33",
-  "poweredBy": "Bunshine v3.0.0",
+  "poweredBy": "Bunshine v3.0.0-rc.1",
   "machine": "server1",
-  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0-rc.1.0 Safari/537.36",
   "pid": 123
 }
 ```
@@ -989,9 +989,9 @@ Response log:
   "method": "GET",
   "pathname": "/",
   "runtime": "Bun v1.1.3",
-  "poweredBy": "Bunshine v3.0.0",
+  "poweredBy": "Bunshine v3.0.0-rc.1",
   "machine": "server1",
-  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0-rc.1.0 Safari/537.36",
   "pid": 123,
   "took": 5
 }

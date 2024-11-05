@@ -1,4 +1,4 @@
-import type { Middleware } from '../../HttpRouter/HttpRouter.ts';
+import type { Middleware } from '../../HttpRouter/HttpRouter';
 
 export interface ResponseCache {
   get(key: string): { clone: () => Response };

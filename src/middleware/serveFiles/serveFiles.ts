@@ -1,7 +1,7 @@
 import path from 'path';
-import type { Middleware } from '../../HttpRouter/HttpRouter.ts';
-import { buildFileResponse } from '../../HttpRouter/responseFactories.ts';
-import ms from '../../ms/ms.ts';
+import type { Middleware } from '../../HttpRouter/HttpRouter';
+import { buildFileResponse } from '../../HttpRouter/responseFactories';
+import ms from '../../ms/ms';
 
 // see https://expressjs.com/en/4x/api.html#express.static
 // and https://www.npmjs.com/package/send#dotfiles

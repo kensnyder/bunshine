@@ -1,5 +1,5 @@
-import { compressibleMimeList } from './compressibleMimeList.compiled.ts';
-import { compressibleMimeTypeRegexes } from './compressibleMimeRegexes.ts';
+import { compressibleMimeList } from './compressibleMimeList.compiled';
+import { compressibleMimeTypeRegexes } from './compressibleMimeRegexes';
 
 export default function isCompressibleMime(mimeType: string | null) {
   return (

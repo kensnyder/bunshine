@@ -1,8 +1,8 @@
 import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { LRUCache } from 'lru-cache';
-import HttpRouter from '../../HttpRouter/HttpRouter.ts';
-import { responseCache } from './responseCache.ts';
+import HttpRouter from '../../HttpRouter/HttpRouter';
+import { responseCache } from './responseCache';
 
 describe('responseCache middleware', () => {
   let server: Server;

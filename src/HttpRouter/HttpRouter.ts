@@ -2,8 +2,8 @@ import type { ServeOptions, Server } from 'bun';
 import os from 'os';
 import bunshine from '../../package.json';
 import Context, { type ContextWithError } from '../Context/Context';
-import MatcherWithCache from '../MatcherWithCache/MatcherWithCache.ts';
-import SocketRouter from '../SocketRouter/SocketRouter.ts';
+import MatcherWithCache from '../MatcherWithCache/MatcherWithCache';
+import SocketRouter from '../SocketRouter/SocketRouter';
 import { fallback404 } from './fallback404';
 import { fallback500 } from './fallback500';
 

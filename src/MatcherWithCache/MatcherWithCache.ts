@@ -1,5 +1,5 @@
 import { LRUCache } from 'lru-cache';
-import RouteMatcher from '../RouteMatcher/RouteMatcher.ts';
+import RouteMatcher from '../RouteMatcher/RouteMatcher';
 
 export default class MatcherWithCache<
   Target = any,

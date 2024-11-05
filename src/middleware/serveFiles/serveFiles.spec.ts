@@ -1,8 +1,8 @@
 import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import path from 'path';
-import HttpRouter from '../../HttpRouter/HttpRouter.ts';
-import { serveFiles } from './serveFiles.ts';
+import HttpRouter from '../../HttpRouter/HttpRouter';
+import { serveFiles } from './serveFiles';
 
 const fixturesPath = path.join(import.meta.dir, '..', '..', 'testFixtures');
 

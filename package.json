@@ -1,6 +1,6 @@
 {
   "name": "bunshine",
-  "version": "3.0.0",
+  "version": "3.0.0-rc.1",
   "module": "server/server.ts",
   "type": "module",
   "main": "index.ts",
@@ -8,8 +8,9 @@
   "scripts": {
     "test-watch": "bun test --watch",
     "coverage": "bun test --coverage",
-    "lint": "tsc",
-    "build": "rm index.d.ts; bunx dts-bundle-generator -o index.d.ts index.ts",
+    "lint": "tsc --noEmit",
+    "build:esm": "yes | npx esbuild index.ts --bundle --platform=node --format=esm --external:./package.json --outfile=dist/index.mjs",
+    "build:dts": "yes | bunx dts-bundle-generator -o dist/index.d.ts index.ts",
     "example": "bun --watch ./examples/server.ts"
   },
   "sideEffects": false,
@@ -18,7 +19,7 @@
     "url": "git+https://github.com/kensnyder/bunshine.git"
   },
   "bin": {
-    "serve": "./bin/serve.ts"
+    "bunshine-serve": "./bin/serve.ts"
   },
   "keywords": [
     "Bun HTTP Server",
@@ -45,11 +46,10 @@
   },
   "homepage": "https://github.com/kensnyder/bunshine#readme",
   "dependencies": {
+    "bun-types": "1.1.34",
     "lru-cache": "11.0.2"
   },
   "devDependencies": {
-    "@types/eventsource": "1.1.15",
-    "bun-types": "1.1.34",
     "eventsource": "2.0.2",
     "globby": "14.0.2",
     "prettier": "3.3.3",

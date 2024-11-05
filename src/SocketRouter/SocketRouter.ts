@@ -1,9 +1,9 @@
 import type { ServerWebSocket } from 'bun';
 import { RequireAtLeastOne } from 'type-fest';
-import Context from '../Context/Context.ts';
+import Context from '../Context/Context';
 import HttpRouter, { NextFunction } from '../HttpRouter/HttpRouter';
 import RouteMatcher from '../RouteMatcher/RouteMatcher';
-import SocketContext, { SocketMessage } from './SocketContext.ts';
+import SocketContext, { SocketMessage } from './SocketContext';
 
 // U = UpgradeShape
 // P = ParamsShape

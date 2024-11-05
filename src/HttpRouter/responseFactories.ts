@@ -1,7 +1,7 @@
 import { BunFile } from 'bun';
 import path from 'node:path';
-import Context from '../Context/Context.ts';
-import getMimeType from '../getMimeType/getMimeType.ts';
+import Context from '../Context/Context';
+import getMimeType from '../getMimeType/getMimeType';
 
 export type Factory = (body: string, init?: ResponseInit) => Response;
 

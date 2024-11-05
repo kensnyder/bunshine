@@ -1,7 +1,7 @@
 import type { Server } from 'bun';
 import { beforeEach, describe, expect, it } from 'bun:test';
-import HttpRouter from '../../HttpRouter/HttpRouter.ts';
-import { cors } from './cors.ts';
+import HttpRouter from '../../HttpRouter/HttpRouter';
+import { cors } from './cors';
 
 describe('headers middleware', () => {
   let server: Server;

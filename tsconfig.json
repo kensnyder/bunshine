@@ -1,28 +1,24 @@
 {
-  "include": ["index.ts", "package.json", "src/**/*", "examples", "benchmarks", "bin/**/*"],
-  "exclude": [
-    "**/*.spec.ts"
-  ],
+  "files": ["index.ts"],
+  "exclude": ["**/*.spec.ts"],
   "compilerOptions": {
-    "lib": ["ESNext", "dom", "dom.iterable"],
-    "module": "esnext",
-    "target": "esnext",
-    "moduleResolution": "bundler",
-    "moduleDetection": "force",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
+    "target": "ESNext",
+    "outDir": "./dist",
+    "declaration": true,
+    "removeComments": false,
+    "noEmit": false,
+    "pretty": true,
     "isolatedModules": true,
-    "esModuleInterop": true,
-    "allowImportingTsExtensions": true,
-    "composite": true,
-    "strict": true,
-    "noEmit": true,
-    "downlevelIteration": true,
+    "sourceMap": false,
     "skipLibCheck": true,
-    "noImplicitAny": false,
+    "moduleResolution": "Bundler",
     "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-    "allowJs": true,
-    "types": [
-      "bun-types"
-    ]
+    "esModuleInterop": true,
+    "strict": true,
+    "downlevelIteration": true,
+    "noImplicitAny": false,
+    "types": []
   }
 }

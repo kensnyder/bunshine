@@ -32,7 +32,7 @@ export {
   compression,
   compressionDefaults,
   type CompressionOptions,
-} from './src/middleware/compression/compression.ts';
+} from './src/middleware/compression/compression';
 export {
   cors,
   corsDefaults,
@@ -44,14 +44,14 @@ export {
   etags,
   type EtagHashCalculator,
   type EtagOptions,
-} from './src/middleware/etags/etags.ts';
+} from './src/middleware/etags/etags';
 export {
   headers,
   type HeaderCondition,
   type HeaderValue,
   type HeaderValues,
 } from './src/middleware/headers/headers';
-export { performanceHeader } from './src/middleware/performanceHeader/performanceHeader.ts';
+export { performanceHeader } from './src/middleware/performanceHeader/performanceHeader';
 export { prodLogger } from './src/middleware/prodLogger/prodLogger';
 export {
   responseCache,
@@ -73,4 +73,4 @@ export {
   type SocketPlainHandler,
   type SocketUpgradeHandler,
   type WsDataShape,
-} from './src/SocketRouter/SocketRouter.ts';
+} from './src/SocketRouter/SocketRouter';

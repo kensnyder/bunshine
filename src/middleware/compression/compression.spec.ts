@@ -1,7 +1,7 @@
 import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import HttpRouter from '../../HttpRouter/HttpRouter.ts';
-import { compression, type CompressionOptions } from './compression.ts';
+import HttpRouter from '../../HttpRouter/HttpRouter';
+import { compression, type CompressionOptions } from './compression';
 
 const html = await fetch('https://www.npmjs.com/package/bunshine').then(res =>
   res.text()

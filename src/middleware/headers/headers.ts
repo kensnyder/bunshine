@@ -1,5 +1,5 @@
-import type Context from '../../Context/Context.ts';
-import type { Middleware, NextFunction } from '../../HttpRouter/HttpRouter.ts';
+import type Context from '../../Context/Context';
+import type { Middleware, NextFunction } from '../../HttpRouter/HttpRouter';
 
 export type HeaderValue =
   | string

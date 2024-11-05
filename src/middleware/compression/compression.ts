@@ -1,8 +1,8 @@
 import type { ZlibCompressionOptions } from 'bun';
 import { promisify } from 'node:util';
 import { type BrotliOptions, brotliCompress, gzip } from 'node:zlib';
-import { Middleware } from '../../HttpRouter/HttpRouter.ts';
-import isCompressibleMime from './isCompressibleMime.ts';
+import { Middleware } from '../../HttpRouter/HttpRouter';
+import isCompressibleMime from './isCompressibleMime';
 
 const brPromise = promisify(brotliCompress);
 const gzipPromise = promisify(gzip);

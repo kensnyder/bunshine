@@ -1,5 +1,5 @@
 import { Server, ServerWebSocket, ServerWebSocketSendStatus } from 'bun';
-import { WsDataShape } from './SocketRouter.ts';
+import { WsDataShape } from './SocketRouter';
 
 const isBufferSource = (function () {
   const TypedArray = Object.getPrototypeOf(Uint8Array);

@@ -1,4 +1,4 @@
-import type { Middleware } from '../../HttpRouter/HttpRouter.ts';
+import type { Middleware } from '../../HttpRouter/HttpRouter';
 
 export function devLogger(): Middleware {
   return async (c, next) => {

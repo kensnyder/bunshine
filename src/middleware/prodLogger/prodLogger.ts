@@ -1,6 +1,6 @@
 import os from 'os';
 import bunshinePkg from '../../../package.json';
-import type { Middleware } from '../../HttpRouter/HttpRouter.ts';
+import type { Middleware } from '../../HttpRouter/HttpRouter';
 
 const machine = os.hostname();
 const runtime = process.versions.bun
