@@ -2,15 +2,14 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=3.0.0-rc.1" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=3.0.0-rc.2" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.0.0-rc.1)](https://npmjs.com/package/bunshine)
-[![Language](https://badgen.net/static/language/TS?v=3.0.0-rc.1)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
-![Test Coverage: 96%](https://badgen.net/static/test%20coverage/92%25/green?v=3.0.0-rc.1)
-[![Gzipped Size](https://badgen.net/bundlephobia/minzip/bunshine?label=minzipped&v=3.0.0-rc.1)](https://bundlephobia.com/package/bunshine@3.0.0-rc.1)
-[![Dependency details](https://badgen.net/bundlephobia/dependency-count/bunshine?v=3.0.0-rc.1)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
-[![Tree shakeable](https://badgen.net/bundlephobia/tree-shaking/bunshine?v=3.0.0-rc.1)](https://www.npmjs.com/package/bunshine)
-[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.0.0-rc.1)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.0.0-rc.2)](https://npmjs.com/package/bunshine)
+[![Language: TypeScript](https://badgen.net/static/language/TS?v=3.0.0-rc.2)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
+![Test Coverage: 96%](https://badgen.net/static/test%20coverage/96%25/green?v=3.0.0-rc.2)
+[![Dependencies: 1](https://badgen.net/static/dependencies/1/green?v=3.0.0-rc.2)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
+![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.0.0-rc.2)
+[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.0.0-rc.2)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
@@ -24,16 +23,17 @@ _Or to run Bunshine on Node,
 ## Motivation
 
 1. Use bare `Request` and `Response` objects
-2. Support for routing `WebSocket` requests
-3. Support for Server Sent Events
-4. Support ranged file downloads (e.g. for video streaming)
-5. Be very lightweight
-6. Treat every handler like middleware
-7. Support async handlers
-8. Provide common middleware out of the box (cors, prodLogger, headers, compression, etags)
-9. Support traditional routing syntax
-10. Make specifically for Bun
-11. Comprehensive unit tests
+2. Integrated support for routing `WebSocket` requests
+3. Integrated support for _Server Sent Events_
+4. Support _ranged file downloads_ (e.g. for video streaming)
+5. Be very _lightweight_
+6. _Elegantly_ treat every handler like middleware
+7. Support _async handlers_
+8. Provide _common middleware_ out of the box (cors, prodLogger, headers,
+   compression, etags)
+9. Support _traditional routing_ syntax
+10. Make specifically for _Bun_
+11. Comprehensive _unit tests_
 12. Support for `X-HTTP-Method-Override` header
 
 ## Table of Contents
@@ -56,17 +56,20 @@ _Or to run Bunshine on Node,
     - [headers](#headers)
     - [performanceHeader](#performanceheader)
     - [etags](#etags)
+    - [Recommended Middleware](#recommended-middleware)
 11. [TypeScript pro-tips](#typescript-pro-tips)
-12. [Roadmap](#roadmap)
-13. [License](./LICENSE.md)
+12. [Design Decisions](#design-decisions)
+13. [Roadmap](#roadmap)
+14. [ISC License](./LICENSE.md)
 
 ## Upgrading from 1.x to 2.x
 
-RegExp symbols are not allowed in route definitions to avoid ReDoS vulnerabilities.
+`RegExp` symbols are not allowed in route definitions to avoid ReDoS
+vulnerabilities.
 
 ## Upgrading from 2.x to 3.x
 
-- The `securityHeaders` middleware has been dropped. Use a library such as
+- The `securityHeaders` middleware has been discontinued. Use a library such as
   [@side/fortifyjs](https://www.npmjs.com/package/@side/fortifyjs) instead.
 - The `serveFiles` middleware no longer accepts options for `etags` or `gzip`.
   Instead, compose the `etags` and `compression` middlewares:
@@ -107,18 +110,18 @@ app.patch('/users/:id', async c => {
   }
 });
 
-app.on404(c => {
+app.onNotFound(c => {
+  // alias: on404
   // called when no handlers match the requested path
   return c.text('Page Not found', { status: 404 });
 });
 
-app.on500(c => {
+app.onError(c => {
+  // alias: on500
   // called when a handler throws an error
   console.error('500', c.error);
   return c.json({ error: 'Internal server error' }, { status: 500 });
 });
-
-// note that you can also use the aliases onNotFound and onError
 
 app.listen({ port: 3100, reusePort: true });
 
@@ -168,7 +171,7 @@ app.get('/hello', (c: Context, next: NextFunction) => {
   c.server; // The Bun server instance (useful for pub-sub)
   c.app; // The HttpRouter instance
   c.locals; // A place to persist data between handlers for the duration of the request
-  c.error; // An error object available to handlers registered with app.on500()
+  c.error; // An error object available to handlers registered with app.onError()
   c.ip; // The IP address of the client or load balancer (not necessarily the end user)
   c.date; // The date of the request
   c.now; // The result of performance.now() at the start of the request
@@ -205,7 +208,7 @@ app.listen({ port: 3100, reusePort: true });
 
 See the [serveFiles](#serveFiles) section for more info.
 
-Also note you can serve files with bunshine anywhere with `bunx bunshine serve`.
+Also note you can serve files with Bunshine anywhere with `bunx bunshine-serve`.
 It currently uses the default `serveFiles()` options.
 
 ## Writing middleware
@@ -222,14 +225,13 @@ app.get('/healthcheck', c => c.text('200 OK'));
 
 // Run before each request
 app.use(c => {
-  if (!isAllowed(c.request.headers.get('Authorization'))) {
-    // redirect instead of running other middleware or handlers
-    return c.redirect('/login', { status: 403 });
+  if (isBot(c.request.headers.get('User-Agent'))) {
+    return c.text('Bots are forbidden', { status: 403 });
   }
   // continue to other handlers
 });
 
-// Run after each request
+// Run code after each request
 app.use(async (c, next) => {
   // wait for response from other handlers
   const resp = await next();
@@ -241,7 +243,7 @@ app.use(async (c, next) => {
   return resp;
 });
 
-// Run before AND after each request
+// Run code before AND after each request
 app.use(async (c, next) => {
   logRequest(c.request);
   const resp = await next();
@@ -250,11 +252,12 @@ app.use(async (c, next) => {
 });
 
 // Middleware at a certain path
-app.get('/admin', c => {
+const requireAdmin: Middleware = c => {
   if (!isAdmin(c.request.headers.get('Authorization'))) {
     return c.redirect('/login', { status: 403 });
   }
-});
+};
+app.get('/admin', requireAdmin);
 
 // Middleware before a given handler (as args)
 app.get('/users/:id', paramValidationMiddleware, async c => {
@@ -274,6 +277,22 @@ app.get('/users/:id', [
 // handler affected by middleware defined above
 app.get('/', c => c.text('Hello World!'));
 
+// define a handler function to be used in multiple places
+const ensureSafeData = async (_, next) => {
+  const unsafeResponse = await next();
+  const text = await unsafeResponse.text();
+  const scrubbed = scrubSensitiveData(text);
+  return new Response(scrubbed, {
+    headers: unsafeResponse.headers,
+    status: unsafeResponse.status,
+    statusText: unsafeResponse.statusText,
+  });
+};
+
+// all routes that start with /api will get ensureSafeData applied
+app.get('/api/*', ensureSafeData);
+app.get('/api/v1/users/:id', getUser);
+
 app.listen({ port: 3100, reusePort: true });
 ```
 
@@ -283,7 +302,7 @@ you must register handlers in order of desired specificity. For example:
 ```ts
 // This order matters
 app.get('/users/me', handler1);
-app.get('/users/:id', handler2); // runs only if id is not "me" or handler1 doesn't respond
+app.get('/users/:id', handler2); // runs only if handler1 doesn't respond
 app.get('*', http404Handler);
 ```
 
@@ -305,6 +324,10 @@ app.get('/', async (c, next) => {
 app.get('/', async (c, next) => {
   console.log(3);
   return c.text('Hello');
+});
+app.get('/', async (c, next) => {
+  console.log('never');
+  return c.text('Hello2');
 });
 // logs 1, 2, 3, 4, then 5
 
@@ -347,12 +370,13 @@ import { HttpRouter, type Context, type NextFunction } from 'bunshine';
 
 const app = new HttpRouter();
 
-// ❌ Incorrect use of next
+// ❌ Incorrect use of next()
 app.get('/hello', (c: Context, next: NextFunction) => {
   const resp = next();
+  // oops! resp is a Promise
 });
 
-// ✅ Correct use of next
+// ✅ Correct use of next()
 app.get('/hello', async (c: Context, next: NextFunction) => {
   // wait for other handlers to return a response
   const resp = await next();
@@ -360,8 +384,8 @@ app.get('/hello', async (c: Context, next: NextFunction) => {
 });
 ```
 
-And finally, it means that `.use()` is just a convenience function for
-registering middleware. Consider the following:
+And it means that `.use()` is just a convenience function for registering
+middleware. Consider the following:
 
 ```ts
 import { HttpRouter } from 'bunshine';
@@ -381,7 +405,7 @@ import { HttpRouter } from 'bunshine';
 
 const app = new HttpRouter();
 
-// middleware can be inserted with parameters
+// middleware can be inserted as parameters to app.get()
 app.get('/admin', getAuthMiddleware('admin'), middleware2, handler);
 
 // Bunshine accepts any number of middleware functions in parameters or arrays
@@ -418,6 +442,10 @@ app.post('/posts', async c => {
 // start the server
 app.listen({ port: 3100, reusePort: true });
 ```
+
+Throwing a `Response` effectively skips the currently running handler/middleware
+and passes control to the next handler. That way thrown responses will be passed
+to subsequent middleware such as loggers.
 
 ## WebSockets
 
@@ -574,7 +602,7 @@ livePrice.addEventListener('price', e => {
 
 Note that with SSE, the client must ultimately decide when to stop listening.
 Creating an `EventSource` object will open a connection to the server, and if
-the server closes the connection, the browser will automatically reconnect.
+the server closes the connection, a browser will automatically reconnect.
 
 So if you want to tell the browser you are done sending events, send a
 message that your client-side code will understand to mean "stop listening".
@@ -592,6 +620,7 @@ app.get<{ videoId: string }>('/convert-video/:videoId', c => {
       send('progress', { percent });
     };
     const onComplete = () => {
+      // Browser code will close connection when percent is 100
       send('progress', { percent: 100 });
     };
     startVideoConversion(videoId, onProgress, onComplete);
@@ -643,24 +672,24 @@ events.addEventListener('event2', listener2);
 
 Bunshine v1 used the `path-to-regexp` package for processing path routes.
 Due to a discovered
-[RegExp Denial of Service vulnerability](https://security.snyk.io/vuln/SNYK-JS-PATHTOREGEXP-7925106),
-Bunshine v2+ no longer uses
-[path-to-regexp docs](https://www.npmjs.com/package/path-to-regexp).
+[RegExp Denial of Service (ReDoS) vulnerability](https://security.snyk.io/vuln/SNYK-JS-PATHTOREGEXP-7925106)
+Bunshine v2+ no longer uses `path-to-regexp` because the new, safer version
+imposes disruptive limitations such as no support for unnamed wildcards.
 
-### Support
+### What is supported
 
 Bunshine supports the following route matching features:
 
 - Named placeholders using colons (e.g. `/posts/:id`)
 - End wildcards using stars (e.g. `/assets/*`)
-- Middle non-slash wildcards using stars (e.g. `/assets/*/*.css`)
+- Middle (non-slash) wildcards using stars (e.g. `/assets/*/*.css`)
 - Static paths (e.g. `/posts`)
 
-Support for other behaviors can lead to a Regular Expression Denial of service
-vulnerability where an attacker can request long URLs and tie up your server
-CPU with backtracking regular expression searches.
+Support for RegExp symbols such as `\d+` can lead to a Regular Expression Denial
+of Service (ReDoS) vulnerability where an attacker can request long URLs and
+tie up your server CPU with backtracking regular-expression searches.
 
-### Path examples
+### Supported path examples
 
 | Path                 | URL                 | params                  |
 | -------------------- | ------------------- | ----------------------- |
@@ -673,31 +702,34 @@ CPU with backtracking regular expression searches.
 | `/star/*/can`        | `/star/man/can`     | `{ 0: 'man' }`          |
 | `/star/*/can/*`      | `/star/man/can/go`  | `{ 0: 'man', 1: 'go' }` |
 
-### Special Characters
+### Special characters are not supported
 
 Note that all regular-expression special characters including
 `\ ^ $ * + ? . ( ) | { } [ ]` will be escaped. If you need any of these
-behaviors, you'll need to pass in a `RegExp`.
+behaviors, you'll need to pass in a `RegExp`. But be sure to check your
+`RegExp` with a ReDoS such as [Devina](https://devina.io/redos-checker) or
+[redos-checker on npm](https://www.npmjs.com/package/redos-detector).
 
 For example, the dot in `/assets/*.js` will not match all characters--only dots.
 
-### Not supported
+### Examples of unsupported routes
 
-Support for regex-like syntax has been dropped in v2 due to the aforementioned
-[RegExp Denial of Service vulnerability](https://security.snyk.io/vuln/SNYK-JS-PATHTOREGEXP-7925106).
+Support for regex-like syntax has been dropped in Bunshine v2 due to the
+aforementioned RegExp Denial of Service (ReDoS) vulnerability.
 For cases where you need to limit by character or specify optional segments,
 you'll need to pass in a `RegExp`. Be sure to check your `RegExp` with a ReDoS
 checker such as [Devina](https://devina.io/redos-checker) or
 [redos-checker on npm](https://www.npmjs.com/package/redos-detector).
 
-| Example             | Explaination                              | Equivalent RegExp        |
-| ------------------- | ----------------------------------------- | ------------------------ |
-| `/users/([a-z-]+)/` | Character classes are not supported       | `^\/users\/([a-z-]+)$`   |
-| `/users/(\\d+)`     | Character class escapes are not supported | `^/\/users\/(\d+)$`      |
-| `/(users\|u)/:id`   | Pipes are not supported                   | `^\/(users\|u)/([^/]+)$` |
-| `/:a/:b?`           | Optional params are not supported         | `^\/([^/]*)\/(.*)$`      |
+| Example                | Explaination                              | Equivalent Safe RegExp   |
+| ---------------------- | ----------------------------------------- | ------------------------ |
+| `/users/([a-z-]+)/` ❌ | Character classes are not supported       | `^\/users\/([a-z-]+)$`   |
+| `/users/(\\d+)` ❌     | Character class escapes are not supported | `^/\/users\/(\d+)$`      |
+| `/(users\|u)/:id` ❌   | Pipes are not supported                   | `^\/(users\|u)/([^/]+)$` |
+| `/:a/:b?` ❌           | Optional params are not supported         | `^\/([^/]*)\/(.*)$`      |
 
-If you want to double check all your routes, you can use code like the following:
+If you want to double-check all your routes, you can install `redos-detector`
+and use Bunshine's `detectPotentialDos` function:
 
 ```ts
 import { HttpRouter } from 'bunshine';
@@ -743,9 +775,9 @@ app.listen({ port: 3100, reusePort: true });
 
 ### serveFiles
 
-Serve static files from a directory. As shown above, serving static files is
-easy with the `serveFiles` middleware. Note that ranged requests are
-supported, so you can use it for video streaming or partial downloads.
+Serve static files from a directory. Note that ranged requests are
+supported, so you can use it to serve video streams and support partial
+downloads.
 
 ```ts
 import { HttpRouter, serveFiles } from 'bunshine';
@@ -764,27 +796,9 @@ import { HttpRouter, serveFiles } from 'bunshine';
 
 const app = new HttpRouter();
 
-app.on(['HEAD', 'GET'], '/public/*', serveFiles(`${import.meta.dir}/public`));
-// or
 app.headGet('/public/*', serveFiles(`${import.meta.dir}/public`));
-
-app.listen({ port: 3100, reusePort: true });
-```
-
-How to alter the response provided by another handler:
-
-```ts
-import { HttpRouter, serveFiles } from 'bunshine';
-
-const app = new HttpRouter();
-
-const addFooHeader = async (_, next) => {
-  const response = await next();
-  response.headers.set('x-foo', 'bar');
-  return response;
-};
-
-app.get('/public/*', addFooHeader, serveFiles(`${import.meta.dir}/public`));
+// or
+app.on(['HEAD', 'GET'], '/public/*', serveFiles(`${import.meta.dir}/public`));
 
 app.listen({ port: 3100, reusePort: true });
 ```
@@ -813,26 +827,26 @@ All options for serveFiles:
 | ------------ | ----------- | ----------------------------------------------------------------------------------------- |
 | acceptRanges | `true`      | If true, accept ranged byte requests                                                      |
 | dotfiles     | `"ignore"`  | How to handle dotfiles; allow=>serve normally, deny=>return 403, ignore=>run next handler |
-| extensions   | `[]`        | If given, a list of file extensions to allow                                              |
+| extensions   | `[]`        | If given, a whitelist of file extensions to allow                                         |
 | fallthrough  | `true`      | If false, issue a 404 when a file is not found, otherwise proceed to next handler         |
 | maxAge       | `undefined` | If given, add a Cache-Control header with max-age†                                        |
 | immutable    | `false`     | If true, add immutable directive to Cache-Control header; must also specify maxAge        |
 | index        | `[]`        | If given, a list of filenames (e.g. index.html) to look for when path is a folder         |
-| lastModified | `true`      | If true, set the Last-Modified header                                                     |
+| lastModified | `true`      | If true, set the Last-Modified header based on the filesystem's last modified date        |
 
 † _A number in milliseconds or expression such as '30min', '14 days', '1y'._
 
 ### responseCache
 
 Simple caching can be accomplished with the `responseCache()` middleware. It
-saves responses to a cache you supply, based on URL. This can be useful for
+saves responses to a cache you supply, with URLs as keys. This can be useful for
 builds, where your assets aren't changing. In the example below, `lru-cache` is
 used to store assets in memory. Any cache that implements `has(url: string)`,
 `get(url: string)` and `set(url: string, resp: Response)` methods can be used.
 Your cache can also serialize responses to save them to an external system.
 Keep in mind that your `set()` function will receive a `Response` object and
-your `get()` function should be an object with a `clone()` method that returns
-a `Response` object.
+your `get()` function should return an object with a `clone()` method that
+returns a `Response` object.
 
 ```ts
 import { LRUCache } from 'lru-cache';
@@ -846,6 +860,10 @@ app.headGet(
 );
 ```
 
+Note that caching in memory can potentially consume a lot of memory. Using a
+service such as CloudFlare removes the need for caching assets and takes a load
+off your application.
+
 ### compression
 
 To add Gzip compression:
@@ -855,6 +873,10 @@ import { HttpRouter, compression, serveFiles } from 'bunshine';
 
 const app = new HttpRouter();
 
+// compress all payloads
+app.use(compression());
+
+// compress only certain payloads
 app.get('/public/*', compression(), serveFiles(`${import.meta.dir}/public`));
 
 app.listen({ port: 3100, reusePort: true });
@@ -914,12 +936,14 @@ app.listen({ port: 3100, reusePort: true });
 
 Options details:
 
-_origin_: A string, regex, array of strings/regexes, or a function that returns the desired origin header
+_origin_: A string, regex, array of strings/regexes, or a function that returns
+the desired origin header
 _allowMethods_: an array of HTTP verbs to allow clients to make
 _allowHeaders_: an array of HTTP headers to allow clients to send
 _exposeHeaders_: an array of HTTP headers to expose to clients
 _maxAge_: the number of seconds clients should cache the CORS headers
-_credentials_: whether to allow clients to send credentials (e.g. cookies or auth headers)
+_credentials_: whether to allow clients to send credentials (e.g. cookies or
+auth headers)
 
 ### headers
 
@@ -947,6 +971,28 @@ const neverCache = headers({
 app.get('/api/*', neverCache);
 ```
 
+You can also use pass a function as a second parameter to `headers`, to only
+apply
+the given headers under certain conditions.
+
+```ts
+import { HttpRouter, headers } from '../index';
+
+const app = new HttpRouter();
+
+const htmlSecurityHeaders = headers(
+  {
+    'Content-Security-Policy': `default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;`,
+    'Referrer-Policy': 'strict-origin',
+    'Permissions-Policy':
+      'accelerometer=(), ambient-light-sensor=(), autoplay=(*), battery=(), camera=(), display-capture=(), document-domain=(), encrypted-media=(), execution-while-not-rendered=(), execution-while-out-of-viewport=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), local-fonts=(), magnetometer=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-create=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), web-share=(self)',
+  },
+  (c, response) => response.headers.get('content-type')?.includes('text/html')
+);
+
+app.use(htmlSecurityHeaders);
+```
+
 ### devLogger & prodLogger
 
 `devLogger` outputs colorful logs in the form below.
@@ -972,9 +1018,9 @@ Request log:
   "method": "GET",
   "pathname": "/",
   "runtime": "Bun v1.1.33",
-  "poweredBy": "Bunshine v3.0.0-rc.1",
+  "poweredBy": "Bunshine v3.0.0-rc.2",
   "machine": "server1",
-  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0-rc.1.0 Safari/537.36",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0-rc.2.0 Safari/537.36",
   "pid": 123
 }
 ```
@@ -991,9 +1037,9 @@ Response log:
   "method": "GET",
   "pathname": "/",
   "runtime": "Bun v1.1.3",
-  "poweredBy": "Bunshine v3.0.0-rc.1",
+  "poweredBy": "Bunshine v3.0.0-rc.2",
   "machine": "server1",
-  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0-rc.1.0 Safari/537.36",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0-rc.2.0 Safari/537.36",
   "pid": 123,
   "took": 5
 }
@@ -1009,9 +1055,11 @@ import { HttpRouter, devLogger, prodLogger } from 'bunshine';
 const app = new HttpRouter();
 
 const logger = process.env.NODE_ENV === 'development' ? devLogger : prodLogger;
+// attach very first to log all requests
 app.use(logger());
-// or at a specific path
-app.use('/api/*', logger());
+// OR attach only to a specific path
+app.get('/api/*', logger());
+api.get('/api/users/:id', getUser);
 
 app.listen({ port: 3100, reusePort: true });
 ```
@@ -1048,6 +1096,26 @@ app.get('/resource1', c => c.text(someBigThing));
 app.listen({ port: 3100, reusePort: true });
 ```
 
+### Recommended Middleware
+
+Most applications will want a full-featured set of middleware. Below is the
+recommended middleware in order.
+
+```ts
+import { HttpRouter, compression, etags, performanceHeader } from 'bunshine';
+
+const app = new HttpRouter();
+
+// add total execution time in milliseconds
+app.use(performanceHeader);
+// log all requests
+app.use(process.env.NODE_ENV === 'development' ? devLogger() : prodLogger());
+// use etag headers
+app.use(etags());
+// compress all payloads
+app.use(compression());
+```
+
 ## TypeScript pro-tips
 
 Bun embraces TypeScript and so does Bunshine. Here are some tips for getting
@@ -1055,7 +1123,7 @@ the most out of TypeScript.
 
 ### Typing URL params
 
-You can type URL params by passing a type to any of the route methods:
+You can specify URL param types by passing a type to any of the route methods:
 
 ```ts
 import { HttpRouter } from 'bunshine';
@@ -1120,9 +1188,11 @@ app.listen({ port: 3100, reusePort: true });
 ### Typing middleware
 
 ```ts
+import { HttpRouter, type Middleware } from 'bunshine';
+
 function myMiddleware(options: Options): Middleware {
   return (c, next) => {
-    // TypeScript infers c and next because of Middleware
+    // TypeScript infers c and next because of Middleware type
   };
 }
 ```
@@ -1130,8 +1200,7 @@ function myMiddleware(options: Options): Middleware {
 ## Examples of common http server tasks
 
 ```ts
-import { HttpRouter } from 'bunshine';
-import { Middleware } from './HttpRouter';
+import { HttpRouter, type Middleware } from 'bunshine';
 
 const app = new HttpRouter();
 
@@ -1186,6 +1255,7 @@ app.headGet('/embeds/*', async (c, next) => {
 // Persist data in c.locals
 app.get('/api/*', async (c, next) => {
   const authValue = c.request.headers.get('Authorization');
+  // subsequent handler will have access to this auth information
   c.locals.auth = {
     identity: await getUser(authValue),
     permission: await getPermissions(authValue),
@@ -1203,50 +1273,62 @@ function castSchema(zodSchema: ZodObject): Middleware {
     c.locals.safePayload = result.data;
   };
 }
+
 app.post('/api/users', castSchema(userCreateSchema), createUser);
 
 // Destructure context object
 app.get('/api/*', async ({ url, request, json }) => {
   // do stuff with url and request
-  return text('my json response');
+  return json({ message: 'my json response' });
 });
 ```
 
-## Decisions
+## Design Decisions
 
 The following decisions are based on scripts in /benchmarks:
 
-- bound-functions.ts - The Context object created for each request has its
+- `bound-functions.ts` - The Context object created for each request has its
   methods automatically bound to the instance. It is convenient for developers
   and adds only a tiny overhead.
-- inner-functions.ts - The Context is a class, not a set of functions in an
-  enclosure which saves about 3% of time.
-- compression.ts - gzip is the default preferred format for the compression
+- `inner-functions.ts` - Context is a class, not a set of functions in a
+  closure, which saves about 3% of time.
+- `compression.ts` - gzip is the default preferred format for the compression
   middleware. Deflate provides no advantage, and Brotli provides 2-8% additional
   size savings at the cost of 7-10x as much CPU time as gzip. Brotli takes on
   the order of 100ms to compress 100kb of html, compared to sub-milliseconds
   for gzip.
-- etags - etag calculation is very fast. On the order of tens of microseconds
-  for 100kb of html.
-- lru-matcher.ts - The default LRU cache size used for the router is 4000.
+- `etags.ts` - etag calculation is very fast. On the order of tens of
+  microseconds for 100kb of html.
+- `lru-matcher.ts` - The default LRU cache size used for the router is 4000.
   Cache sizes of 4000+ are all about 1.4x faster than no cache.
-- response-reencoding.ts - Both the etags middleware and compression middleware
-  convert the response body to an ArrayBuffer, process it, then create a new
-  Response object. The decode/reencode process takes only 10s of microseconds.
-- TextEncoder-reuse.ts - The Context object's response factories (c.json(),
-  c.html(), etc.) reuse a single TextEncoder object. That gains about 18% which
-  turns out to be only on the order of 10s of nanoseconds.
-- timer-resolution.ts - performance.now() is faster than Date.now() even though
-  it provides additional precision. The performanceHeader uses performance.now()
-  when it sets the X-Took header, which is rounded to 3 decimal places.
+- `response-reencoding.ts` - Both the etags middleware and compression
+  middleware convert the response body to an ArrayBuffer, process it, then create a new Response object. The decode/reencode process takes only 10s of microseconds.
+- `TextEncoder-reuse.ts` - The Context object's response factories (c.json(),
+  c.html(), etc.) reuse a single `TextEncoder` object. That gains about 18%
+  which turns out to be only on the order of 10s of nanoseconds.
+- `timer-resolution.ts` - `performance.now()` is faster than `Date.now()` even
+  though it provides additional precision. The `performanceHeader()` middleware
+  uses `performance.now()` when it sets the `X-Took` header with the number of
+  milliseconds rounded to 3 decimal places.
 
 Some additional design decisions:
 
 - I decided to use LRUCache and a custom router. I looked into trie routers and
   compile RegExp routers, but they didn't easily support the concept of matching
   multiple handlers and running each one in order of registration. Bunshine v1
-  did use `path-to-regexp`, but that recently stopped supporting `*` in route
-  registration.
+  did use `path-to-regexp`, but that recently stopped supporting many common
+  route definitions.
+- Handlers must use `Request` and `Response` objects. We all work with these
+  modern APIs every time we use `fetch`. Cloudflare Workers, Deno, Bun, and
+  other runtimes decided to use bare `Request` and `Response` objects for their
+  standard libraries. Someday Node may add support too. Frameworks like Express
+  and Hono are nice, but take some learning to understand their proprietary APIs
+  for creating responses, sending responses, and setting headers.
+- Handlers receive a raw `URL` object. `URL` objects are a fast and standardized
+  way to parse incoming URLs. The router only needs to know the path, and so
+  does no other processing for query parameters, ports and so on. There are many
+  approaches to parse query parameters; Bunshine is agnostic. Use
+  `c.url.searchParams` however you like.
 
 ## Roadmap
 
