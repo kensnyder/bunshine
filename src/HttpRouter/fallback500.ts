@@ -1,12 +1,12 @@
-import type { ContextWithError } from '../Context/Context';
+import type Context from '../Context/Context';
 
-export const fallback500 = (context: ContextWithError) => {
+export const fallback500 = (context: Context) => {
   const error = context.error;
   const headers = new Headers();
   let body: string;
   if (Bun.env.NODE_ENV === 'development') {
-    const message = error.message || String(error);
-    const stack = error.stack || 'N/A';
+    const message = error ? error.message || String(error) : 'Unknown Error';
+    const stack = error?.stack || 'N/A';
     headers.append('Reason', 'Error was not handled');
     headers.append('Error-Text', JSON.stringify(message));
     headers.append('Error-Stack', JSON.stringify(stack));

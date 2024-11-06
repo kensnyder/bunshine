@@ -1,7 +1,7 @@
 import type { ServeOptions, Server } from 'bun';
 import os from 'node:os';
-import bunshine from '../../package.json' assert { type: 'json' };
-import Context, { type ContextWithError } from '../Context/Context';
+import bunshinePkg from '../../package.json' assert { type: 'json' };
+import Context from '../Context/Context';
 import MatcherWithCache from '../MatcherWithCache/MatcherWithCache';
 import SocketRouter from '../SocketRouter/SocketRouter';
 import { fallback404 } from './fallback404';
@@ -16,13 +16,6 @@ export type SingleHandler<
   next: NextFunction
 ) => Response | void | Promise<Response | void>;
 
-export type SingleErrorHandler<
-  ParamsShape extends Record<string, string> = Record<string, string>,
-> = (
-  context: ContextWithError<ParamsShape>,
-  next: NextFunction
-) => Response | void | Promise<Response | void>;
-
 export type Middleware<
   ParamsShape extends Record<string, string> = Record<string, string>,
 > = SingleHandler<ParamsShape>;
@@ -30,10 +23,6 @@ export type Middleware<
 export type Handler<
   ParamsShape extends Record<string, string> = Record<string, string>,
 > = SingleHandler<ParamsShape> | Handler<ParamsShape>[];
-
-export type ErrorHandler<
-  ParamsShape extends Record<string, string> = Record<string, string>,
-> = SingleErrorHandler<ParamsShape> | ErrorHandler<ParamsShape>[];
 
 export type ListenOptions = Omit<ServeOptions, 'fetch' | 'websocket'> | number;
 
@@ -59,17 +48,21 @@ export type EmitUrlOptions = {
 };
 
 export default class HttpRouter {
-  version: string = bunshine.version;
+  version: string = bunshinePkg.version;
   locals: Record<string, any> = {};
   server: Server | undefined;
   routeMatcher: MatcherWithCache<SingleHandler>;
   _wsRouter?: SocketRouter;
-  private _onErrors: any[] = [];
-  private _on404s: any[] = [];
+  onNotFound: typeof this.on404;
+  onError: typeof this.on500;
+  private _on404Handlers: SingleHandler[] = [];
+  private _on500Handlers: SingleHandler[] = [];
   constructor(options: HttpRouterOptions = {}) {
     this.routeMatcher = new MatcherWithCache<SingleHandler>(
       options.cacheSize || 4000
     );
+    this.onNotFound = this.on404;
+    this.onError = this.on500;
   }
   listen(portOrOptions: ListenOptions = {}) {
     if (typeof portOrOptions === 'number') {
@@ -98,7 +91,7 @@ export default class HttpRouter {
       const runtime = process.versions.bun
         ? `Bun v${process.versions.bun}`
         : `Node v${process.versions.node}`;
-      message = `☀️ Bunshine v${bunshine.version} on ${runtime} serving at ${servingAt} on "${server}" in ${mode} (${took}ms)`;
+      message = `☀️ Bunshine v${bunshinePkg.version} on ${runtime} serving at ${servingAt} on "${server}" in ${mode} (${took}ms)`;
     } else {
       message = `☀️ Serving ${servingAt}`;
     }
@@ -204,12 +197,12 @@ export default class HttpRouter {
   use(...handlers: Handler<{}>[]) {
     return this.all('*', handlers);
   }
-  onError(...handlers: ErrorHandler<Record<string, string>>[]) {
-    this._onErrors.push(...handlers.flat(9));
+  on404(...handlers: SingleHandler<Record<string, string>>[]) {
+    this._on404Handlers.push(...handlers.flat(9));
     return this;
   }
-  on404(...handlers: Handler<Record<string, string>>[]) {
-    this._on404s.push(...handlers.flat(9));
+  on500(...handlers: SingleHandler<Record<string, string>>[]) {
+    this._on500Handlers.push(...handlers.flat(9));
     return this;
   }
   fetch = async (request: Request, server: Server) => {
@@ -218,7 +211,11 @@ export default class HttpRouter {
     const method = (
       request.headers.get('X-HTTP-Method-Override') || request.method
     ).toUpperCase();
-    const matched = this.routeMatcher.match(method, pathname, this._on404s);
+    const matched = this.routeMatcher.match(
+      method,
+      pathname,
+      this._on404Handlers
+    );
     let i = 0;
     const next: NextFunction = async () => {
       const match = matched[i++];
@@ -241,8 +238,7 @@ export default class HttpRouter {
         }
         return next();
       } catch (e) {
-        // @ts-expect-error
-        return errorHandler(e);
+        return errorHandler(e as Error);
       }
     };
     const errorHandler = (e: Error | Response) => {
@@ -253,9 +249,9 @@ export default class HttpRouter {
       context.error = e as Error;
       let idx = 0;
       const nextError: NextFunction = async () => {
-        const handler = this._onErrors[idx++];
+        const handler = this._on500Handlers[idx++];
         if (!handler) {
-          return fallback500(context as ContextWithError);
+          return fallback500(context);
         }
         try {
           let result = handler(context, nextError);

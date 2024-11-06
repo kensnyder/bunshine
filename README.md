@@ -118,6 +118,8 @@ app.on500(c => {
   return c.json({ error: 'Internal server error' }, { status: 500 });
 });
 
+// note that you can also use the aliases onNotFound and onError
+
 app.listen({ port: 3100, reusePort: true });
 
 function authorize(authHeader: string) {

@@ -24,7 +24,7 @@ describe('headers middleware', () => {
     expect(text).toBe('');
     expect(resp.headers.get('Access-Control-Allow-Origin')).toBe('*');
     expect(resp.headers.get('Access-Control-Allow-Methods')).toBe(
-      'GET,HEAD,PUT,POST,PATCH,DELETE'
+      'GET,HEAD,PUT,POST,PATCH,DELETE,OPTIONS'
     );
   });
   it('should add specific origin', async () => {

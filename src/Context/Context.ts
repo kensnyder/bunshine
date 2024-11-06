@@ -16,10 +16,6 @@ const textHtml = factory('text/html');
 const textXml = factory('text/xml');
 const textCss = factory('text/css');
 
-export type ContextWithError<
-  ParamsShape extends Record<string, string> = Record<string, string>,
-> = Context<ParamsShape> & { error: Error };
-
 export default class Context<
   ParamsShape extends Record<string, string> = Record<string, string>,
 > {

@@ -9,6 +9,7 @@ import {
   serveFiles,
   trailingSlashes,
 } from '../index';
+import { applyHandlerIf } from '../src/middleware/applyHandlerIf/applyHandlerIf';
 
 const app = new HttpRouter();
 
@@ -37,6 +38,17 @@ app.headGet(
     maxAge: 365 * 24 * 60 * 60,
   })
 );
+app.use(
+  applyHandlerIf({
+    requestCondition: () => true,
+    responseCondition: (c, resp) => {
+      return String(resp.headers.get('Content-Type')).includes(
+        'application/json'
+      );
+    },
+    handler: headers({ 'x-handler-if': 'here' }),
+  })
+);
 app.get('/', c => c.redirect('/static/index.html'));
 app.get('/bye', htmlSecurityHeaders, c => c.html('<h1>Bye World</h1>'));
 app.get('/json', c => c.json({ hello: 'world' }));
@@ -48,6 +60,10 @@ app.post('/parrot', async c =>
     withHeaders: Object.fromEntries(c.request.headers),
   })
 );
+app.onError(c => {
+  console.log('caught error!', c.error);
+  c.json({ error: c.error!.message }, { status: 500 });
+});
 
 app.listen({ port: 3300, reusePort: true });
 app.emitUrl({ date: true });

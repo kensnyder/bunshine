@@ -1,18 +1,13 @@
-export {
-  default as Context,
-  type ContextWithError,
-} from './src/Context/Context';
+export { default as Context } from './src/Context/Context';
 export {
   default as HttpRouter,
   type EmitUrlOptions,
-  type ErrorHandler,
   type Handler,
   type HttpMethods,
   type HttpRouterOptions,
   type ListenOptions,
   type Middleware,
   type NextFunction,
-  type SingleErrorHandler,
   type SingleHandler,
 } from './src/HttpRouter/HttpRouter';
 export {
@@ -28,6 +23,10 @@ export {
   type SseSend,
   type SseSetupFunction,
 } from './src/HttpRouter/responseFactories';
+export {
+  applyHandlerIf,
+  type ApplyHandlerIfArgs,
+} from './src/middleware/applyHandlerIf/applyHandlerIf';
 export {
   compression,
   compressionDefaults,
