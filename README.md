@@ -59,9 +59,10 @@ _Or to run Bunshine on Node,
     - [etags](#etags)
     - [Recommended Middleware](#recommended-middleware)
 11. [TypeScript pro-tips](#typescript-pro-tips)
-12. [Design Decisions](#design-decisions)
-13. [Roadmap](#roadmap)
-14. [ISC License](./LICENSE.md)
+12. [Examples of common http server setup](#examples-of-common-http-server-setup)
+13. [Design Decisions](#design-decisions)
+14. [Roadmap](#roadmap)
+15. [ISC License](./LICENSE.md)
 
 ## Upgrading from 1.x to 2.x
 
@@ -1220,7 +1221,7 @@ function myMiddleware(options: Options): Middleware {
 }
 ```
 
-## Examples of common http server tasks
+## Examples of common http server setup
 
 ```ts
 import { HttpRouter, type Middleware } from 'bunshine';
