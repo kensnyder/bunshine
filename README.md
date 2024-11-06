@@ -2,14 +2,14 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=3.0.0-rc.2" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/assets/bunshine-logo.png?v=3.0.0-rc.3" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.0.0-rc.2)](https://npmjs.com/package/bunshine)
-[![Language: TypeScript](https://badgen.net/static/language/TS?v=3.0.0-rc.2)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
-![Test Coverage: 96%](https://badgen.net/static/test%20coverage/96%25/green?v=3.0.0-rc.2)
-[![Dependencies: 1](https://badgen.net/static/dependencies/1/green?v=3.0.0-rc.2)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
-![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.0.0-rc.2)
-[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.0.0-rc.2)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.0.0-rc.3)](https://npmjs.com/package/bunshine)
+[![Language: TypeScript](https://badgen.net/static/language/TS?v=3.0.0-rc.3)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
+![Test Coverage: 96%](https://badgen.net/static/test%20coverage/96%25/green?v=3.0.0-rc.3)
+[![Dependencies: 1](https://badgen.net/static/dependencies/1/green?v=3.0.0-rc.3)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
+![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.0.0-rc.3)
+[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.0.0-rc.3)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
@@ -24,16 +24,16 @@ _Or to run Bunshine on Node,
 
 1. Use bare `Request` and `Response` objects
 2. Integrated support for routing `WebSocket` requests
-3. Integrated support for _Server Sent Events_
-4. Support _ranged file downloads_ (e.g. for video streaming)
-5. Be very _lightweight_
-6. _Elegantly_ treat every handler like middleware
-7. Support _async handlers_
-8. Provide _common middleware_ out of the box (cors, prodLogger, headers,
+3. Integrated support for **Server Sent Events**
+4. Support **ranged file downloads** (e.g. for video streaming)
+5. Be very **lightweight**
+6. **Elegantly** treat every handler like middleware
+7. Support **async handlers**
+8. Provide **common middleware** out of the box (cors, prodLogger, headers,
    compression, etags)
-9. Support _traditional routing_ syntax
-10. Make specifically for _Bun_
-11. Comprehensive _unit tests_
+9. Support **traditional routing** syntax
+10. Make specifically for **Bun**
+11. Comprehensive **unit tests**
 12. Support for `X-HTTP-Method-Override` header
 
 ## Table of Contents
@@ -51,6 +51,7 @@ _Or to run Bunshine on Node,
     - [serveFiles](#servefiles)
     - [responseCache](#responseCache)
     - [compression](#compression)
+    - [trailingSlashes](#trailingslashes)
     - [cors](#cors)
     - [devLogger & prodLogger](#devlogger--prodlogger)
     - [headers](#headers)
@@ -728,8 +729,8 @@ checker such as [Devina](https://devina.io/redos-checker) or
 | `/(users\|u)/:id` ❌   | Pipes are not supported                   | `^\/(users\|u)/([^/]+)$` |
 | `/:a/:b?` ❌           | Optional params are not supported         | `^\/([^/]*)\/(.*)$`      |
 
-If you want to double-check all your routes, you can install `redos-detector`
-and use Bunshine's `detectPotentialDos` function:
+If you want to double-check all your routes at runtime, you can install
+`redos-detector` and use Bunshine's `detectPotentialDos` function:
 
 ```ts
 import { HttpRouter } from 'bunshine';
@@ -739,7 +740,7 @@ const app = new HttpRouter();
 app.get('/', home);
 // ... all my routes
 
-// detectPotentialDos() calls console.warn with() details of each unsafe pattern
+// detectPotentialDos() calls console.warn() with details of each unsafe pattern
 app.matcher.detectPotentialDos(isSafe);
 ```
 
@@ -894,6 +895,22 @@ type CompressionOptions = {
 };
 ```
 
+### trailingSlashes
+
+Use the `trailingSlashes` middleware to make sure all URLs have consistent
+slash naming for caching, analytics and SEO purposes.
+
+```ts
+import { HttpRouter, cors } from 'bunshine';
+
+const app = new HttpRouter();
+
+// use 'add' to add trailing slashes or 'remove' to strip trailing slashes
+app.use(trailingSlashes('remove'));
+
+// other routes here
+```
+
 ### cors
 
 To add CORS headers to some/all responses, use the `cors` middleware.
@@ -1004,6 +1021,10 @@ example:
 [19:10:50.276Z] GET /api/users/me 200 (5ms)
 ```
 
+Screenshot:
+
+<img alt="devLogger" src="https://github.com/kensnyder/bunshine/raw/main/assets/devLogger-screenshot.png?v=3.0.0-rc.3" width="524" height="78" />
+
 `prodLogger` outputs logs in JSON with the following shape:
 
 Request log:
@@ -1018,9 +1039,9 @@ Request log:
   "method": "GET",
   "pathname": "/",
   "runtime": "Bun v1.1.33",
-  "poweredBy": "Bunshine v3.0.0-rc.2",
+  "poweredBy": "Bunshine v3.0.0-rc.3",
   "machine": "server1",
-  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0-rc.2.0 Safari/537.36",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0-rc.3.0 Safari/537.36",
   "pid": 123
 }
 ```
@@ -1037,9 +1058,9 @@ Response log:
   "method": "GET",
   "pathname": "/",
   "runtime": "Bun v1.1.3",
-  "poweredBy": "Bunshine v3.0.0-rc.2",
+  "poweredBy": "Bunshine v3.0.0-rc.3",
   "machine": "server1",
-  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0-rc.2.0 Safari/537.36",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0-rc.3.0 Safari/537.36",
   "pid": 123,
   "took": 5
 }
@@ -1099,7 +1120,7 @@ app.listen({ port: 3100, reusePort: true });
 ### Recommended Middleware
 
 Most applications will want a full-featured set of middleware. Below is the
-recommended middleware in order.
+recommended middleware in recommended order.
 
 ```ts
 import { HttpRouter, compression, etags, performanceHeader } from 'bunshine';
@@ -1110,6 +1131,8 @@ const app = new HttpRouter();
 app.use(performanceHeader);
 // log all requests
 app.use(process.env.NODE_ENV === 'development' ? devLogger() : prodLogger());
+// strip trailing slashes
+app.use(trailingSlashes('remove'));
 // use etag headers
 app.use(etags());
 // compress all payloads
