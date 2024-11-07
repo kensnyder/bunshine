@@ -1,5 +1,6 @@
 import {
   HttpRouter,
+  applyHandlerIf,
   compression,
   cors,
   devLogger,
@@ -9,7 +10,6 @@ import {
   serveFiles,
   trailingSlashes,
 } from '../index';
-import { applyHandlerIf } from '../src/middleware/applyHandlerIf/applyHandlerIf';
 
 const app = new HttpRouter();
 
@@ -19,23 +19,19 @@ const htmlSecurityHeaders = headers({
   'Permissions-Policy':
     'accelerometer=(), ambient-light-sensor=(), autoplay=(*), battery=(), camera=(), display-capture=(), document-domain=(), encrypted-media=(), execution-while-not-rendered=(), execution-while-out-of-viewport=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), local-fonts=(), magnetometer=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-create=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), web-share=(self)',
 });
-app.use(devLogger());
 app.use(performanceHeader());
-app.use(
-  cors({
-    allowHeaders: ['X-Test'],
-  })
-);
+app.use(devLogger());
+app.use(trailingSlashes('remove'));
+app.use(cors({ origin: '*' }));
 app.use(etags());
 app.use(compression());
-app.use(trailingSlashes('remove'));
 app.headGet('/favicon.ico', cacheControl({ age: 365 * 24 * 60 * 60 }), c =>
   c.file(`${import.meta.dir}/../assets/favicon.ico`)
 );
 app.headGet(
-  '/static',
+  '/static/*',
   serveFiles(`${import.meta.dir}/../testFixtures/folder`, {
-    maxAge: 365 * 24 * 60 * 60,
+    maxAge: '1y',
   })
 );
 app.use(
@@ -46,7 +42,7 @@ app.use(
         'application/json'
       );
     },
-    handler: headers({ 'x-handler-if': 'here' }),
+    handler: headers({ 'enjoy-your-json': 'please' }),
   })
 );
 app.get('/', c => c.redirect('/static/index.html'));

@@ -24,7 +24,9 @@ describe('Context', () => {
     const request = new Request('http://localhost/home.html');
     const app = new HttpRouter();
     const c = new Context(request, server, app);
-    const resp = await c.file(`${import.meta.dir}/../testFixtures/home.html`);
+    const resp = await c.file(
+      `${import.meta.dir}/../../testFixtures/home.html`
+    );
     expect(resp).toBeInstanceOf(Response);
     expect(resp.headers.get('Accept-Ranges')).toBe('bytes');
     const file = await resp.blob();
@@ -37,7 +39,9 @@ describe('Context', () => {
     });
     const app = new HttpRouter();
     const c = new Context(request, server, app);
-    const resp = await c.file(`${import.meta.dir}/../testFixtures/home.html`);
+    const resp = await c.file(
+      `${import.meta.dir}/../../testFixtures/home.html`
+    );
     expect(resp).toBeInstanceOf(Response);
     const file = await resp.blob();
     const text = await file.text();
@@ -50,7 +54,9 @@ describe('Context', () => {
     });
     const app = new HttpRouter();
     const c = new Context(request, server, app);
-    const resp = await c.file(`${import.meta.dir}/../testFixtures/home.html`);
+    const resp = await c.file(
+      `${import.meta.dir}/../../testFixtures/home.html`
+    );
     expect(resp).toBeInstanceOf(Response);
     const file = await resp.blob();
     const text = await file.text();
@@ -62,7 +68,9 @@ describe('Context', () => {
     });
     const app = new HttpRouter();
     const c = new Context(request, server, app);
-    const resp = await c.file(`${import.meta.dir}/../testFixtures/home.html`);
+    const resp = await c.file(
+      `${import.meta.dir}/../../testFixtures/home.html`
+    );
     expect(resp).toBeInstanceOf(Response);
     expect(resp.status).toBe(200);
   });
@@ -72,7 +80,9 @@ describe('Context', () => {
     });
     const app = new HttpRouter();
     const c = new Context(request, server, app);
-    const resp = await c.file(`${import.meta.dir}/../testFixtures/home.html`);
+    const resp = await c.file(
+      `${import.meta.dir}/../../testFixtures/home.html`
+    );
     expect(resp).toBeInstanceOf(Response);
     expect(resp.status).toBe(206);
     expect(await resp.text()).toBe('<h1>');

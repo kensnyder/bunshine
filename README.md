@@ -9,6 +9,7 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 ![Test Coverage: 96%](https://badgen.net/static/test%20coverage/96%25/green?v=3.0.0-rc.3)
 [![Dependencies: 1](https://badgen.net/static/dependencies/1/green?v=3.0.0-rc.3)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
 ![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.0.0-rc.3)
+[![DeepScan grade](https://deepscan.io/api/teams/24409/projects/27605/branches/884000/badge/grade.svg)](https://deepscan.io/dashboard#view=project&tid=24409&pid=27605&bid=884000)
 [![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.0.0-rc.3)](https://opensource.org/licenses/ISC)
 
 ## Installation
@@ -1318,7 +1319,7 @@ The following decisions are based on scripts in /benchmarks:
   closure, which saves about 3% of time.
 - `compression.ts` - gzip is the default preferred format for the compression
   middleware. Deflate provides no advantage, and Brotli provides 2-8% additional
-  size savings at the cost of 7-10x as much CPU time as gzip. Brotli takes on
+  size savings at the cost of 100x as much CPU time as gzip. Brotli takes on
   the order of 100ms to compress 100kb of html, compared to sub-milliseconds
   for gzip.
 - `etags.ts` - etag calculation is very fast. On the order of tens of
@@ -1326,9 +1327,11 @@ The following decisions are based on scripts in /benchmarks:
 - `lru-matcher.ts` - The default LRU cache size used for the router is 4000.
   Cache sizes of 4000+ are all about 1.4x faster than no cache.
 - `response-reencoding.ts` - Both the etags middleware and compression
-  middleware convert the response body to an ArrayBuffer, process it, then create a new Response object. The decode/reencode process takes only 10s of microseconds.
-- `TextEncoder-reuse.ts` - The Context object's response factories (c.json(),
-  c.html(), etc.) reuse a single `TextEncoder` object. That gains about 18%
+  middleware convert the response body to an `ArrayBuffer`, process it, then
+  create a new `Response` object. The decode/reencode process takes only 10s of
+  microseconds.
+- `TextEncoder-reuse.ts` - The Context object's response factories (`c.json()`,
+  `c.html()`, etc.) reuse a single `TextEncoder` object. That gains about 18%
   which turns out to be only on the order of 10s of nanoseconds.
 - `timer-resolution.ts` - `performance.now()` is faster than `Date.now()` even
   though it provides additional precision. The `performanceHeader()` middleware
@@ -1359,7 +1362,8 @@ Some additional design decisions:
 - ✅ HttpRouter
 - ✅ SocketRouter
 - ✅ Context
-- ✅ examples/server.ts
+- ✅ examples/kitchen-sink.ts
+- 🔲 more examples
 - ✅ middleware > compression
 - ✅ middleware > cors
 - ✅ middleware > devLogger
@@ -1379,7 +1383,6 @@ Some additional design decisions:
 - ✅ tests for serveFiles
 - 🔲 100% test coverage
 - 🔲 support and document flags to bin/serve.ts with commander
-- 🔲 more files in examples folder
 - 🔲 example of mini app that uses bin/serve.ts (maybe our own docs?)
 - 🔲 GitHub Actions to run tests and coverage
 - ✅ Replace "ms" with a small and simple implementation

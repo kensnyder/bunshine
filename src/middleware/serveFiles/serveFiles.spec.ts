@@ -4,7 +4,13 @@ import path from 'path';
 import HttpRouter from '../../HttpRouter/HttpRouter';
 import { serveFiles } from './serveFiles';
 
-const fixturesPath = path.join(import.meta.dir, '..', '..', 'testFixtures');
+const fixturesPath = path.join(
+  import.meta.dir,
+  '..',
+  '..',
+  '..',
+  'testFixtures'
+);
 
 describe('serveFiles middleware', () => {
   let app: HttpRouter;
