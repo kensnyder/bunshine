@@ -27,6 +27,18 @@ describe('etags middleware', () => {
     expect(resp.headers.get('Etag')).toBe(helloWorldEtag);
     expect(text).toBe('');
   });
+  it('should match when multiple etags are given', async () => {
+    app.get('/', c => c.text('Hello world'));
+    const resp = await fetch(server.url, {
+      headers: {
+        'If-None-Match': `"abc", ${helloWorldEtag}`,
+      },
+    });
+    const text = await resp.text();
+    expect(resp.status).toBe(304);
+    expect(resp.headers.get('Etag')).toBe(helloWorldEtag);
+    expect(text).toBe('');
+  });
   it('should return full response for mismatch', async () => {
     app.get('/', c => c.text('Hello world'));
     const mismatchEtag = '"mismatch"';

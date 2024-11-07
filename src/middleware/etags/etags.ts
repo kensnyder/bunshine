@@ -23,7 +23,7 @@ export function etags({
     const { buffer, hash } = await calculator(context, resp);
     const etag = `"${hash}"`;
     resp.headers.set('Etag', etag);
-    if (ifNoneMatch && ifNoneMatch === etag) {
+    if (ifNoneMatch && _includesEtag(ifNoneMatch, etag)) {
       return new Response('', {
         headers: resp.headers,
         status: 304,
@@ -36,6 +36,11 @@ export function etags({
       statusText: '',
     });
   };
+}
+
+function _includesEtag(ifNoneMatch: string, etag: string) {
+  const matches = ifNoneMatch.split(',').map(s => s.trim());
+  return matches.includes(etag);
 }
 
 export async function defaultEtagsCalculator(_: Context, resp: Response) {
