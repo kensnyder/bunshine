@@ -56,7 +56,16 @@ export function compression(
           headers: resp.headers,
         });
       }
-      const encoding = resolvedOptions.prefer === 'br' && canBr ? 'br' : 'gzip';
+      let encoding: 'br' | 'gzip';
+      if (!canGz) {
+        encoding = 'br';
+      } else if (!canBr) {
+        encoding = 'gzip';
+      } else {
+        // @ts-expect-error TypeScript isn't smart enough
+        //   to know that prefer can't be "none" at this point
+        encoding = resolvedOptions.prefer;
+      }
       const newBody = await compressBytes(oldBody, encoding, resolvedOptions);
       resp.headers.set('Content-Encoding', encoding);
       resp.headers.delete('Content-Length');

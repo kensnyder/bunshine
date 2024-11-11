@@ -53,10 +53,6 @@ export {
 export { performanceHeader } from './src/middleware/performanceHeader/performanceHeader';
 export { prodLogger } from './src/middleware/prodLogger/prodLogger';
 export {
-  responseCache,
-  type ResponseCache,
-} from './src/middleware/responseCache/responseCache';
-export {
   serveFiles,
   type ServeFilesOptions,
 } from './src/middleware/serveFiles/serveFiles';

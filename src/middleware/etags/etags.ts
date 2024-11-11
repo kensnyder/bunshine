@@ -17,6 +17,7 @@ export function etags({
   return async (context: Context, next: NextFunction) => {
     const resp = await next();
     if (context.request.method !== 'GET' || resp.status !== 200) {
+      // Only use Etags for successful GET requests
       return resp;
     }
     const ifNoneMatch = context.request.headers.get('if-none-match');

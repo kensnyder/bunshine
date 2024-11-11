@@ -50,7 +50,6 @@ _Or to run Bunshine on Node,
 9. [Route Matching](#route-matching)
 10. [Included middleware](#included-middleware)
     - [serveFiles](#servefiles)
-    - [responseCache](#responseCache)
     - [compression](#compression)
     - [trailingSlashes](#trailingslashes)
     - [cors](#cors)
@@ -176,20 +175,32 @@ app.get('/hello', (c: Context, next: NextFunction) => {
   c.locals; // A place to persist data between handlers for the duration of the request
   c.error; // An error object available to handlers registered with app.onError()
   c.ip; // The IP address of the client or load balancer (not necessarily the end user)
-  c.date; // The date of the request
+  c.date; // The Date of the request
   c.now; // The result of performance.now() at the start of the request
 
-  // Convenience methods for creating Response objects with various content types
-  c.json(data, init);
-  c.text(text, init);
-  c.js(jsText, init);
-  c.xml(xmlText, init);
-  c.html(htmlText, init);
-  c.css(cssText, init);
-  c.file(path, init);
+  // To respond, return a Response object:
+  return new Response(JSON.stringify(payload), {
+    headers: { 'Content-type': 'application/json' },
+  });
 
-  // Create a redirect Response
-  c.redirect(url, status);
+  // Or create Response objects with convenience functions:
+  return c.json(data, init);
+  return c.text(text, init);
+  return c.js(jsText, init);
+  return c.xml(xmlText, init);
+  return c.html(htmlText, init);
+  return c.css(cssText, init);
+  return c.file(pathOrSource, init);
+
+  // above init is ResponseInit:
+  {
+    headers: Headers | Record<string, string> | Array<[string, string]>;
+    status: number;
+    statusText: string;
+  }
+
+  // Create a redirect Response:
+  return c.redirect(url, status); // status defaults to 302 (Temporary Redirect)
 });
 ```
 
@@ -416,6 +427,11 @@ app.get('/admin', getAuthMiddleware('admin'), middleware2, handler);
 app.get('/posts', middleware1, middleware2, handler);
 app.get('/users', [middleware1, middleware2, handler]);
 app.get('/visitors', [[middleware1, [middleware2, handler]]]);
+
+// Why might this be useful?
+// You can group multiple middlewares into one array and pass it to route definitions
+const adminMiddleware = [getAuthCookie, checkPermissions];
+app.get('/admin/posts', adminMiddleware, getPosts);
 ```
 
 ## Throwing responses
@@ -468,6 +484,7 @@ type DataShape = { user: User };
 app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
   // Optional. Allows you to specify arbitrary data to attach to ws.data.
   upgrade: sc => {
+    // upgrade is called on first connection, before HTTP 101 is issued
     const cookies = sc.request.headers.get('cookie');
     const user = getUserFromCookies(cookies);
     return { user };
@@ -478,6 +495,7 @@ app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
   },
   // Optional. Called when the client connects
   open(sc) {
+    // open is called once client has successfully upgraded to a Socket connection
     const room = sc.params.room;
     const user = sc.data.user;
     markUserEntrance(room, user);
@@ -839,34 +857,6 @@ All options for serveFiles:
 
 † _A number in milliseconds or expression such as '30min', '14 days', '1y'._
 
-### responseCache
-
-Simple caching can be accomplished with the `responseCache()` middleware. It
-saves responses to a cache you supply, with URLs as keys. This can be useful for
-builds, where your assets aren't changing. In the example below, `lru-cache` is
-used to store assets in memory. Any cache that implements `has(url: string)`,
-`get(url: string)` and `set(url: string, resp: Response)` methods can be used.
-Your cache can also serialize responses to save them to an external system.
-Keep in mind that your `set()` function will receive a `Response` object and
-your `get()` function should return an object with a `clone()` method that
-returns a `Response` object.
-
-```ts
-import { LRUCache } from 'lru-cache';
-import { HttpRouter, responseCache, serveFiles } from 'bunshine';
-
-const app = new HttpRouter();
-app.headGet(
-  '/public/*',
-  responseCache(new LRUCache({ max: 100 })),
-  serveFiles(`${import.meta.dir}/build/public`)
-);
-```
-
-Note that caching in memory can potentially consume a lot of memory. Using a
-service such as CloudFlare removes the need for caching assets and takes a load
-off your application.
-
 ### compression
 
 To add Gzip compression:
@@ -1033,14 +1023,14 @@ Request log:
 
 ```json
 {
-  "msg": "--> GET /",
+  "msg": "--> GET /home",
   "type": "request",
   "date": "2021-08-01T19:10:50.276Z",
   "id": "ea98fe2e-45e0-47d1-9344-2e3af680d6a7",
   "host": "example.com",
   "method": "GET",
-  "pathname": "/",
-  "runtime": "Bun v1.1.33",
+  "pathname": "/home",
+  "runtime": "Bun v1.1.34",
   "poweredBy": "Bunshine v3.0.0-rc.4",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0-rc.4.0 Safari/537.36",
@@ -1052,14 +1042,14 @@ Response log:
 
 ```json
 {
-  "msg": "200 GET /",
+  "msg": "200 GET /home",
   "type": "response",
   "date": "2021-08-01T19:10:50.286Z",
   "id": "ea98fe2e-45e0-47d1-9344-2e3af680d6a7",
   "host": "example.com",
   "method": "GET",
-  "pathname": "/",
-  "runtime": "Bun v1.1.3",
+  "pathname": "/home",
+  "runtime": "Bun v1.1.34",
   "poweredBy": "Bunshine v3.0.0-rc.4",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0-rc.4.0 Safari/537.36",
@@ -1119,6 +1109,14 @@ app.get('/resource1', c => c.text(someBigThing));
 app.listen({ port: 3100, reusePort: true });
 ```
 
+Note: Please register `etags()` before `compression()`.
+
+It's important to generate the ETag after compressing the response. This
+ensures that the ETag reflects the exact version of the compressed content sent
+to the client. If you generate the ETag before compression, it will correspond
+to the uncompressed content, leading to mismatches when clients compare ETags
+for cached compressed responses.
+
 ### Recommended Middleware
 
 Most applications will want a full-featured set of middleware. Below is the
@@ -1140,6 +1138,14 @@ app.use(etags());
 // compress all payloads
 app.use(compression());
 ```
+
+Note: Please register `etags()` before `compression()`.
+
+It's important to generate the ETag after compressing the response. This
+ensures that the ETag reflects the exact version of the compressed content sent
+to the client. If you generate the ETag before compression, it will correspond
+to the uncompressed content, leading to mismatches when clients compare ETags
+for cached compressed responses.
 
 ## TypeScript pro-tips
 
@@ -1371,7 +1377,6 @@ Some additional design decisions:
 - ✅ middleware > headers
 - ✅ middleware > performanceHeader
 - ✅ middleware > prodLogger
-- ✅ middleware > responseCache
 - ✅ middleware > serveFiles
 - ✅ middleware > trailingSlashes
 - ✅ document the headers middleware
