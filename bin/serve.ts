@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import fs from 'fs/promises';
-import { devLogger, HttpRouter, prodLogger, serveFiles } from '../index.ts';
+import { devLogger, HttpRouter, prodLogger, serveFiles } from '../index';
 
 const folder = Bun.argv[2] || process.cwd();
 
