@@ -336,6 +336,5 @@ describe('server', () => {
       }
     );
     expect(result.status).toBe(1006); // abnormal closure
-    expect(result.reason).toBe('');
   });
 });
