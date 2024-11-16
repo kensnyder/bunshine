@@ -5,6 +5,7 @@ import HttpRouter from '../HttpRouter/HttpRouter';
 describe('server', () => {
   let app: HttpRouter;
   let server: Server;
+  let nextPort = 7777;
   beforeEach(() => {
     app = new HttpRouter();
   });
@@ -12,7 +13,15 @@ describe('server', () => {
     server.stop(true);
   });
   it('should connect ok', async () => {
-    const result = await new Promise((resolve, reject) => {
+    const result: {
+      binaryType: string | undefined;
+      address: string;
+      fruit: string;
+      room: string;
+      type: string;
+      open: boolean;
+      message: string;
+    } = await new Promise((resolve, reject) => {
       app.socket.at<{ room: string }>('/chat/:room', {
         upgrade() {
           return { fruit: 'apple' };
@@ -22,6 +31,8 @@ describe('server', () => {
         },
         message(sc, request) {
           resolve({
+            binaryType: sc.binaryType,
+            address: sc.remoteAddress,
             fruit: sc.data.fruit,
             room: sc.params.room,
             type: sc.type,
@@ -30,20 +41,20 @@ describe('server', () => {
           });
         },
       });
-      server = app.listen({ port: 7774 });
+      server = app.listen({ port: nextPort++ });
       const chat = new WebSocket(`${server.url}chat/123`);
       chat.addEventListener('open', evt => {
         chat.send('hello');
       });
       chat.addEventListener('error', reject);
     });
-    expect(result).toEqual({
-      fruit: 'apple',
-      room: '123',
-      type: 'message',
-      open: true,
-      message: 'hello',
-    });
+    expect(result.binaryType).toBe('nodebuffer');
+    expect(typeof result.address).toBe('string');
+    expect(result.fruit).toBe('apple');
+    expect(result.room).toBe('123');
+    expect(result.type).toBe('message');
+    expect(result.open).toBe(true);
+    expect(result.message).toBe('hello');
   });
   it('should send buffers ok', async () => {
     const result: Buffer = await new Promise((resolve, reject) => {
@@ -52,7 +63,24 @@ describe('server', () => {
           sc.send(Buffer.from('hello'));
         },
       });
-      server = app.listen({ port: 7775 });
+      server = app.listen({ port: nextPort++ });
+      const chat = new WebSocket(`${server.url}chat/123`);
+      chat.addEventListener('message', evt => {
+        resolve(evt.data);
+      });
+    });
+    expect(result).toBeInstanceOf(Buffer);
+    expect(result.toString()).toEqual('hello');
+  });
+  it('should set binaryType ok', async () => {
+    const result: Buffer = await new Promise((resolve, reject) => {
+      app.socket.at<{ room: string }>('/chat/:room', {
+        open(sc) {
+          sc.binaryType = 'arraybuffer';
+          sc.send(Buffer.from('hello'));
+        },
+      });
+      server = app.listen({ port: nextPort++ });
       const chat = new WebSocket(`${server.url}chat/123`);
       chat.addEventListener('message', evt => {
         resolve(evt.data);
@@ -68,7 +96,7 @@ describe('server', () => {
           sc.send(Buffer.from('hello').buffer);
         },
       });
-      server = app.listen({ port: 7776 });
+      server = app.listen({ port: nextPort++ });
       const chat = new WebSocket(`${server.url}chat/123`);
       chat.addEventListener('message', evt => {
         resolve(evt.data);
@@ -84,7 +112,7 @@ describe('server', () => {
           sc.send({ hello: 'world' });
         },
       });
-      server = app.listen({ port: 7777 });
+      server = app.listen({ port: nextPort++ });
       const chat = new WebSocket(`${server.url}chat/123`);
       chat.addEventListener('message', evt => {
         resolve(JSON.parse(evt.data));
@@ -122,7 +150,7 @@ describe('server', () => {
           sc.send('world');
         },
       });
-      server = app.listen({ port: 7778 });
+      server = app.listen({ port: nextPort++ });
       const chat = new WebSocket(`${server.url}chat/123`);
       chat.addEventListener('open', evt => {
         chat.send('hello');
@@ -174,7 +202,7 @@ describe('server', () => {
           throw new Error('message!');
         },
       });
-      server = app.listen({ port: 7779 });
+      server = app.listen({ port: nextPort++ });
       const chat = new WebSocket(`${server.url}chat/123`);
       chat.addEventListener('open', evt => {
         chat.send('hello');
@@ -195,7 +223,7 @@ describe('server', () => {
         throw new Error('open!');
       },
     });
-    server = app.listen({ port: 7780 });
+    server = app.listen({ port: nextPort++ });
     new WebSocket(`${server.url}chat/123`);
     await new Promise(r => setTimeout(r, 10));
     expect(spy).toHaveBeenCalled();
@@ -240,7 +268,7 @@ describe('server', () => {
             console.log('error', error);
           },
         });
-        server = app.listen({ port: 7781 });
+        server = app.listen({ port: nextPort++ });
         const user1 = new WebSocket(`${server.url}chat/123?user=a`);
         const user2 = new WebSocket(`${server.url}chat/123?user=b`);
         await Promise.all([
@@ -267,5 +295,47 @@ describe('server', () => {
     expect(events.includes('b left the chat')).toBe(true);
     // Note: we don't hear that "a left the chat"
     // because no one is subscribed to the room to hear it
+  });
+  it('should close with reason', async () => {
+    const result: { status: number; reason: string } = await new Promise(
+      (resolve, reject) => {
+        app.socket.at<{ room: string }>('/chat/:room', {
+          message(sc, request) {
+            sc.close(1000, 'l8r');
+          },
+        });
+        server = app.listen({ port: nextPort++ });
+        const chat = new WebSocket(`${server.url}chat/123`);
+        chat.addEventListener('open', evt => {
+          chat.send('hello');
+        });
+        chat.addEventListener('close', evt => {
+          resolve({ status: evt.code, reason: evt.reason });
+        });
+      }
+    );
+    expect(result.status).toBe(1000);
+    expect(result.reason).toBe('l8r');
+  });
+  it('should terminate', async () => {
+    const result: { status: number; reason: string } = await new Promise(
+      (resolve, reject) => {
+        app.socket.at<{ room: string }>('/chat/:room', {
+          message(sc, request) {
+            sc.terminate();
+          },
+        });
+        server = app.listen({ port: nextPort++ });
+        const chat = new WebSocket(`${server.url}chat/456`);
+        chat.addEventListener('open', evt => {
+          chat.send('hello');
+        });
+        chat.addEventListener('close', evt => {
+          resolve({ status: evt.code, reason: evt.reason });
+        });
+      }
+    );
+    expect(result.status).toBe(1006); // abnormal closure
+    expect(result.reason).toBe('');
   });
 });

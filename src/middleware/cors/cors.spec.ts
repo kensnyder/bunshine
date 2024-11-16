@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'bun:test';
 import HttpRouter from '../../HttpRouter/HttpRouter';
 import { cors } from './cors';
 
-describe('headers middleware', () => {
+describe('cors middleware', () => {
   let server: Server;
   let app: HttpRouter;
   let fetchInit: RequestInit;
@@ -120,7 +120,7 @@ describe('headers middleware', () => {
   });
   it('should allow function-returning arrays (with match)', async () => {
     const options = {
-      origin: () => ['example.com', 'yahoo.com'],
+      origin: () => ['example.com', 'google.com'],
     };
     app.use(cors(options), c => c.text('hello'));
     const resp = await fetch(server.url, fetchInit);

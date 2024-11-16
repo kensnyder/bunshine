@@ -66,6 +66,16 @@ describe('headers middleware', () => {
     expect(text).toBe('hello');
     expect(resp.headers.get('Foo')).toBe('bar');
   });
+  it('should ignore resolvers that throw', async () => {
+    const doThrow = () => {
+      throw new Error('');
+    };
+    app.get('/', headers({ Foo: doThrow }), c => c.text('hello'));
+    const resp = await fetch(server.url);
+    const text = await resp.text();
+    expect(text).toBe('hello');
+    expect(resp.headers.has('Foo')).toBe(false);
+  });
   it('should catch conditional function exceptions', async () => {
     const doThrow = () => {
       throw new Error('');

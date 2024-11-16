@@ -33,6 +33,22 @@ describe('Context', () => {
     const text = await file.text();
     expect(text).toBe('<h1>Welcome home</h1>\n');
   });
+  it('should handle files with disposition="attachment', async () => {
+    const request = new Request('http://localhost/home.html');
+    const app = new HttpRouter();
+    const c = new Context(request, server, app);
+    const resp = await c.file(
+      `${import.meta.dir}/../../testFixtures/home.html`,
+      { disposition: 'attachment' }
+    );
+    expect(resp).toBeInstanceOf(Response);
+    expect(resp.headers.get('Content-Disposition')).toBe(
+      'attachment; filename="home.html"'
+    );
+    const file = await resp.blob();
+    const text = await file.text();
+    expect(text).toBe('<h1>Welcome home</h1>\n');
+  });
   it('should handle files with range "bytes=0-3"', async () => {
     const request = new Request('http://localhost/home.html', {
       headers: { Range: 'bytes=0-3' },

@@ -6,7 +6,7 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
 [![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.0.0-rc.4)](https://npmjs.com/package/bunshine)
 [![Language: TypeScript](https://badgen.net/static/language/TS?v=3.0.0-rc.4)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
-![Test Coverage: 96%](https://badgen.net/static/test%20coverage/96%25/green?v=3.0.0-rc.4)
+[![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.0.0-rc.4)](https://codecov.io/gh/kensnyder/bunshine)
 [![Dependencies: 1](https://badgen.net/static/dependencies/1/green?v=3.0.0-rc.4)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
 ![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.0.0-rc.4)
 [![DeepScan grade](https://deepscan.io/api/teams/24409/projects/27605/branches/884000/badge/grade.svg)](https://deepscan.io/dashboard#view=project&tid=24409&pid=27605&bid=884000)

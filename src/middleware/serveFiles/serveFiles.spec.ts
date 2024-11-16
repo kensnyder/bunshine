@@ -61,6 +61,12 @@ describe('serveFiles middleware', () => {
       const resp = await fetch(`${server.url}files/404.html`);
       expect(resp.status).toBe(404);
     });
+    it('should 404 if file does not exist (no fallthrough)', async () => {
+      app.get('/files/*', serveFiles(fixturesPath, { fallthrough: false }));
+      server = app.listen();
+      const resp = await fetch(`${server.url}files/404.html`);
+      expect(resp.status).toBe(404);
+    });
   });
   describe('headers', () => {
     it('should add date header', async () => {
