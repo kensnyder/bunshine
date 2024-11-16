@@ -11,19 +11,6 @@ export {
   type SingleHandler,
 } from './src/HttpRouter/HttpRouter';
 export {
-  buildFileResponse,
-  factory,
-  file,
-  json,
-  redirect,
-  sse,
-  type Factory,
-  type FileResponseOptions,
-  type SseClose,
-  type SseSend,
-  type SseSetupFunction,
-} from './src/HttpRouter/responseFactories';
-export {
   applyHandlerIf,
   type ApplyHandlerIfArgs,
 } from './src/middleware/applyHandlerIf/applyHandlerIf';
@@ -57,6 +44,21 @@ export {
   type ServeFilesOptions,
 } from './src/middleware/serveFiles/serveFiles';
 export { trailingSlashes } from './src/middleware/trailingSlashes/trailingSlashes';
+export { default as ms } from './src/ms/ms';
+export { default as buildFileResponse } from './src/responseFactories/buildFileResponse';
+export { default as factory } from './src/responseFactories/factory';
+export {
+  default as file,
+  type FileResponseOptions,
+} from './src/responseFactories/file';
+export { default as json } from './src/responseFactories/json';
+export { default as redirect } from './src/responseFactories/redirect';
+export {
+  default as sse,
+  type SseClose,
+  type SseSend,
+  type SseSetupFunction,
+} from './src/responseFactories/sse';
 export {
   default as SocketRouter,
   type BunHandlers,

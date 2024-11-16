@@ -1,14 +1,10 @@
 import type { BunFile, Server } from 'bun';
 import type HttpRouter from '../HttpRouter/HttpRouter';
-import {
-  factory,
-  file,
-  json,
-  redirect,
-  sse,
-  type FileResponseOptions,
-  type SseSetupFunction,
-} from '../HttpRouter/responseFactories';
+import factory from '../responseFactories/factory';
+import file, { type FileResponseOptions } from '../responseFactories/file';
+import json from '../responseFactories/json';
+import redirect from '../responseFactories/redirect';
+import sse, { type SseSetupFunction } from '../responseFactories/sse';
 
 const textPlain = factory('text/plain');
 const textJs = factory('text/javascript');
@@ -81,7 +77,7 @@ export default class Context<
   redirect = (url: string, status = 302) => {
     return redirect(url, status);
   };
-  /** A shorthand for `new Response(bunFile, fileHeaders)` */
+  /** A shorthand for `new Response(bunFile, fileHeaders)` plus range features */
   file = async (
     filenameOrBunFile: string | BunFile,
     fileOptions: FileResponseOptions = {}
