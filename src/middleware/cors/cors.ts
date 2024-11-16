@@ -23,6 +23,8 @@ type OriginResolver = (incoming: string, c: Context) => string | null;
 export const corsDefaults = {
   origin: '*',
   allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  maxAge: undefined,
+  credentials: undefined,
   allowHeaders: [],
   exposeHeaders: [],
 };
@@ -39,9 +41,9 @@ export function cors(options: CorsOptions = {}): Middleware {
     if (c.request.method === 'OPTIONS') {
       return optionsRequestHandler(c);
     }
-    const response = await next();
-    maybeAddAccessHeaders(c, response);
-    return response;
+    const resp = await next();
+    maybeAddAccessHeaders(c, resp);
+    return resp;
   };
 }
 

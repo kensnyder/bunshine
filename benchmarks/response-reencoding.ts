@@ -3,7 +3,7 @@ import { runBenchmarks } from './runBenchmarks.ts';
 /*
 Conclusions:
 
-Decoding and reencoding Response objects takes a matter of microseconds:
+Decoding and re-encoding Response objects takes a matter of microseconds:
   1k string:  1 µs
  10k string:  3 µs
 100k string: 24 µs

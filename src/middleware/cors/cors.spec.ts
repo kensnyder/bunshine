@@ -97,6 +97,47 @@ describe('headers middleware', () => {
     expect(text).toBe('');
     expect(resp.headers.get('Access-Control-Allow-Origin')).toBe(null);
   });
+  it('should allow function that returns string', async () => {
+    const options = {
+      origin: () => 'google.com',
+    };
+    app.use(cors(options), c => c.text('hello'));
+    const resp = await fetch(server.url, fetchInit);
+    const text = await resp.text();
+    expect(text).toBe('');
+    expect(resp.headers.get('Access-Control-Allow-Origin')).toBe('google.com');
+  });
+  it('should ignore function that returns invalid value', async () => {
+    const options = {
+      origin: () => 123,
+    };
+    // @ts-expect-error - testing invalid input
+    app.use(cors(options), c => c.text('hello'));
+    const resp = await fetch(server.url, fetchInit);
+    const text = await resp.text();
+    expect(text).toBe('');
+    expect(resp.headers.get('Access-Control-Allow-Origin')).toBe(null);
+  });
+  it('should allow function-returning arrays (with match)', async () => {
+    const options = {
+      origin: () => ['example.com', 'yahoo.com'],
+    };
+    app.use(cors(options), c => c.text('hello'));
+    const resp = await fetch(server.url, fetchInit);
+    const text = await resp.text();
+    expect(text).toBe('');
+    expect(resp.headers.get('Access-Control-Allow-Origin')).toBe('google.com');
+  });
+  it('should allow arrays (without match)', async () => {
+    const options = {
+      origin: ['some-other-thing'],
+    };
+    app.use(cors(options), c => c.text('hello'));
+    const resp = await fetch(server.url, fetchInit);
+    const text = await resp.text();
+    expect(text).toBe('');
+    expect(resp.headers.has('Access-Control-Allow-Origin')).toBe(false);
+  });
   it('should add other headers', async () => {
     const options = {
       allowMethods: ['GET', 'POST'],
@@ -109,6 +150,37 @@ describe('headers middleware', () => {
     const text = await resp.text();
     expect(text).toBe('');
     expect(resp.headers.get('Access-Control-Allow-Methods')).toBe('GET,POST');
+    expect(resp.headers.get('Access-Control-Allow-Headers')).toBe('Foo,Bar');
     expect(resp.headers.get('Access-Control-Max-Age')).toBe('1800');
+  });
+  it('should add headers on GET', async () => {
+    const options = {
+      origin: '*',
+      allowMethods: ['GET', 'POST'],
+      allowHeaders: ['Foo', 'Bar'],
+      exposeHeaders: ['Baz', 'Qux'],
+      maxAge: 60 * 30,
+    };
+    app.use(cors(options), c => c.text('hello'));
+    const resp = await fetch(server.url, {
+      headers: {
+        Origin: 'google.com',
+      },
+    });
+    const text = await resp.text();
+    expect(text).toBe('hello');
+    expect(resp.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(resp.headers.has('Access-Control-Allow-Methods')).toBe(false);
+    expect(resp.headers.get('Access-Control-Expose-Headers')).toBe('Baz,Qux');
+  });
+  it('should throw on invalid origin option', async () => {
+    const thrower = () => {
+      const options = {
+        origin: new Date(),
+      };
+      // @ts-expect-error - testing invalid input
+      app.use(cors(options), c => c.text('hello'));
+    };
+    expect(thrower).toThrowError('Invalid cors origin option');
   });
 });

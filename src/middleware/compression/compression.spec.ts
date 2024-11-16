@@ -44,6 +44,36 @@ describe('compression middleware', () => {
       expect(resp.headers.get('Content-encoding')).toBe(null);
       expect(text).toBe(respText);
     });
+    it("should avoid compressing when client doesn't support it", async () => {
+      app.get('/', c => c.html(html));
+      const resp = await fetch(server.url, {
+        headers: { 'Accept-Encoding': 'identity' },
+      });
+      const text = await resp.text();
+      expect(resp.status).toBe(200);
+      expect(resp.headers.get('Content-encoding')).toBe(null);
+      expect(text).toBe(html);
+    });
+    it("should use br if gzip isn't supported", async () => {
+      app.get('/', c => c.html(html));
+      const resp = await fetch(server.url, {
+        headers: { 'Accept-Encoding': 'br' },
+      });
+      const text = await resp.text();
+      expect(resp.status).toBe(200);
+      expect(resp.headers.get('Content-encoding')).toBe('br');
+      expect(text).toBe(html);
+    });
+    it("should use gzip if br isn't supported", async () => {
+      app.get('/', c => c.html(html));
+      const resp = await fetch(server.url, {
+        headers: { 'Accept-Encoding': 'gzip' },
+      });
+      const text = await resp.text();
+      expect(resp.status).toBe(200);
+      expect(resp.headers.get('Content-encoding')).toBe('gzip');
+      expect(text).toBe(html);
+    });
   });
 });
 

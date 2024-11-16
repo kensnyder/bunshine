@@ -20,8 +20,6 @@ export async function runBenchmarks<Signature extends Function = () => any>(
     count++;
   }
 
-  process.stdout.write('Warming up...');
-  await bench.warmup();
   console.log('DONE');
   if (options.time) {
     process.stdout.write(

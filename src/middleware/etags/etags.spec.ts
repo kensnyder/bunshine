@@ -52,4 +52,29 @@ describe('etags middleware', () => {
     expect(resp.headers.get('Etag')).toBe(helloWorldEtag);
     expect(text).toBe('Hello world');
   });
+  it('should not generate for non-200', async () => {
+    app.get('/', c => c.text('Hello world', { status: 404 }));
+    const resp = await fetch(server.url, {
+      headers: {
+        'If-None-Match': helloWorldEtag,
+      },
+    });
+    const text = await resp.text();
+    expect(resp.status).toBe(404);
+    expect(resp.headers.has('Etag')).toBe(false);
+    expect(text).toBe('Hello world');
+  });
+  it('should not generate for non-GET', async () => {
+    app.post('/', c => c.text('Hello world'));
+    const resp = await fetch(server.url, {
+      method: 'POST',
+      headers: {
+        'If-None-Match': helloWorldEtag,
+      },
+    });
+    const text = await resp.text();
+    expect(resp.status).toBe(200);
+    expect(resp.headers.has('Etag')).toBe(false);
+    expect(text).toBe('Hello world');
+  });
 });

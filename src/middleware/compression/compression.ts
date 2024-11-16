@@ -35,50 +35,44 @@ export function compression(
   const resolvedOptions = { ...compressionDefaults, ...options };
   return async (context, next) => {
     const resp = await next();
-    try {
-      if (!isCompressibleMime(resp.headers.get('Content-Type'))) {
-        return resp;
-      }
-      const accept = context.request.headers.get('Accept-Encoding') ?? '';
-      const canBr = /\bbr\b/.test(accept);
-      const canGz = /\bgzip\b/.test(accept);
-      if (!canBr && !canGz) {
-        return resp;
-      }
-      const oldBody = await resp.arrayBuffer();
-      if (
-        oldBody.byteLength < resolvedOptions.minSize ||
-        oldBody.byteLength > resolvedOptions.maxSize
-      ) {
-        return new Response(oldBody, {
-          status: resp.status,
-          statusText: resp.statusText,
-          headers: resp.headers,
-        });
-      }
-      let encoding: 'br' | 'gzip';
-      if (!canGz) {
-        encoding = 'br';
-      } else if (!canBr) {
-        encoding = 'gzip';
-      } else {
-        // @ts-expect-error TypeScript isn't smart enough
-        //   to know that prefer can't be "none" at this point
-        encoding = resolvedOptions.prefer;
-      }
-      const newBody = await compressBytes(oldBody, encoding, resolvedOptions);
-      resp.headers.set('Content-Encoding', encoding);
-      resp.headers.delete('Content-Length');
-      return new Response(newBody, {
+    if (!isCompressibleMime(resp.headers.get('Content-Type'))) {
+      return resp;
+    }
+    const accept = context.request.headers.get('Accept-Encoding') ?? '';
+    const canBr = /\bbr\b/.test(accept);
+    const canGz = /\bgzip\b/.test(accept);
+    if (!canBr && !canGz) {
+      return resp;
+    }
+    const oldBody = await resp.arrayBuffer();
+    if (
+      oldBody.byteLength < resolvedOptions.minSize ||
+      oldBody.byteLength > resolvedOptions.maxSize
+    ) {
+      return new Response(oldBody, {
         status: resp.status,
         statusText: resp.statusText,
         headers: resp.headers,
       });
-    } catch (e) {
-      const error = e as Error;
-      console.error(`bunshine compression() error: ${error.message}`);
-      return resp;
     }
+    let encoding: 'br' | 'gzip';
+    if (!canGz) {
+      encoding = 'br';
+    } else if (!canBr) {
+      encoding = 'gzip';
+    } else {
+      // @ts-expect-error TypeScript isn't smart enough
+      //   to know that prefer can't be "none" at this point
+      encoding = resolvedOptions.prefer;
+    }
+    const newBody = await compressBytes(oldBody, encoding, resolvedOptions);
+    resp.headers.set('Content-Encoding', encoding);
+    resp.headers.delete('Content-Length');
+    return new Response(newBody, {
+      status: resp.status,
+      statusText: resp.statusText,
+      headers: resp.headers,
+    });
   };
 }
 
