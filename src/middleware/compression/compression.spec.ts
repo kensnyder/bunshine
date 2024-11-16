@@ -11,7 +11,7 @@ describe('compression middleware', () => {
   testWithOptions('should support "gzip"', { prefer: 'gzip' });
   testWithOptions('should support "br"', { prefer: 'br' });
   testWithOptions('should support "none"', { prefer: 'none' });
-  describe('minSize', () => {
+  describe('', () => {
     let server: Server;
     let app: HttpRouter;
     beforeEach(() => {
@@ -19,9 +19,7 @@ describe('compression middleware', () => {
       app.use(compression());
       server = app.listen();
     });
-    afterEach(() => {
-      server.stop(true);
-    });
+    afterEach(() => server.stop(true));
     it('should ignore small payloads', async () => {
       const respText = 'Hello world';
       app.get('/', c => c.text(respText));
@@ -29,7 +27,22 @@ describe('compression middleware', () => {
       const text = await resp.text();
       expect(resp.status).toBe(200);
       expect(resp.headers.get('Content-encoding')).toBe(null);
-      expect(text).toBe('Hello world');
+      expect(text).toBe(respText);
+    });
+    it('should avoid compressing non-text responses', async () => {
+      const respText = 'Hello world';
+      app.get(
+        '/',
+        () =>
+          new Response(Buffer.from(respText), {
+            headers: { 'Content-Type': 'application/octet-stream' },
+          })
+      );
+      const resp = await fetch(server.url);
+      const text = await resp.text();
+      expect(resp.status).toBe(200);
+      expect(resp.headers.get('Content-encoding')).toBe(null);
+      expect(text).toBe(respText);
     });
   });
 });

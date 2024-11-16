@@ -178,6 +178,29 @@ describe('HttpRouter', () => {
       expect(resp2.status).toBe(200);
       expect(await resp2.text()).toBe('Method was PUT');
     });
+    it('should allow headGet', async () => {
+      app.headGet('/', c => {
+        if (c.request.method === 'GET') {
+          return c.file(`${import.meta.dirname}/../../testFixtures/home.html`);
+        } else {
+          return new Response('', {
+            headers: {
+              'Content-type': 'text/html',
+              'Content-length': '22',
+            },
+          });
+        }
+      });
+      const getResp = await app.fetch(new Request('http://localhost/'), server);
+      expect(getResp.status).toBe(200);
+      expect(await getResp.text()).toInclude('Welcome home');
+      const headResp = await app.fetch(
+        new Request('http://localhost/', { method: 'HEAD' }),
+        server
+      );
+      expect(headResp.status).toBe(200);
+      expect(await headResp.text()).toBe('');
+    });
     it('should allow RegExp paths', async () => {
       app.get(/^\/user\/(.+)\/(.+)/, c => {
         return new Response(
