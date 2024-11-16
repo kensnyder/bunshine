@@ -1,0 +1,31 @@
+name: build
+on: [push]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        bun-version: [1.1.0, latest]
+
+    steps:
+      - name: ➡️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🧅 Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ matrix.bun-version }}
+
+      - name: ⬇️ Install dependencies
+        run: bun install
+
+      - name: 🏃 Run tests
+        run: bun run coverage
+
+      - name: ☂️ Upload to codecov
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true

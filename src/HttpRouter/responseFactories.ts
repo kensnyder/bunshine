@@ -217,18 +217,15 @@ export async function buildFileResponse({
       `bytes ${start}-${end}/${totalFileSize}`
     );
   } else {
-    let body: null | ArrayBuffer | BunFile;
+    let body: null | ArrayBuffer;
     if (method === 'HEAD') {
       body = null;
     } else {
-      body = process.versions.bun ? file : await file.arrayBuffer();
+      body = await file.arrayBuffer();
     }
-    // Bun will automatically set content-type and content-length,
-    //   but delays until the response is actually sent, but middleware might
-    //   want to know the file details ahead of time
     response = new Response(body, {
       headers: {
-        'Content-Length': String(file.size),
+        'Content-Length': String(body ? body.byteLength : 0),
         'Content-Type': getMimeType(file),
       },
       status: method === 'HEAD' ? 204 : 200,
