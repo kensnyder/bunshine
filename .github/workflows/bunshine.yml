@@ -1,5 +1,8 @@
-name: build
-on: [push]
+name: Build and Test
+on:
+  push:
+    paths:
+      - 'packages/bunshine/**'
 jobs:
   run:
     runs-on: ubuntu-latest
