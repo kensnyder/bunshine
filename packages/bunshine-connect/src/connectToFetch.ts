@@ -1,79 +1,68 @@
-import { type Middleware } from 'bunshine';
-import { Readable } from 'stream';
+import { type IncomingMessage, type ServerResponse } from 'http';
+import { Readable } from 'node:stream';
+import createIncomingMessage from './createIncomingMessage';
+import createServerResponse from './createServerResponse';
+import { flattenHeaders } from './headers';
 
 type ConnectHandler = (
-  req: Request,
-  res: Response,
-  next: (error?: Error) => void
+  req: IncomingMessage,
+  res: ServerResponse,
+  next: (error?: string | Error) => void
 ) => void;
 
-function connectToFetch(connectHandler: ConnectHandler): Middleware {
-  return async function (c, bunshineNext) {
-    const req = {
-      app: c.app,
-      url: c.url,
-      fresh: true,
-      stale: false,
-      host: c.url.host,
-      hostname: c.url.hostname,
-      ip: c.ip,
-      method: c.request.method,
-      body: c.request.body ? Readable.fromWeb(c.request.body) : c.request.body,
-      get: (name: string) => c.request.headers.get(name),
-      get xhr() {
-        return c.request.headers.get('X-Requested-With') === 'XMLHttpRequest';
-      },
-      get subdomains() {
-        return c.url.hostname.split('.').slice(0, -2);
-      },
-      get query() {
-        return Object.fromEntries(c.url.searchParams);
-      },
-    };
-    const res = {
-      app: c.app,
-      headersSent: false,
-      locals: {},
-      _headers: new Headers(),
-      set: (name: string, value: string) => res._headers.set(name, value),
-      append: (name: string, value: string) => res._headers.append(name, value),
-      attachment: () => {},
-    };
-    const next = {};
-    // await connectHandler(req, res, next);
-    // return new Response(res.body, {
-    //   status: res._status,
-    //   statusText: res._statusText,
-    //   headers: res._headers,
-    // })
+type Flattenable = ConnectHandler | Flattenable[];
+
+const statusCodesWithoutBody = [
+  100, // Continue
+  101, // Switching Protocols
+  102, // Processing (WebDAV)
+  103, // Early Hints
+  204, // No Content
+  205, // Reset Content
+  304, // Not Modified
+];
+
+export function connectToFetch(...connectHandlers: Flattenable[]) {
+  const handlers = connectHandlers.flat(9) as ConnectHandler[];
+  return function (request: Request) {
+    const req = createIncomingMessage(request);
+    const { res, onReadable } = createServerResponse(
+      req as unknown as IncomingMessage
+    );
+
+    return new Promise<Response | undefined>((resolve, reject) => {
+      // onReadable is called when res.end(content) is called
+      onReadable(({ readable, headers, statusCode }) => {
+        const responseBody = statusCodesWithoutBody.includes(statusCode)
+          ? null
+          : (Readable.toWeb(readable) as unknown as ReadableStream);
+        resolve(
+          new Response(responseBody, {
+            status: statusCode,
+            headers: flattenHeaders(headers),
+          })
+        );
+      });
+
+      let handlerIndex = 0;
+      const next = (error?: string | Error) => {
+        if (error && error !== 'route' && error !== 'router') {
+          reject(error instanceof Error ? error : new Error(String(error)));
+        }
+        const handler = handlers[handlerIndex++];
+        if (!handler) {
+          // 404 because no handlers called next
+          resolve(undefined);
+        }
+        try {
+          handler(req, res, next);
+        } catch (e) {
+          const error = e as Error;
+          reject(error);
+        }
+      };
+
+      next();
+    });
   };
-  // return async function (req, res, next) {
-  //   // Convert Node.js request to Fetch API Request
-  //   const fetchRequest = new Request(req.url, {
-  //     method: req.method,
-  //     headers: req.headers,
-  //     body: req.method !== 'GET' && req.method !== 'HEAD' ? Readable.toWeb(req) : undefined,
-  //   });
-  //
-  //   try {
-  //     const fetchResponse = await fetchHandler(fetchRequest);
-  //
-  //     // Set status code and headers
-  //     res.statusCode = fetchResponse.status;
-  //     fetchResponse.headers.forEach((value, name) => {
-  //       res.setHeader(name, value);
-  //     });
-  //
-  //     // Stream the response body
-  //     if (fetchResponse.body) {
-  //       const nodeStream = Readable.fromWeb(fetchResponse.body);
-  //       nodeStream.pipe(res);
-  //       nodeStream.on('end', () => res.end());
-  //     } else {
-  //       res.end();
-  //     }
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // };
 }
