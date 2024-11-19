@@ -9,7 +9,6 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 [![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.0.0)](https://codecov.io/gh/kensnyder/bunshine)
 [![Dependencies: 1](https://badgen.net/static/dependencies/1/green?v=3.0.0)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
 ![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.0.0)
-[![DeepScan grade](https://deepscan.io/api/teams/24409/projects/27605/branches/884000/badge/grade.svg)](https://deepscan.io/dashboard#view=project&tid=24409&pid=27605&bid=884000)
 [![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.0.0)](https://opensource.org/licenses/ISC)
 
 ## Installation
