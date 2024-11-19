@@ -427,7 +427,7 @@ app.get('/posts', middleware1, middleware2, handler);
 app.get('/users', [middleware1, middleware2, handler]);
 app.get('/visitors', [[middleware1, [middleware2, handler]]]);
 
-// Why might this be useful?
+// Why might this flattening behavior be useful?
 // You can group multiple middlewares into one array and pass it to route definitions
 const adminMiddleware = [getAuthCookie, checkPermissions];
 app.get('/admin/posts', adminMiddleware, getPosts);
