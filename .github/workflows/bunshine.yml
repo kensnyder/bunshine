@@ -6,7 +6,6 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    working-directory: packages/bunshine
 
     strategy:
       matrix:
@@ -22,12 +21,15 @@ jobs:
           bun-version: ${{ matrix.bun-version }}
 
       - name: ⬇️ Install dependencies
+        working-directory: packages/bunshine
         run: bun install
 
       - name: 🏃 Run tests
+        working-directory: packages/bunshine
         run: bun run coverage
 
       - name: ☂️ Upload to codecov
+        working-directory: packages/bunshine
         uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true

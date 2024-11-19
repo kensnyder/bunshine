@@ -421,7 +421,7 @@ const app = new HttpRouter();
 // middleware can be inserted as parameters to app.get()
 app.get('/admin', getAuthMiddleware('admin'), middleware2, handler);
 
-// Bunshine accepts any number of middleware functions in parameters or arrays
+// Bunshine accepts middleware as arguments or arrays, ultimately flattening to one array
 // so the following are equivalent
 app.get('/posts', middleware1, middleware2, handler);
 app.get('/users', [middleware1, middleware2, handler]);
