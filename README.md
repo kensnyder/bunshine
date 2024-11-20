@@ -6,5 +6,6 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
 This GitHub repository is a monorepo for Bunshine. Packages are:
 
-- [bunshine](./packages/bunshine/README.md) - The main package
-- [bunshine-connect](./packages/bunshine-connect/README.md) - A package to use [connect-style middleware](https://github.com/senchalabs/connect) such as an [Express](https://expressjs.com/) middleware with Bunshine
+- [bunshine](./packages/bunshine/README.md) - The main Bunshine HTTP Server package
+- [connect-to-fetch](./packages/connect-to-fetch/README.md) - A package to use [connect-style middleware](https://github.com/senchalabs/connect) such as an [Express](https://expressjs.com/) middleware with Fetch environments such as `Bun.serve`, `Deno.serve`, and Cloudflare Workers
+- [bunshine-connect](./packages/bunshine-connect/README.md) - A package that uses `connect-to-fetch` with Bunshine

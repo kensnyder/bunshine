@@ -1,0 +1,45 @@
+{
+  "name": "connect-to-fetch",
+  "version": "1.0.0",
+  "module": "server/server.ts",
+  "type": "module",
+  "main": "index.ts",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test-watch": "bun test --watch",
+    "coverage": "bun test --coverage",
+    "lint": "tsc",
+    "build:dts": "yes | bunx dts-bundle-generator -o dist/index.d.ts index.ts",
+    "example": "bun --watch ./examples/server.ts"
+  },
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kensnyder/bunshine.git"
+  },
+  "bin": {
+    "bunshine-serve": "./bin/serve.ts"
+  },
+  "keywords": [
+    "Bun",
+    "Bun serve",
+    "Connect to Fetch",
+    "Connect Middleware",
+    "Express to Fetch",
+    "Express Middleware",
+    "Node HTTP to Fetch"
+  ],
+  "author": "kendsnyder@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kensnyder/bunshine/issues"
+  },
+  "homepage": "https://github.com/kensnyder/bunshine/packages/connect-to-fetch#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/bun": "1.1.13",
+    "prettier": "3.3.3",
+    "prettier-plugin-organize-imports": "4.1.0",
+    "typescript": "5.6.3"
+  }
+}

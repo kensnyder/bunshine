@@ -1,33 +1,20 @@
 import type { Server } from 'bun';
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { HttpRouter } from 'bunshine';
-import connectToBunshine from './connectToBunshine';
+import { afterEach, describe, expect, it } from 'bun:test';
+import connectToFetch from './connectToFetch';
 import { ConnectErrorHandler, ConnectRouteHandler } from './handler.types';
 
 describe('connectToBunshine', () => {
   let server: Server;
-  let app: HttpRouter;
-  let error: Error | null;
   let port = 7777;
-  beforeEach(() => {
-    app = new HttpRouter();
-    error = null;
-    app.onError(c => {
-      error = c.error;
-      if (error.message !== 'foobar') {
-        console.log(c.error);
-      }
-    });
-    server = app.listen({
-      port: port++,
-    });
-  });
   afterEach(() => server.stop(true));
   it('should run handler', async () => {
     const connectHandler: ConnectRouteHandler = (req, res, next) => {
       res.end('Hello world');
     };
-    app.get('/', connectToBunshine(connectHandler));
+    server = Bun.serve({
+      fetch: connectToFetch(connectHandler),
+      port: port++,
+    });
     const resp = await fetch(server.url);
     const text = await resp.text();
     expect(resp.status).toBe(200);
@@ -37,39 +24,14 @@ describe('connectToBunshine', () => {
     const connectHandler: ConnectRouteHandler = (req, res, next) => {
       setTimeout(() => res.end('Hello world'), 15);
     };
-    app.get('/', connectToBunshine(connectHandler));
+    server = Bun.serve({
+      fetch: connectToFetch(connectHandler),
+      port: port++,
+    });
     const resp = await fetch(server.url);
     const text = await resp.text();
     expect(resp.status).toBe(200);
     expect(text).toBe('Hello world');
-  });
-  it("should pass thrown errors to Bunshine's onError callback", async () => {
-    const connectHandler: ConnectRouteHandler = (req, res, next) => {
-      throw new Error('foobar');
-    };
-    app.get('/', connectToBunshine(connectHandler));
-    const resp = await fetch(server.url);
-    expect(resp.status).toBe(500);
-    expect(error.message).toBe('foobar');
-  });
-  it("should pass next() errors to Bunshine's onError callback", async () => {
-    const connectHandler: ConnectRouteHandler = (req, res, next) => {
-      next('foobar');
-    };
-    app.get('/', connectToBunshine(connectHandler));
-    const resp = await fetch(server.url);
-    expect(resp.status).toBe(500);
-    expect(error.message).toBe('foobar');
-  });
-  it('should handle 404s', async () => {
-    const connectHandler: ConnectRouteHandler = (req, res, next) => {
-      res.setHeader('fromFunction', 'handler');
-      next();
-    };
-    app.get('/', connectToBunshine(connectHandler));
-    const resp = await fetch(server.url);
-    expect(resp.status).toBe(404);
-    expect(resp.headers.has('fromFunction')).toBe(false);
   });
   it('should run 2 handlers', async () => {
     const connect1: ConnectRouteHandler = (req, res, next) => {
@@ -80,7 +42,10 @@ describe('connectToBunshine', () => {
       res.statusCode = 201;
       res.end('<h1>Hello world</h1>');
     };
-    app.get('/', connectToBunshine(connect1, connect2));
+    server = Bun.serve({
+      fetch: connectToFetch(connect1, connect2),
+      port: port++,
+    });
     const resp = await fetch(server.url);
     const text = await resp.text();
     expect(resp.status).toBe(201);
@@ -96,7 +61,10 @@ describe('connectToBunshine', () => {
       res.statusCode = 201;
       res.end('<h1>Hello world</h1>');
     };
-    app.get('/', connectToBunshine([connect1, [connect2]]));
+    server = Bun.serve({
+      fetch: connectToFetch([connect1, [connect2]]),
+      port: port++,
+    });
     const resp = await fetch(server.url);
     const text = await resp.text();
     expect(resp.status).toBe(201);
@@ -115,7 +83,10 @@ describe('connectToBunshine', () => {
       res.setHeader('Location', '/home');
       res.end('Redirecting...');
     };
-    app.get('/', connectToBunshine([connect1, connect2, connect3]));
+    server = Bun.serve({
+      fetch: connectToFetch(connect1, connect2, connect3),
+      port: port++,
+    });
     const resp = await fetch(server.url, {
       redirect: 'manual',
     });
@@ -130,7 +101,10 @@ describe('connectToBunshine', () => {
     const connect2: ConnectRouteHandler = (req, res, next) => {
       res.end('Hello world');
     };
-    app.get('/', connectToBunshine([connect1, connect2]));
+    server = Bun.serve({
+      fetch: connectToFetch([connect1, connect2]),
+      port: port++,
+    });
     const resp = await fetch(server.url);
     const text = await resp.text();
     expect(resp.status).toBe(202);
@@ -157,7 +131,10 @@ describe('connectToBunshine', () => {
           );
         });
     };
-    app.post('/', connectToBunshine(connectHandler));
+    server = Bun.serve({
+      fetch: connectToFetch(connectHandler),
+      port: port++,
+    });
     const resp = await fetch(server.url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -186,7 +163,10 @@ describe('connectToBunshine', () => {
       res.end('Caught error ' + error.message);
       next();
     };
-    app.get('/', connectToBunshine([connect1, connect2, connect3]));
+    server = Bun.serve({
+      fetch: connectToFetch([connect1, connect2, connect3]),
+      port: port++,
+    });
     const resp = await fetch(server.url);
     const text = await resp.text();
     expect(resp.status).toBe(500);
@@ -208,7 +188,10 @@ describe('connectToBunshine', () => {
       res.end('Caught error ' + error.message);
       next();
     };
-    app.get('/', connectToBunshine([connect1, connect2, connect3]));
+    server = Bun.serve({
+      fetch: connectToFetch([connect1, connect2, connect3]),
+      port: port++,
+    });
     const resp = await fetch(server.url);
     const text = await resp.text();
     expect(resp.status).toBe(500);
@@ -224,40 +207,14 @@ describe('connectToBunshine', () => {
     const connect2: ConnectRouteHandler = (req, res, next) => {
       res.end('2');
     };
-    app.get('/', connectToBunshine([connect1, connect2]));
+    server = Bun.serve({
+      fetch: connectToFetch([connect1, connect2]),
+      port: port++,
+    });
     const resp = await fetch(server.url);
     const text = await resp.text();
     expect(resp.status).toBe(200);
     expect(text).toBe('2');
     expect(was1Called).toBe(false);
-  });
-  it('should pass to next bunshine handlers', async () => {
-    let was1Called = false;
-    const connect1: ConnectRouteHandler = (req, res, next) => {
-      was1Called = true;
-      next();
-    };
-    app.get('/', connectToBunshine(connect1), c => {
-      return c.text('Bunshine!');
-    });
-    const resp = await fetch(server.url);
-    const text = await resp.text();
-    expect(resp.status).toBe(200);
-    expect(text).toBe('Bunshine!');
-    expect(was1Called).toBe(true);
-  });
-  it('should allow multiple groups of handlers', async () => {
-    let was1Called = false;
-    const connect1: ConnectRouteHandler = (req, res, next) => {
-      res.setHeader('Content-type', 'text/html');
-    };
-    app.get('/', connectToBunshine(connect1), c => {
-      return c.text('Bunshine!');
-    });
-    const resp = await fetch(server.url);
-    const text = await resp.text();
-    expect(resp.status).toBe(200);
-    expect(text).toBe('Bunshine!');
-    expect(was1Called).toBe(true);
   });
 });

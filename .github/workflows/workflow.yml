@@ -1,17 +1,12 @@
-name: Build and Test
-on:
-  push:
-    paths:
-      - 'packages/bunshine/**'
+name: Install and Test
+on: push
 jobs:
   run:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: packages/bunshine
 
     strategy:
       matrix:
+        package: [bunshine, connect-to-fetch]
         bun-version: [1.1.33, latest]
 
     steps:
@@ -24,15 +19,20 @@ jobs:
           bun-version: ${{ matrix.bun-version }}
 
       - name: ⬇️ Install dependencies
+        working-directory: packages/${{ matrix.package }}
         run: bun install
 
       - name: 🏃 Run tests
+        working-directory: packages/${{ matrix.package }}
         run: bun run coverage
 
       - name: ☂️ Upload to codecov
         if: matrix.bun-version == 'latest'
         uses: codecov/codecov-action@v4
         with:
+          files: packages/${{ matrix.package }}/coverage/lcov.info
+          flags: ${{ matrix.package }}
+          name: ${{ matrix.package }}-coverage
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
