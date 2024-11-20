@@ -1,17 +1,9 @@
 import { type Middleware } from 'bunshine';
-import type { IncomingMessage, ServerResponse } from 'http';
-import { connectToFetch } from './connectToFetch';
-
-type ConnectHandler = (
-  req: IncomingMessage,
-  res: ServerResponse,
-  next: (error?: string | Error) => void
-) => void;
-
-type Flattenable = ConnectHandler | Flattenable[];
+import connectToFetch from './connectToFetch';
+import { FlatHandlers } from './handler.types';
 
 export default function connectToBunshine(
-  ...connectHandlers: Flattenable[]
+  ...connectHandlers: FlatHandlers[]
 ): Middleware {
   const getResponse = connectToFetch(...connectHandlers);
   return function (c) {

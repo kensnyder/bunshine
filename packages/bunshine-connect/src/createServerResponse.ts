@@ -1,13 +1,13 @@
+// Adapted from https://github.com/vikejs/vike-node/blob/main/packages/vike-node/src/runtime/adapters/createServerResponse.ts
 import {
   ServerResponse,
   type IncomingMessage,
   type OutgoingHttpHeader,
   type OutgoingHttpHeaders,
-} from 'http';
+} from 'node:http';
 import { PassThrough, Readable } from 'node:stream';
 
 /**
- * @see https://github.com/vikejs/vike-node/blob/main/packages/vike-node/src/runtime/adapters/createServerResponse.ts
  * Creates a custom ServerResponse object that allows for intercepting and streaming the response.
  *
  * @param {IncomingMessage} incomingMessage - The incoming HTTP request message.

@@ -1,33 +1,7 @@
-// @see https://github.com/vikejs/vike-node/blob/main/packages/vike-node/src/runtime/utils/header-utils.ts
+// Adapted from https://github.com/vikejs/vike-node/blob/main/packages/vike-node/src/runtime/utils/header-utils.ts
 import type { OutgoingHttpHeaders } from 'node:http';
-type HeadersProvided = Record<string, string | string[] | undefined> | Headers;
 
-export function groupHeaders(
-  headers: [string, string][]
-): [string, string | string[]][] {
-  const grouped: { [key: string]: string | string[] } = {};
-
-  headers.forEach(([key, value]) => {
-    if (grouped[key]) {
-      // If the key already exists, append the new value
-      if (Array.isArray(grouped[key])) {
-        (grouped[key] as string[]).push(value);
-      } else {
-        grouped[key] = [grouped[key] as string, value];
-      }
-    } else {
-      // If the key doesn't exist, add it to the object
-      grouped[key] = value;
-    }
-  });
-
-  // Convert the object back to an array
-  return Object.entries(grouped);
-}
-
-export function flattenHeaders(
-  headers: OutgoingHttpHeaders
-): [string, string][] {
+export function flattenHeaders(headers: OutgoingHttpHeaders) {
   const flatHeaders: [string, string][] = [];
 
   for (const [key, value] of Object.entries(headers)) {
@@ -47,31 +21,4 @@ export function flattenHeaders(
   }
 
   return flatHeaders;
-}
-
-export function parseHeaders(headers: HeadersProvided): [string, string][] {
-  const result: [string, string][] = [];
-  if (typeof headers.forEach === 'function') {
-    headers.forEach((value, key) => {
-      if (Array.isArray(value)) {
-        value.forEach(value_ => {
-          result.push([key, value_]);
-        });
-      } else {
-        result.push([key, value]);
-      }
-    });
-  } else {
-    for (const [key, value] of Object.entries(headers)) {
-      if (Array.isArray(value)) {
-        value.forEach(value_ => {
-          result.push([key, value_]);
-        });
-      } else {
-        result.push([key, value]);
-      }
-    }
-  }
-
-  return result;
 }

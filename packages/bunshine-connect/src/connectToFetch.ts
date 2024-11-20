@@ -1,16 +1,10 @@
-import { type IncomingMessage, type ServerResponse } from 'http';
+// Adapted from https://github.com/vikejs/vike-node/blob/main/packages/vike-node/src/runtime/adapters/connectToWeb.ts
+import { type IncomingMessage } from 'http';
 import { Readable } from 'node:stream';
 import createIncomingMessage from './createIncomingMessage';
 import createServerResponse from './createServerResponse';
+import { FlatHandlers, MappedHandler } from './handler.types';
 import { flattenHeaders } from './headers';
-
-type ConnectHandler = (
-  req: IncomingMessage,
-  res: ServerResponse,
-  next: (error?: string | Error) => void
-) => void;
-
-type Flattenable = ConnectHandler | Flattenable[];
 
 const statusCodesWithoutBody = [
   100, // Continue
@@ -22,8 +16,13 @@ const statusCodesWithoutBody = [
   304, // Not Modified
 ];
 
-export function connectToFetch(...connectHandlers: Flattenable[]) {
-  const handlers = connectHandlers.flat(9) as ConnectHandler[];
+export default function connectToFetch(...connectHandlers: FlatHandlers[]) {
+  // flatten and assign a "kind" for TypeScript discriminated union
+  const handlers = connectHandlers.flat(9).map(fn => ({
+    kind: fn.length === 4 ? 'error' : 'route',
+    fn,
+  })) as MappedHandler[];
+  // function that takes a Request and returns a Promise<Response> by running handlers
   return function (request: Request) {
     const req = createIncomingMessage(request);
     const { res, onReadable } = createServerResponse(
@@ -44,21 +43,44 @@ export function connectToFetch(...connectHandlers: Flattenable[]) {
         );
       });
 
+      // see similar code in connect codebase https://github.com/senchalabs/connect/blob/master/index.js#L232
       let handlerIndex = 0;
+      let globalError: Error;
       const next = (error?: string | Error) => {
         if (error && error !== 'route' && error !== 'router') {
-          reject(error instanceof Error ? error : new Error(String(error)));
+          globalError =
+            error instanceof Error ? error : new Error(String(error));
         }
         const handler = handlers[handlerIndex++];
         if (!handler) {
-          // 404 because no handlers called next
-          resolve(undefined);
+          // no more handlers
+          if (globalError) {
+            // unhandled error
+            reject(globalError);
+          } else {
+            // 404
+            resolve(undefined);
+          }
+          return;
         }
         try {
-          handler(req, res, next);
+          if (globalError) {
+            if (handler.kind === 'error') {
+              handler.fn(globalError, req, res, next);
+            } else {
+              // don't call non-error handlers with error
+              next();
+            }
+          } else {
+            if (handler.kind === 'error') {
+              // don't call error handlers without error
+              next();
+            } else {
+              handler.fn(req, res, next);
+            }
+          }
         } catch (e) {
-          const error = e as Error;
-          reject(error);
+          next(e);
         }
       };
 
