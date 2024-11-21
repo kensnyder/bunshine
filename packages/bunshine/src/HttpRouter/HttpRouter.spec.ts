@@ -14,6 +14,7 @@ type SseTestEvent = {
 const server: Server = {};
 
 describe('HttpRouter', () => {
+  let port = 7500;
   describe('handlers', () => {
     let app: HttpRouter;
     let oldEnv: string | undefined;
@@ -300,23 +301,116 @@ describe('HttpRouter', () => {
     let server: Server;
     beforeEach(() => {
       app = new HttpRouter();
+      server = app.listen({ port: port++ });
     });
     afterEach(() => {
       server.stop(true);
     });
-    it('should assign random port', async () => {
-      app.get('/', () => new Response('Hi'));
-      server = app.listen({ port: 7769 });
-      const resp = await fetch(`http://localhost:${server.port}/`);
-      expect(typeof server.port).toBe('number');
-      expect(server.port).toBeGreaterThan(0);
-      expect(resp.status).toBe(200);
-      expect(await resp.text()).toBe('Hi');
+    // it('should assign random port', async () => {
+    //   app.get('/', () => new Response('Hi'));
+    //   server = app.listen({ port: 7769 });
+    //   const resp = await fetch(`http://localhost:${server.port}/`);
+    //   expect(typeof server.port).toBe('number');
+    //   expect(server.port).toBeGreaterThan(0);
+    //   expect(resp.status).toBe(200);
+    //   expect(await resp.text()).toBe('Hi');
+    // });
+    it('should return correct statuses, headers, and bytes', async () => {
+      app.headGet('/bun-logo.jpg', c => {
+        return c.file(`${import.meta.dirname}/../../testFixtures/bun-logo.jpg`);
+      });
+      const url = `${server.url}/bun-logo.jpg`;
+
+      // Step 1: Fetch entire file
+      const fullResponse = await fetch(url);
+      const fullFileBytes = await fullResponse.blob();
+      const fullContentLength = parseInt(
+        fullResponse.headers.get('content-length'),
+        10
+      );
+      const acceptRanges = fullResponse.headers.get('accept-ranges');
+
+      expect(fullResponse.status).toBe(200);
+      expect(fullFileBytes.size).toBe(fullContentLength);
+      expect(acceptRanges).toBe('bytes');
+
+      // Step 2: Fetch HEAD and validate
+      const headResponse = await fetch(url, { method: 'HEAD' });
+
+      const headContentLength = parseInt(
+        headResponse.headers.get('content-length'),
+        10
+      );
+      const headAcceptRanges = headResponse.headers.get('accept-ranges');
+
+      expect(headResponse.status).toBe(200);
+      expect(headContentLength).toBe(fullContentLength);
+      expect(headAcceptRanges).toBe('bytes');
+
+      // Step 3: Fetch range "bytes=0-" and validate
+      const rangeResponse1 = await fetch(url, {
+        headers: { Range: 'bytes=0-' },
+      });
+
+      const range1Bytes = await rangeResponse1.blob();
+      const range1AcceptRanges = rangeResponse1.headers.get('accept-ranges');
+      const range1ContentLength = parseInt(
+        rangeResponse1.headers.get('content-length'),
+        10
+      );
+
+      expect(rangeResponse1.status).toBe(206);
+      expect(range1AcceptRanges).toBe('bytes');
+      expect(range1Bytes.size).toBe(fullContentLength);
+      expect(range1ContentLength).toBe(fullContentLength);
+      expect(range1Bytes).toEqual(fullFileBytes);
+
+      // Step 4: Fetch range "bytes=0-999" and validate
+      const rangeResponse2 = await fetch(url, {
+        headers: { Range: 'bytes=0-999' },
+      });
+
+      const range2Bytes = await rangeResponse2.blob();
+      const range2ContentRange = rangeResponse2.headers.get('content-range');
+      const range2ContentLength = parseInt(
+        rangeResponse2.headers.get('content-length'),
+        10
+      );
+
+      expect(rangeResponse2.status).toBe(206);
+      expect(rangeResponse2.headers.get('accept-ranges')).toBe('bytes');
+      expect(range2ContentLength).toBe(1000);
+      expect(range2Bytes.size).toBe(1000);
+      expect(range2ContentRange).toBe(`bytes 0-999/${fullContentLength}`);
+      expect(range2Bytes).toEqual(fullFileBytes.slice(0, 1000));
+
+      // Step 5: Fetch range "bytes=1000-1999" and validate
+      const rangeResponse3 = await fetch(url, {
+        headers: { Range: 'bytes=1000-1999' },
+      });
+      const range3Bytes = await rangeResponse3.blob();
+      const range3ContentRange = rangeResponse3.headers.get('content-range');
+      const range3ContentLength = parseInt(
+        rangeResponse3.headers.get('content-length'),
+        10
+      );
+
+      expect(rangeResponse3.status).toBe(206);
+      expect(rangeResponse3.headers.get('accept-ranges')).toBe('bytes');
+      expect(range3ContentLength).toBe(1000);
+      expect(range3Bytes.size).toBe(1000);
+      expect(range3ContentRange).toBe(`bytes 1000-1999/${fullContentLength}`);
+      expect(range3Bytes).toEqual(fullFileBytes.slice(1000, 2000));
+
+      // Step 6: Request invalid range
+      const rangeResponse4 = await fetch(url, {
+        headers: { Range: 'bytes=9999999-' },
+      });
+      expect(rangeResponse4.status).toBe(416);
     });
     it('should get client ip info', async () => {
       app.get('/', c => c.json(c.ip));
-      server = app.listen({ port: 7770 });
-      const resp = await fetch(`http://localhost:${server.port}/`);
+      const resp = await fetch(server.url);
       const info = (await resp.json()) as {
         address: string;
         family: string;
@@ -328,24 +422,20 @@ describe('HttpRouter', () => {
     });
     it('should emit url', async () => {
       app.all('/', () => new Response('Hi'));
-      server = app.listen({ port: 7771 });
       let output: string;
       const to = (message: string) => (output = message);
       app.emitUrl({ to });
-      // @ts-expect-error
       expect(output).toContain(String(server.url));
     });
     it('should handle all', async () => {
       app.all('/', () => new Response('Hi'));
-      server = app.listen({ port: 7772 });
-      const resp = await fetch('http://localhost:7772/');
+      const resp = await fetch(server.url);
       expect(resp.status).toBe(200);
       expect(await resp.text()).toBe('Hi');
     });
     it('should handle GET', async () => {
       app.get('/', () => new Response('Hi'));
-      server = app.listen({ port: 7773 });
-      const resp = await fetch('http://localhost:7773/');
+      const resp = await fetch(server.url);
       expect(resp.status).toBe(200);
       expect(await resp.text()).toBe('Hi');
     });
@@ -353,8 +443,7 @@ describe('HttpRouter', () => {
       app.put('/', async ({ request, json }) => {
         return json(await request.json());
       });
-      server = app.listen({ port: 7774 });
-      const resp = await fetch('http://localhost:7774/', {
+      const resp = await fetch(server.url, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -376,8 +465,7 @@ describe('HttpRouter', () => {
           },
         });
       });
-      server = app.listen({ port: 7775 });
-      const resp = await fetch('http://localhost:7775/hi?name=Bob', {
+      const resp = await fetch(`${server.url}/hi?name=Bob`, {
         method: 'HEAD',
       });
       expect(resp.status).toBe(204);
@@ -394,10 +482,9 @@ describe('HttpRouter', () => {
           },
         });
       });
-      server = app.listen({ port: 7776 });
       const formData = new URLSearchParams();
       formData.append('key', 'secret');
-      const resp = await fetch('http://localhost:7776/parrot', {
+      const resp = await fetch(`${server.url}/parrot`, {
         method: 'POST',
         headers: {
           'Content-type': 'application/x-www-form-urlencoded',
@@ -418,10 +505,9 @@ describe('HttpRouter', () => {
           },
         });
       });
-      server = app.listen({ port: 7777 });
       const formData = new FormData();
       formData.append('key2', 'secret2');
-      const resp = await fetch('http://localhost:7777/parrot', {
+      const resp = await fetch(`${server.url}/parrot`, {
         method: 'POST',
         body: formData,
       });
@@ -432,8 +518,7 @@ describe('HttpRouter', () => {
       app.patch('/', async ({ request, json }) => {
         return json(await request.json());
       });
-      server = app.listen({ port: 7778 });
-      const resp = await fetch('http://localhost:7778/', {
+      const resp = await fetch(server.url, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -453,8 +538,7 @@ describe('HttpRouter', () => {
           },
         });
       });
-      server = app.listen({ port: 7779 });
-      const resp = await fetch('http://localhost:7779/', {
+      const resp = await fetch(server.url, {
         method: 'TRACE',
         headers: {
           'Max-Forwards': '0',
@@ -474,8 +558,7 @@ describe('HttpRouter', () => {
           },
         });
       });
-      server = app.listen({ port: 7780 });
-      const resp = await fetch('http://localhost:7780/users/42', {
+      const resp = await fetch(`${server.url}/users/42`, {
         method: 'DELETE',
       });
       expect(resp.status).toBe(204);
@@ -490,8 +573,7 @@ describe('HttpRouter', () => {
           },
         });
       });
-      server = app.listen({ port: 7781 });
-      const resp = await fetch('http://localhost:7781/users/42', {
+      const resp = await fetch(`${server.url}/users/42`, {
         method: 'OPTIONS',
       });
       expect(resp.status).toBe(204);
@@ -501,9 +583,8 @@ describe('HttpRouter', () => {
       app.get('/home', ({ app }) => {
         return new Response(app.locals.foo);
       });
-      server = app.listen({ port: 7782 });
       app.locals.foo = 'bar';
-      const resp = await fetch('http://localhost:7782/home');
+      const resp = await fetch(`${server.url}/home`);
       expect(resp.status).toBe(200);
       expect(await resp.text()).toBe('bar');
     });
@@ -573,7 +654,7 @@ describe('HttpRouter', () => {
     it('should handle unnamed data', async () => {
       const events = await sseTest({
         event: 'message',
-        port: 7784,
+        port: port++,
         payloads: [['Hello'], ['World']],
       });
       expect(events.length).toBe(2);
@@ -583,7 +664,7 @@ describe('HttpRouter', () => {
     it('should send last event id and origin', async () => {
       const events = await sseTest({
         event: 'myEvent',
-        port: 7785,
+        port: port++,
         payloads: [
           ['myEvent', 'hi1', 'id1'],
           ['myEvent', 'hi2', 'id2'],
@@ -594,13 +675,13 @@ describe('HttpRouter', () => {
       expect(events[1].data).toBe('hi2');
       expect(events[0].lastEventId).toBe('id1');
       expect(events[1].lastEventId).toBe('id2');
-      expect(events[0].origin).toBe('http://localhost:7785');
-      expect(events[1].origin).toBe('http://localhost:7785');
+      expect(events[0].origin).toBe(`http://localhost:${port - 1}`);
+      expect(events[1].origin).toBe(`http://localhost:${port - 1}`);
     });
     it('should JSON encode data if needed', async () => {
       const events = await sseTest({
         event: 'myEvent',
-        port: 7786,
+        port: port++,
         payloads: [['myEvent', { name: 'Bob' }]],
       });
       expect(events.length).toBe(1);
@@ -610,7 +691,7 @@ describe('HttpRouter', () => {
       spyOn(console, 'warn').mockImplementation(() => {});
       await sseTest({
         event: 'myEvent',
-        port: 7787,
+        port: port++,
         payloads: [['myEvent', { name: 'Bob' }]],
         headers: {
           'Content-Type': 'text/plain',
@@ -626,7 +707,7 @@ describe('HttpRouter', () => {
       spyOn(console, 'warn').mockImplementation(() => {});
       await sseTest({
         event: 'myEvent',
-        port: 7788,
+        port: port++,
         payloads: [['myEvent', { name: 'Bob' }]],
         headers: {
           'Content-Type': 'text/event-stream',
