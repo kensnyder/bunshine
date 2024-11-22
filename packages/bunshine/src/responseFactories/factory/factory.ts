@@ -1,4 +1,4 @@
-import Context from '../Context/Context';
+import Context from '../../Context/Context';
 
 export type Factory = (body: string, init?: ResponseInit) => Response;
 

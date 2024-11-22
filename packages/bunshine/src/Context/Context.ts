@@ -1,10 +1,10 @@
 import type { BunFile, Server } from 'bun';
 import type HttpRouter from '../HttpRouter/HttpRouter';
-import factory from '../responseFactories/factory';
-import file, { type FileResponseOptions } from '../responseFactories/file';
-import json from '../responseFactories/json';
-import redirect from '../responseFactories/redirect';
-import sse, { type SseSetupFunction } from '../responseFactories/sse';
+import factory from '../responseFactories/factory/factory';
+import file, { type FileResponseOptions } from '../responseFactories/file/file';
+import json from '../responseFactories/json/json';
+import redirect from '../responseFactories/redirect/redirect';
+import sse, { type SseSetupFunction } from '../responseFactories/sse/sse';
 
 const textPlain = factory('text/plain');
 const textJs = factory('text/javascript');
