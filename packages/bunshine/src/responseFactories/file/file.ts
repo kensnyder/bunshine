@@ -5,11 +5,11 @@ import getMimeType from '../../getMimeType/getMimeType';
 import parseRangeHeader from '../../parseRangeHeader/parseRangeHeader';
 
 export type FileResponseOptions = {
-  range?: string;
   chunkSize?: number;
   disposition?: 'inline' | 'attachment';
   acceptRanges?: boolean;
 };
+
 export default async function file(
   this: Context,
   filenameOrBunFile: string | BunFile,
@@ -22,12 +22,11 @@ export default async function file(
   if (!(await file.exists())) {
     return new Response('File not found', { status: 404 });
   }
-
   const resp = await buildFileResponse({
     file,
     acceptRanges: fileOptions.acceptRanges !== false,
     chunkSize: fileOptions.chunkSize,
-    rangeHeader: fileOptions.range,
+    rangeHeader: this.request.headers.get('Range'),
     method: this.request.method,
   });
   if (fileOptions.disposition === 'attachment') {
@@ -42,7 +41,7 @@ export default async function file(
   return resp;
 }
 
-function buildFileResponse({
+async function buildFileResponse({
   file,
   acceptRanges,
   chunkSize,
@@ -56,7 +55,7 @@ function buildFileResponse({
   method: string;
 }) {
   const { slice, status } = parseRangeHeader({
-    range: acceptRanges ? String(rangeHeader) : '',
+    rangeHeader: acceptRanges ? rangeHeader : null,
     totalFileSize: file.size,
     defaultChunkSize: chunkSize,
   });
@@ -88,7 +87,7 @@ function buildFileResponse({
   if (slice) {
     buffer = buffer.slice(slice.start, slice.end + 1);
   }
-  return new Response(method === 'HEAD' ? null : buffer, {
+  return new Response(buffer, {
     status,
     headers: {
       'Content-Type': getMimeType(file),

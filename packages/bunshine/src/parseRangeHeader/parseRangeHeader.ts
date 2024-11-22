@@ -10,6 +10,7 @@ export default function parseRangeHeader({
   defaultChunkSize = 3 * 1024 ** 2, // 3MB chunk if byte range is open ended
 }: RangeInformation) {
   if (!rangeHeader) {
+    // range header missing or empty
     return { slice: null, contentLength: totalFileSize, status: 200 };
   }
   // only support single ranges

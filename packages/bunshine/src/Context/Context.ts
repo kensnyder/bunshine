@@ -82,7 +82,7 @@ export default class Context<
     filenameOrBunFile: string | BunFile,
     fileOptions: FileResponseOptions = {}
   ) => {
-    return file(filenameOrBunFile, {
+    return file.call(this, filenameOrBunFile, {
       range: this.request.headers.get('Range') || undefined,
       ...fileOptions,
     });
