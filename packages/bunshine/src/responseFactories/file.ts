@@ -1,5 +1,6 @@
 import { BunFile } from 'bun';
 import path from 'node:path';
+import Context from '../Context/Context';
 import buildFileResponse from './buildFileResponse';
 
 export type FileResponseOptions = {
@@ -9,6 +10,7 @@ export type FileResponseOptions = {
   acceptRanges?: boolean;
 };
 export default async function file(
+  this: Context,
   filenameOrBunFile: string | BunFile,
   fileOptions: FileResponseOptions = {}
 ) {
@@ -19,17 +21,14 @@ export default async function file(
   if (!(await file.exists())) {
     return new Response('File not found', { status: 404 });
   }
+
   const resp = await buildFileResponse({
     file,
-    acceptRanges: true,
+    acceptRanges: fileOptions.acceptRanges !== false,
     chunkSize: fileOptions.chunkSize,
     rangeHeader: fileOptions.range,
     method: 'GET',
   });
-  if (fileOptions.acceptRanges !== false) {
-    // tell the client that we are capable of handling range requests
-    resp.headers.set('Accept-Ranges', 'bytes');
-  }
   if (fileOptions.disposition === 'attachment') {
     const filename = path.basename(file.name!);
     resp.headers.set(

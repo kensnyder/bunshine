@@ -1,7 +1,6 @@
 import path from 'path';
 import type { Middleware } from '../../HttpRouter/HttpRouter';
 import ms from '../../ms/ms';
-import buildFileResponse from '../../responseFactories/buildFileResponse';
 
 // see https://expressjs.com/en/4x/api.html#express.static
 // and https://www.npmjs.com/package/send#dotfiles
@@ -74,14 +73,7 @@ export function serveFiles(
       }
       return new Response('404 Not Found', { status: 404 });
     }
-    const rangeHeader = c.request.headers.get('range');
-    const response = await buildFileResponse({
-      file,
-      acceptRanges,
-      chunkSize: 0,
-      rangeHeader,
-      method: c.request.method,
-    });
+    const response = await c.file(file);
     // add last modified
     if (lastModified) {
       response.headers.set(
