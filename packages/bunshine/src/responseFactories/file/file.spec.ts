@@ -12,6 +12,21 @@ describe('c.file()', () => {
     server = app.listen({ port: port++ });
   });
   afterEach(() => server.stop(true));
+  it('should handle files with disposition="attachment', async () => {
+    app.get('/home.html', c =>
+      c.file(`${import.meta.dir}/../../../testFixtures/home.html`, {
+        disposition: 'attachment',
+      })
+    );
+    const resp = await fetch(`${server.url}home.html`);
+    expect(resp).toBeInstanceOf(Response);
+    expect(resp.headers.get('Content-Disposition')).toBe(
+      'attachment; filename="home.html"'
+    );
+    const file = await resp.blob();
+    const text = await file.text();
+    expect(text).toBe('<h1>Welcome home</h1>\n');
+  });
   it('should allow headGet', async () => {
     app.headGet('/', c => {
       if (c.request.method === 'GET') {
@@ -41,7 +56,7 @@ describe('c.file()', () => {
         `${import.meta.dirname}/../../../testFixtures/bun-logo.jpg`
       );
     });
-    const url = `${server.url}/bun-logo.jpg?foo=bar`;
+    const url = `${server.url}bun-logo.jpg?foo=bar`;
 
     // Step 1: Fetch entire file
     const fullResponse = await fetch(url);
@@ -59,6 +74,13 @@ describe('c.file()', () => {
     expect(headResponse.status).toBe(200);
     expect(headResponse.headers.get('accept-ranges')).toBe('bytes');
     expect(headResponse.headers.get('content-length')).toBe(
+      // currently Bun always sets Content-Length to 0 for HEAD responses
+      // https://github.com/oven-sh/bun/issues/15355
+      '0'
+      // String(fullFileBytes.size)
+    );
+    // So for now we set an X-Content-Length header to the actual file size
+    expect(headResponse.headers.get('x-content-length')).toBe(
       String(fullFileBytes.size)
     );
 
@@ -68,7 +90,7 @@ describe('c.file()', () => {
     });
     const range1Bytes = await rangeResponse1.blob();
 
-    expect(rangeResponse1.status).toBe(206);
+    expect(rangeResponse1.status).toBe(200);
     expect(rangeResponse1.headers.get('accept-ranges')).toBe('bytes');
     expect(rangeResponse1.headers.get('content-type')).toBe('image/jpeg');
     expect(range1Bytes.size).toBe(fileSize);
@@ -118,7 +140,7 @@ describe('c.file()', () => {
     expect(rangeResponse4.headers.get('content-length')).toBe('1000');
     expect(range4Bytes.size).toBe(1000);
     expect(rangeResponse4.headers.get('content-range')).toBe(
-      `bytes ${fileSize - 1001}-${fileSize - 1}/${fileSize}`
+      `bytes ${fileSize - 1000}-${fileSize - 1}/${fileSize}`
     );
     expect(range4Bytes).toEqual(fullFileBytes.slice(-1000));
     expect(rangeResponse4.headers.get('content-type')).toBe('image/jpeg');
@@ -127,10 +149,13 @@ describe('c.file()', () => {
     const rangeResponse5 = await fetch(url, {
       headers: { Range: 'bytes=9999999-' },
     });
+    const content = await rangeResponse5.text();
     expect(rangeResponse5.status).toBe(416);
     expect(rangeResponse5.statusText).toBe('Range Not Satisfiable');
     expect(rangeResponse5.headers.get('content-range')).toBe(
       `bytes */${fileSize}`
     );
+    expect(content).toContain('Requested range is not satisfiable');
+    expect(content).toContain(`${fileSize}`);
   });
 });

@@ -226,17 +226,12 @@ export default class HttpRouter {
       context.params = match[1];
 
       try {
-        let result = handler(context, next);
+        let result = await handler(context, next);
         if (result instanceof Response) {
           return result;
+        } else {
+          return next();
         }
-        if (typeof result?.then === 'function') {
-          result = await result;
-          if (result instanceof Response) {
-            return result;
-          }
-        }
-        return next();
       } catch (e) {
         return errorHandler(e as Error);
       }

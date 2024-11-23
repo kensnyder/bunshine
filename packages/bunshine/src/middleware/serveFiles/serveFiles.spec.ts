@@ -22,9 +22,7 @@ describe('serveFiles middleware', () => {
       return c.text('Error', { status: 500 });
     });
   });
-  afterEach(() => {
-    server.stop(true);
-  });
+  afterEach(() => server.stop(true));
   describe('files', () => {
     it('should serve file', async () => {
       app.get('/files/*', serveFiles(fixturesPath));
@@ -53,7 +51,7 @@ describe('serveFiles middleware', () => {
       const text = await resp.text();
       expect(text).toBe('');
       expect(resp.headers.get('content-length')).toBe('0');
-      expect(resp.status).toBe(204);
+      expect(resp.status).toBe(200);
     });
     it('should 404 if file does not exist', async () => {
       app.get('/files/*', serveFiles(fixturesPath));

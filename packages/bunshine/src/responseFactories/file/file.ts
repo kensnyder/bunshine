@@ -29,6 +29,8 @@ export default async function file(
     rangeHeader: this.request.headers.get('Range'),
     method: this.request.method,
   });
+  // add last modified
+  resp.headers.set('Last-Modified', new Date(file.lastModified).toUTCString());
   if (fileOptions.disposition === 'attachment') {
     const filename = path.basename(file.name!);
     resp.headers.set(
@@ -66,7 +68,6 @@ async function buildFileResponse({
         : `Requested range is not satisfiable. Total size is ${file.size} bytes.`,
       {
         status: 416,
-        // statusText: 'Range Not Satisfiable',
         headers: {
           'Content-Range': `bytes */${file.size}`,
         },
@@ -79,6 +80,7 @@ async function buildFileResponse({
       headers: {
         'Content-Type': getMimeType(file),
         'Content-Length': String(file.size),
+        'X-Content-Length': String(file.size),
         ...(acceptRanges ? { 'Accept-Ranges': 'bytes' } : {}),
       },
     });
@@ -92,6 +94,7 @@ async function buildFileResponse({
     headers: {
       'Content-Type': getMimeType(file),
       'Content-Length': String(buffer.byteLength),
+      'X-Content-Length': String(buffer.byteLength),
       ...(slice
         ? { 'Content-Range': `bytes ${slice.start}-${slice.end}/${file.size}` }
         : {}),

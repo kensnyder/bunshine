@@ -48,13 +48,10 @@ export function serveFiles(
         return;
       }
     }
-    // get file path
+    // get full file path
     const filePath = path.join(directory, filename);
-    // init file
     let file = Bun.file(filePath);
-    // handle existence
     let exists = await file.exists();
-    // console.log('----------=========------- exists?', { exists, filePath });
     // handle index files
     if (!exists && index.length > 0) {
       // try to find index file such as index.html or index.js
@@ -67,23 +64,22 @@ export function serveFiles(
         }
       }
     }
+    // otherwise truly cannot find it
     if (!exists) {
       if (fallthrough) {
         return;
       }
       return new Response('404 Not Found', { status: 404 });
     }
-    const response = await c.file(file);
-    // add last modified
-    if (lastModified) {
-      response.headers.set(
-        'Last-Modified',
-        new Date(file.lastModified).toUTCString()
-      );
-    }
+    const response = await c.file(file, {
+      acceptRanges,
+    });
     // add Cache-Control header
     if (cacheControlHeader) {
       response.headers.set('Cache-Control', cacheControlHeader);
+    }
+    if (lastModified === false) {
+      response.headers.delete('Last-Modified');
     }
     return response;
   };

@@ -35,7 +35,10 @@ export function compression(
   const resolvedOptions = { ...compressionDefaults, ...options };
   return async (context, next) => {
     const resp = await next();
-    if (!isCompressibleMime(resp.headers.get('Content-Type'))) {
+    if (
+      context.request.method === 'HEAD' ||
+      !isCompressibleMime(resp.headers.get('Content-Type'))
+    ) {
       return resp;
     }
     const accept = context.request.headers.get('Accept-Encoding') ?? '';

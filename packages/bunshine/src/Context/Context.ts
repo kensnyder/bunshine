@@ -74,8 +74,8 @@ export default class Context<
     return json.call(this, data, init);
   };
   /** A shorthand for `new Response(null, { headers: { Location: url }, status: 301 })` */
-  redirect = (url: string, status = 302) => {
-    return redirect(url, status);
+  redirect = (url: string, statusOrInit?: number | ResponseInit) => {
+    return redirect(url, statusOrInit);
   };
   /** A shorthand for `new Response(bunFile, fileHeaders)` plus range features */
   file = async (
@@ -89,6 +89,6 @@ export default class Context<
   };
   /** A shorthand for `new Response({ headers: { 'Content-type': 'text/event-stream' } })` */
   sse = (setup: SseSetupFunction, init: ResponseInit = {}) => {
-    return sse(this.request.signal, setup, init);
+    return sse.call(this, this.request.signal, setup, init);
   };
 }
