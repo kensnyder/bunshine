@@ -45,15 +45,10 @@ export {
 } from './src/middleware/serveFiles/serveFiles';
 export { trailingSlashes } from './src/middleware/trailingSlashes/trailingSlashes';
 export { default as ms } from './src/ms/ms';
+export { default as parseRangeHeader } from './src/parseRangeHeader/parseRangeHeader';
 export { default as factory } from './src/responseFactories/factory/factory';
+export { type FileResponseOptions } from './src/responseFactories/file/file';
 export {
-  default as file,
-  type FileResponseOptions,
-} from './src/responseFactories/file/file';
-export { default as json } from './src/responseFactories/json/json';
-export { default as redirect } from './src/responseFactories/redirect/redirect';
-export {
-  default as sse,
   type SseClose,
   type SseSend,
   type SseSetupFunction,
