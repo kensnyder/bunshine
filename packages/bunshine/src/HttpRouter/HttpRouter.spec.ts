@@ -270,7 +270,7 @@ describe('HttpRouter', () => {
     afterEach(() => {
       server.stop(true);
     });
-    it('should assign random port', async () => {
+    it('should assign default port', async () => {
       const app = new HttpRouter();
       server = app.listen();
       app.get('/', () => new Response('Hi'));

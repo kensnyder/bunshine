@@ -1,4 +1,4 @@
-import type { Context } from '../../Context/Context';
+import type Context from '../../Context/Context';
 
 const textEncoder = new TextEncoder();
 

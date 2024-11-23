@@ -18,7 +18,9 @@ describe('sse', () => {
     app = new HttpRouter();
     server = app.listen({ port: port++ });
   });
-  afterEach(() => server.stop(true));
+  afterEach(() => {
+    server.stop(true);
+  });
   function sseTest({
     payloads,
     event,

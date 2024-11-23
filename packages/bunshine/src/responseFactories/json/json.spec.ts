@@ -3,14 +3,16 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import HttpRouter from '../../HttpRouter/HttpRouter';
 
 describe('c.json()', () => {
-  let port = 0;
+  let port = 50450;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {
     app = new HttpRouter();
     server = app.listen({ port: port++ });
   });
-  afterEach(() => server.stop(true));
+  afterEach(() => {
+    server.stop(true);
+  });
   it('should serve data', async () => {
     const data = {
       string: 'string',

@@ -3,14 +3,16 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import HttpRouter from '../../HttpRouter/HttpRouter';
 
 describe('c.redirect()', () => {
-  let port = 0;
+  let port = 50350;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {
     app = new HttpRouter();
     server = app.listen({ port: port++ });
   });
-  afterEach(() => server.stop(true));
+  afterEach(() => {
+    server.stop(true);
+  });
   it('should default to 302', async () => {
     app.get('/', c => c.redirect('/home'));
     const resp = await fetch(server.url, { redirect: 'manual' });

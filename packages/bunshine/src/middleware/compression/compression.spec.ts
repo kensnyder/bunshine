@@ -11,15 +11,18 @@ describe('compression middleware', () => {
   testWithOptions('should support "gzip"', { prefer: 'gzip' });
   testWithOptions('should support "br"', { prefer: 'br' });
   testWithOptions('should support "none"', { prefer: 'none' });
-  describe('', () => {
+  describe('compression rules', () => {
+    let port = 50200;
     let server: Server;
     let app: HttpRouter;
     beforeEach(() => {
       app = new HttpRouter();
       app.use(compression());
-      server = app.listen();
+      server = app.listen({ port: port++ });
     });
-    afterEach(() => server.stop(true));
+    afterEach(() => {
+      server.stop(true);
+    });
     it('should ignore small payloads', async () => {
       const respText = 'Hello world';
       app.get('/', c => c.text(respText));
@@ -82,12 +85,13 @@ function testWithOptions(
   options: Partial<CompressionOptions>
 ) {
   describe('regular payload', () => {
+    let port = 50600;
     let server: Server;
     let app: HttpRouter;
     beforeEach(() => {
       app = new HttpRouter();
       app.use(compression(options));
-      server = app.listen();
+      server = app.listen({ port: port++ });
       app.get('/', c => c.html(html));
     });
     afterEach(() => {

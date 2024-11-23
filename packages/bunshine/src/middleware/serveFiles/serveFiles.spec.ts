@@ -13,20 +13,19 @@ const fixturesPath = path.join(
 );
 
 describe('serveFiles middleware', () => {
+  let port = 50900;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {
     app = new HttpRouter();
-    app.onError(c => {
-      console.log('---------- error', c.error);
-      return c.text('Error', { status: 500 });
-    });
+    server = app.listen({ port: port++ });
   });
-  afterEach(() => server.stop(true));
+  afterEach(() => {
+    server.stop(true);
+  });
   describe('files', () => {
     it('should serve file', async () => {
       app.get('/files/*', serveFiles(fixturesPath));
-      server = app.listen();
       const resp = await fetch(`${server.url}files/home.html`);
       const text = await resp.text();
       expect(text).toBe('<h1>Welcome home</h1>\n');
@@ -35,7 +34,6 @@ describe('serveFiles middleware', () => {
     });
     it('should serve empty file', async () => {
       app.get('/files/*', serveFiles(fixturesPath));
-      server = app.listen();
       const resp = await fetch(`${server.url}files/empty.txt`);
       const text = await resp.text();
       expect(text).toBe('');
@@ -44,7 +42,6 @@ describe('serveFiles middleware', () => {
     });
     it('should support head', async () => {
       app.head('/files/*', serveFiles(fixturesPath));
-      server = app.listen();
       const resp = await fetch(`${server.url}files/home.html`, {
         method: 'HEAD',
       });
@@ -55,13 +52,11 @@ describe('serveFiles middleware', () => {
     });
     it('should 404 if file does not exist', async () => {
       app.get('/files/*', serveFiles(fixturesPath));
-      server = app.listen();
       const resp = await fetch(`${server.url}files/404.html`);
       expect(resp.status).toBe(404);
     });
     it('should 404 if file does not exist (no fallthrough)', async () => {
       app.get('/files/*', serveFiles(fixturesPath, { fallthrough: false }));
-      server = app.listen();
       const resp = await fetch(`${server.url}files/404.html`);
       expect(resp.status).toBe(404);
     });
@@ -69,7 +64,6 @@ describe('serveFiles middleware', () => {
   describe('headers', () => {
     it('should add date header', async () => {
       app.get('/files/*', serveFiles(fixturesPath));
-      server = app.listen();
       const resp = await fetch(`${server.url}files/home.html`);
       const text = await resp.text();
       expect(text).toBe('<h1>Welcome home</h1>\n');
@@ -80,7 +74,6 @@ describe('serveFiles middleware', () => {
     });
     it('should add last-modified header', async () => {
       app.get('/files/*', serveFiles(fixturesPath));
-      server = app.listen();
       const resp = await fetch(`${server.url}files/home.html`);
       expect(resp.headers.get('last-modified')).toMatch(
         /^\w{3}, \d+ \w+ \d+ \d+:\d+:\d+ \w+$/
@@ -88,7 +81,6 @@ describe('serveFiles middleware', () => {
     });
     it('should add accept-ranges header', async () => {
       app.get('/files/*', serveFiles(fixturesPath));
-      server = app.listen();
       const resp = await fetch(`${server.url}files/home.html`);
       expect(resp.headers.get('accept-ranges')).toBe('bytes');
     });
@@ -104,7 +96,6 @@ describe('serveFiles middleware', () => {
         },
         serveFiles(fixturesPath)
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/home.html`);
       const text = await resp.text();
       expect(text).toBe('<h1>Welcome home</h1>\n');
@@ -119,7 +110,6 @@ describe('serveFiles middleware', () => {
           maxAge: 0,
         })
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/home.html`);
       expect(resp.headers.get('cache-control')).toBe('public, max-age=0');
     });
@@ -130,7 +120,6 @@ describe('serveFiles middleware', () => {
           maxAge: 123956,
         })
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/home.html`);
       expect(resp.headers.get('cache-control')).toBe('public, max-age=123');
     });
@@ -141,7 +130,6 @@ describe('serveFiles middleware', () => {
           maxAge: '30d',
         })
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/home.html`);
       expect(resp.headers.get('cache-control')).toBe('public, max-age=2592000');
     });
@@ -162,7 +150,6 @@ describe('serveFiles middleware', () => {
           index: ['index.html'],
         })
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/folder`);
       const text = await resp.text();
       expect(text).toBe('index.html\n');
@@ -174,7 +161,6 @@ describe('serveFiles middleware', () => {
           index: ['index.js'],
         })
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/folder`);
       const text = await resp.text();
       expect(text).toBe('// index.js\n');
@@ -186,7 +172,6 @@ describe('serveFiles middleware', () => {
           index: ['nothing.html', 'index.js'],
         })
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/folder`);
       const text = await resp.text();
       expect(text).toBe('// index.js\n');
@@ -198,7 +183,6 @@ describe('serveFiles middleware', () => {
           index: ['folder'],
         })
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files`);
       expect(resp.status).toBe(404);
     });
@@ -212,7 +196,6 @@ describe('serveFiles middleware', () => {
         }),
         c => c.text('Hello')
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/.dotfile`);
       const text = await resp.text();
       expect(text).toBe('Hello');
@@ -224,7 +207,6 @@ describe('serveFiles middleware', () => {
           dotfiles: 'deny',
         })
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/.dotfile`);
       expect(resp.status).toBe(403);
     });
@@ -235,7 +217,6 @@ describe('serveFiles middleware', () => {
           dotfiles: 'allow',
         })
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/.dotfile`);
       const text = await resp.text();
       expect(text).toBe('.dotfile\n');
@@ -247,7 +228,6 @@ describe('serveFiles middleware', () => {
           dotfiles: 'ignore',
         })
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/..`);
       expect(resp.status).toBe(404);
     });
@@ -261,7 +241,6 @@ describe('serveFiles middleware', () => {
         }),
         c => c.text('Hello')
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/home.html`);
       const text = await resp.text();
       expect(text).toBe('Hello');
@@ -273,7 +252,6 @@ describe('serveFiles middleware', () => {
           extensions: ['html'],
         })
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/home.html`);
       const text = await resp.text();
       expect(text).toBe('<h1>Welcome home</h1>\n');
@@ -285,7 +263,6 @@ describe('serveFiles middleware', () => {
           extensions: ['', 'html'],
         })
       );
-      server = app.listen();
       const resp = await fetch(`${server.url}files/noext`);
       const text = await resp.text();
       expect(text).toBe('noext\n');

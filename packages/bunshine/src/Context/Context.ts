@@ -74,8 +74,8 @@ export default class Context<
     return json.call(this, data, init);
   };
   /** A shorthand for `new Response(null, { headers: { Location: url }, status: 301 })` */
-  redirect = (url: string, statusOrInit?: number | ResponseInit) => {
-    return redirect(url, statusOrInit);
+  redirect = (url: string, status?: number) => {
+    return redirect(url, status);
   };
   /** A shorthand for `new Response(bunFile, fileHeaders)` plus range features */
   file = async (

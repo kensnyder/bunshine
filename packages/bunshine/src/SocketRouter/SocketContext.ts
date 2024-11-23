@@ -138,7 +138,10 @@ export class SocketMessage<T extends SocketEventName> {
     return this._rawMessage.toString(encoding);
   }
   buffer() {
-    return Buffer.from(this._rawMessage);
+    if (typeof this._rawMessage === 'string') {
+      return Buffer.from(this._rawMessage);
+    }
+    return this._rawMessage;
   }
   arrayBuffer() {
     return this.buffer().buffer;

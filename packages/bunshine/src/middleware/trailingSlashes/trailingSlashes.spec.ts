@@ -4,47 +4,44 @@ import HttpRouter from '../../HttpRouter/HttpRouter';
 import { trailingSlashes } from './trailingSlashes';
 
 describe('trailingSlashes middleware', () => {
+  let port = 50250;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {
     app = new HttpRouter();
+    server = app.listen({ port: port++ });
   });
   afterEach(() => {
     server.stop(true);
   });
   it('should add slashes', async () => {
     app.use(trailingSlashes('add'));
-    server = app.listen({ port: 7800 });
-    const resp = await fetch('http://localhost:7800/foo');
+    const resp = await fetch(`${server.url}foo`);
     expect(resp.redirected).toBe(true);
-    expect(resp.url).toBe('http://localhost:7800/foo/');
+    expect(resp.url).toBe(`${server.url}foo/`);
   });
   it('should add slashes with query string', async () => {
     app.use(trailingSlashes('add'));
-    server = app.listen({ port: 7801 });
-    const resp = await fetch('http://localhost:7801/foo?a=b');
+    const resp = await fetch(`${server.url}foo?a=b`);
     expect(resp.redirected).toBe(true);
-    expect(resp.url).toBe('http://localhost:7801/foo/?a=b');
+    expect(resp.url).toBe(`${server.url}foo/?a=b`);
   });
   it('should remove slashes', async () => {
     app.use(trailingSlashes('remove'));
-    server = app.listen({ port: 7802 });
-    const resp = await fetch('http://localhost:7802/foo/');
+    const resp = await fetch(`${server.url}foo/`);
     expect(resp.redirected).toBe(true);
-    expect(resp.url).toBe('http://localhost:7802/foo');
+    expect(resp.url).toBe(`${server.url}foo`);
   });
   it('should remove slashes with query string', async () => {
     app.use(trailingSlashes('remove'));
-    server = app.listen({ port: 7803 });
-    const resp = await fetch('http://localhost:7803/foo/?a=b');
+    const resp = await fetch(`${server.url}foo/?a=b`);
     expect(resp.redirected).toBe(true);
-    expect(resp.url).toBe('http://localhost:7803/foo?a=b');
+    expect(resp.url).toBe(`${server.url}foo?a=b`);
   });
   it('should not remove slashes at root', async () => {
     app.use(trailingSlashes('remove'));
-    server = app.listen({ port: 7804 });
-    const resp = await fetch('http://localhost:7804/');
+    const resp = await fetch(server.url);
     expect(resp.redirected).toBe(false);
-    expect(resp.url).toBe('http://localhost:7804/');
+    expect(resp.url).toBe(`${server.url}`);
   });
 });

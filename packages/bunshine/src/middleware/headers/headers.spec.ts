@@ -1,14 +1,18 @@
 import type { Server } from 'bun';
-import { beforeEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import HttpRouter from '../../HttpRouter/HttpRouter';
 import { headers } from './headers';
 
 describe('headers middleware', () => {
+  let port = 50300;
   let server: Server;
   let app: HttpRouter;
   beforeEach(() => {
     app = new HttpRouter();
-    server = app.listen();
+    server = app.listen({ port: port++ });
+  });
+  afterEach(() => {
+    server.stop(true);
   });
   it('should add string header', async () => {
     app.get('/', headers({ 'Foo-Bar': 'Baz' }), c => c.text('hello'));

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import HttpRouter from '../../HttpRouter/HttpRouter';
 
 describe('c.file()', () => {
-  let port = 7400;
+  let port = 50400;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {
@@ -11,7 +11,9 @@ describe('c.file()', () => {
     app.onError(c => console.log(c.error));
     server = app.listen({ port: port++ });
   });
-  afterEach(() => server.stop(true));
+  afterEach(() => {
+    server.stop(true);
+  });
   it('should handle files with disposition="attachment', async () => {
     app.get('/home.html', c =>
       c.file(`${import.meta.dir}/../../../testFixtures/home.html`, {
