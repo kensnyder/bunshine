@@ -113,6 +113,29 @@ describe('parseRangeHeader', () => {
       status: 206,
     });
   });
+  it('should return 416 on ranged empty file', () => {
+    const result = parseRangeHeader({
+      rangeHeader: 'bytes=0-',
+      totalFileSize: 0,
+    });
+    expect(result).toEqual({
+      slice: null,
+      contentLength: 0,
+      status: 416,
+    });
+  });
+  it('should return 206 on open-ended request from 0', () => {
+    const result = parseRangeHeader({
+      rangeHeader: 'bytes=0-',
+      totalFileSize: 1000,
+      defaultChunkSize: 100,
+    });
+    expect(result).toEqual({
+      slice: { start: 0, end: 99 },
+      contentLength: 100,
+      status: 206,
+    });
+  });
   it('should return 206 on open-ended request (chunk is smaller)', () => {
     const result = parseRangeHeader({
       rangeHeader: 'bytes=900-',

@@ -1,6 +1,10 @@
 # Changelog
 
-## v3.1.0
+## v3.1.1 - Nov 23, 2024
+
+- Fix Content-Range header when file size is 0
+
+## v3.1.0 - Nov 23, 2024
 
 - Remove useless exports of response factories
 - More unit tests
