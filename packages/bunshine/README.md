@@ -183,20 +183,20 @@ app.get('/hello', (c: Context, next: NextFunction) => {
   });
 
   // Or create Response objects with convenience functions:
-  return c.json(data, init);
-  return c.text(text, init);
-  return c.js(jsText, init);
-  return c.xml(xmlText, init);
-  return c.html(htmlText, init);
-  return c.css(cssText, init);
-  return c.file(pathOrSource, init);
+  return c.json(data, init); // data to pass to JSON.stringify
+  return c.text(text, init); // plain text
+  return c.js(jsText, init); // plain-text js
+  return c.xml(xmlText, init); // plain-text xml
+  return c.html(htmlText, init); // plain-text html
+  return c.css(cssText, init); // plain-text css
+  return c.file(pathOrSource, init); // file path, BunFile or binary source
 
-  // above init is ResponseInit:
-  {
-    headers: Headers | Record<string, string> | Array<[string, string]>;
-    status: number;
-    statusText: string;
-  }
+  // above init is the Web Standards ResponseInit:
+  type ResponseInit = {
+    headers?: Headers | Record<string, string> | Array<[string, string]>;
+    status?: number;
+    statusText?: string;
+  };
 
   // Create a redirect Response:
   return c.redirect(url, status); // status defaults to 302 (Temporary Redirect)
@@ -484,21 +484,21 @@ to subsequent middleware such as loggers.
 Setting up websockets at various paths is easy with the `socket` property.
 
 ```ts
-import { HttpRouter } from 'bunshine';
+import { HttpRouter, SocketMessage } from 'bunshine';
 
 const app = new HttpRouter();
 
-// regular routes
+// register regular routes on app.get()/post()/etc
 app.get('/', c => c.text('Hello World!'));
 
-// WebSocket routes
+// Register WebSocket routes with app.socket.at()
 type ParamsShape = { room: string };
 type DataShape = { user: User };
 app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
   // Optional. Allows you to specify arbitrary data to attach to ws.data.
-  upgrade: sc => {
+  upgrade: c => {
     // upgrade is called on first connection, before HTTP 101 is issued
-    const cookies = sc.request.headers.get('cookie');
+    const cookies = c.request.headers.get('cookie');
     const user = getUserFromCookies(cookies);
     return { user };
   },
@@ -525,10 +525,112 @@ app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
   },
   // Optional. Called when the client disconnects
   // List of codes and messages: https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code
-  close(sc, code, message) {
+  close(sc, code, reason) {
     const room = sc.params.room;
     const user = sc.data.user;
     markUserExit(room, user);
+  },
+});
+
+// start the server
+app.listen({ port: 3100, reusePort: true });
+
+//
+// Browser side:
+//
+const gameRoom = new WebSocket('ws://localhost:3100/games/rooms/1?user=42');
+gameRoom.onmessage = e => {
+  // receiving messages
+  const data = JSON.parse(e.data);
+  if (data.type === 'GameState') {
+    setGameState(data);
+  } else if (data.type === 'GameMove') {
+    playMove(data);
+  }
+};
+gameRoom.onerror = handleGameError;
+// send message to server
+gameRoom.send(JSON.stringify({ type: 'GameMove', move: 'rock' }));
+```
+
+### Are sockets magical?
+
+They're simpler than you think. What Bun does internally:
+
+- Responds to a regular HTTP request with HTTP 101 (Switching Protocols)
+- Tells the client to make socket connection on another port
+- Keeps connection open and sends/receives messages
+- Keeps objects in memory to represent each connected client
+- Tracks topic subscription and un-subscription for each client
+
+In Node, the process is complicated because you have to import and orchestrate http/https, and net.
+But Bun provides Bun.serve() which handles everything. Bunshine is a wrapper
+around Bun.serve that adds routing and convenience functions.
+
+With Bunshine you don't need to use Socket.IO or any other framework.
+Connecting from the client requires no library either. You can simply
+create a new WebSocket() object and use it to listen and send data.
+
+For pub-sub, Bun internally handles subscriptions and broadcasts. See below for
+pub-sub examples using Bunshine.
+
+### Socket Context properties
+
+```ts
+import { Context, HttpRouter, NextFunction, SocketContext } from 'bunshine';
+
+const app = new HttpRouter();
+
+// WebSocket routes
+type ParamsShape = { room: string };
+type DataShape = { user: User };
+app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
+  // Optional. Allows you to specify arbitrary data to attach to ws.data.
+  upgrade: (c: Context, next: NextFunction) => {
+    // Functions are type annotated for illustrations, but is not neccessary
+    // c and next here are the same as regular http endpoings
+    return data; // data returned becomes available on sc.data
+  },
+  // Optional. Called when the client sends a message
+  message(sc, message) {
+    sc.url; // the URL object for the request
+    sc.server; // Same as app.server
+    sc.params; // Route params for the request (in this case { room: string; })
+    sc.data; // Any data you return from the upgrade handler
+    sc.remoteAddress; // the client or load balancer IP Address
+    sc.readyState; // 0=connecting, 1=connected, 2=closing, 3=close
+    sc.binaryType; // nodebuffer, arraybuffer, uint8array
+    sc.send(message, compress /*optional*/); // compress is optional
+    //      message can be string, data to be JSON.stringified, or binary data such as Buffer or Uint8Array.
+    //               compress can be true to compress message
+    sc.close(status /*optional*/, reason /*optional*/); // status and reason are optional
+    //       status can be a valid WebSocket status number (in the 1000s)
+    //               reason can be text to tell client why you are closing
+    sc.terminate(); // terminates socket without telling client why
+    sc.subscribe(topic); // The name of a topic to subscribe this client
+    sc.unsubscribe(topic); // Name of topic to unsubscribe
+    sc.isSubscribed(topic); // True if subscribed to that topic name
+    sc.cork(topic); // Normally there is no reason to use this function
+    sc.publish(topic, message, compress /*optional*/); // Publish message to all subscribed clients
+    sc.ping(data /*optional*/); // Tell client to stay connected
+    sc.pong(data /*optional*/); // Way to respond to client request to stay connected
+
+    message.raw(); // get the raw string or Buffer of the message
+    message.text(encoding /*optional*/); // get message as string
+    `${message}`; // will do the same as .text()
+    message.buffer(); // get data as Buffer
+    message.arrayBuffer(); // get data as array buffer
+    message.readableString(); // get data as a ReadableString object
+    message.json(); // parse data with JSON.parse()
+  },
+  // called when a handler throws any error
+  error: (sc: SocketContext, error: Error) => {
+    // sc is the same as above
+  },
+  // Optional. Called when the client disconnects
+  // List of codes and messages: https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code
+  close(sc: SocketContext, code: number, reason: string) {
+    // sc is the same as above
   },
 });
 
@@ -563,8 +665,6 @@ import { HttpRouter } from 'bunshine';
 
 const app = new HttpRouter();
 
-app.get('/', c => c.text('Hello World!'));
-
 type ParamsShape = { room: string };
 type DataShape = { username: string };
 app.socket.at<ParamsShape, DataShape>('/chat/:room', {
@@ -581,11 +681,12 @@ app.socket.at<ParamsShape, DataShape>('/chat/:room', {
   message(sc, message) {
     // the server re-broadcasts incoming messages
     // to each connection's message handler
-    const fullMessage = `${sc.data.username}: ${message}`;
+    // so you need to call sc.publish() and sc.send()
+    const fullMessage = `${sc.data.username}: ${message.text()}`;
     sc.publish(`chat-room-${sc.params.room}`, fullMessage);
     sc.send(fullMessage);
   },
-  close(sc, code, message) {
+  close(sc, code, reason) {
     const msg = `${sc.data.username} has left the chat`;
     sc.publish(`chat-room-${sc.params.room}`, msg);
     sc.unsubscribe(`chat-room-${sc.params.room}`);
@@ -1219,7 +1320,7 @@ app.socket.at<{ room: string }, { user: User }>('/games/rooms/:room', {
     // TypeScript knows that ws.data.params.room is a string
     // TypeScript knows that ws.data.user is a User
   },
-  close(ws, code, message) {
+  close(ws, code, reason) {
     // TypeScript knows that ws.data.params.room is a string
     // TypeScript knows that ws.data.user is a User
   },

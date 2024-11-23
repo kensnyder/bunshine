@@ -147,7 +147,7 @@ export class SocketMessage<T extends SocketEventName> {
     return this.buffer().buffer;
   }
   readableStream(chunkSize: number = 1024) {
-    // @ts-expect-error
+    // @ts-expect-error - type is incorrect
     return new Blob([this.buffer()]).stream(chunkSize);
   }
   json() {
