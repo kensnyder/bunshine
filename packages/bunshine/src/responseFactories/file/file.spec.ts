@@ -92,11 +92,14 @@ describe('c.file()', () => {
     });
     const range1Bytes = await rangeResponse1.blob();
 
-    expect(rangeResponse1.status).toBe(200);
+    expect(rangeResponse1.status).toBe(206);
     expect(rangeResponse1.headers.get('accept-ranges')).toBe('bytes');
     expect(rangeResponse1.headers.get('content-type')).toBe('image/jpeg');
     expect(range1Bytes.size).toBe(fileSize);
     expect(rangeResponse1.headers.get('content-length')).toBe(String(fileSize));
+    expect(rangeResponse1.headers.get('content-range')).toBe(
+      `bytes 0-${fileSize - 1}/${fileSize}`
+    );
     expect(range1Bytes).toEqual(fullFileBytes);
 
     // Step 4: Fetch range "bytes=0-999" and validate

@@ -7,7 +7,7 @@ export type RangeInformation = {
 export default function parseRangeHeader({
   rangeHeader,
   totalFileSize,
-  defaultChunkSize = 3 * 1024 ** 2, // 3MB chunk if byte range is open ended
+  defaultChunkSize = 1024 ** 2, // 1MB chunk if byte range is open ended
 }: RangeInformation) {
   if (!rangeHeader) {
     // range header missing or empty
@@ -42,7 +42,8 @@ export default function parseRangeHeader({
     return { slice: null, contentLength: null, status: 416 };
   }
   if (start === 0 && end === totalFileSize - 1) {
-    return { slice: null, contentLength: totalFileSize, status: 200 };
+    // safari expects a 206 even if the range is the full file
+    // return { slice: null, contentLength: totalFileSize, status: 200 };
   }
   return { slice: { start, end }, contentLength: end - start + 1, status: 206 };
 }

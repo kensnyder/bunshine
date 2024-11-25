@@ -8,6 +8,7 @@ export type FileResponseOptions = {
   chunkSize?: number;
   disposition?: 'inline' | 'attachment';
   acceptRanges?: boolean;
+  headers?: HeadersInit;
 };
 
 export default async function file(
@@ -31,14 +32,22 @@ export default async function file(
   });
   // add last modified
   resp.headers.set('Last-Modified', new Date(file.lastModified).toUTCString());
-  if (fileOptions.disposition === 'attachment') {
-    const filename = path.basename(file.name!);
+  // optionally add disposition
+  if (fileOptions.disposition === 'attachment' && file.name) {
+    const filename = path.basename(file.name);
     resp.headers.set(
       'Content-Disposition',
       `${fileOptions.disposition}; filename="${filename}"`
     );
   } else if (fileOptions.disposition === 'inline') {
     resp.headers.set('Content-Disposition', 'inline');
+  }
+  // optionally add headers
+  if (fileOptions.headers) {
+    const headers = new Headers(fileOptions.headers);
+    for (const [name, value] of Object.entries(headers)) {
+      resp.headers.set(name, value);
+    }
   }
   return resp;
 }
@@ -80,6 +89,7 @@ async function buildFileResponse({
       headers: {
         'Content-Type': getMimeType(file),
         'Content-Length': String(file.size),
+        // Currently Bun overrides the Content-Length header to be 0
         'X-Content-Length': String(file.size),
         ...(acceptRanges ? { 'Accept-Ranges': 'bytes' } : {}),
       },

@@ -194,17 +194,17 @@ export default class HttpRouter {
   ) {
     return this.on<ParamsShape>(['HEAD', 'GET'], path, handlers);
   }
-  use(...handlers: Handler<{}>[]) {
+  use = (...handlers: Handler<{}>[]) => {
     return this.all('*', handlers);
-  }
-  on404(...handlers: SingleHandler<Record<string, string>>[]) {
+  };
+  on404 = (...handlers: SingleHandler<Record<string, string>>[]) => {
     this._on404Handlers.push(...handlers.flat(9));
     return this;
-  }
-  on500(...handlers: SingleHandler<Record<string, string>>[]) {
+  };
+  on500 = (...handlers: SingleHandler<Record<string, string>>[]) => {
     this._on500Handlers.push(...handlers.flat(9));
     return this;
-  }
+  };
   fetch = async (request: Request, server: Server) => {
     const context = new Context(request, server, this);
     const pathname = context.url.pathname;

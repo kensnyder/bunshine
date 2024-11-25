@@ -2,14 +2,14 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/packages/bunshine/assets/bunshine-logo.png?v=3.1.1" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/packages/bunshine/assets/bunshine-logo.png?v=3.1.2" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.1.1)](https://npmjs.com/package/bunshine)
-[![Language: TypeScript](https://badgen.net/static/language/TS?v=3.1.1)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
-[![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.1.1)](https://codecov.io/gh/kensnyder/bunshine)
-[![Dependencies: 1](https://badgen.net/static/dependencies/1/green?v=3.1.1)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
-![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.1.1)
-[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.1.1)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.1.2)](https://npmjs.com/package/bunshine)
+[![Language: TypeScript](https://badgen.net/static/language/TS?v=3.1.2)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
+[![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.1.2)](https://codecov.io/gh/kensnyder/bunshine)
+[![Dependencies: 1](https://badgen.net/static/dependencies/1/green?v=3.1.2)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
+![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.1.2)
+[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.1.2)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
@@ -61,7 +61,8 @@ _Or to run Bunshine on Node,
 12. [Examples of common http server setup](#examples-of-common-http-server-setup)
 13. [Design Decisions](#design-decisions)
 14. [Roadmap](#roadmap)
-15. [ISC License](./LICENSE.md)
+15. [Change Log](./CHANGELOG.md)
+16. [ISC License](./LICENSE.md)
 
 ## Upgrading from 1.x to 2.x
 
@@ -237,6 +238,56 @@ See the [serveFiles](#serveFiles) section for more info.
 
 Also note you can serve files with Bunshine anywhere with `bunx bunshine-serve`.
 It currently uses the default `serveFiles()` options.
+
+If you want to manually manage serving a file, you can use the following approach.
+
+```ts
+import { HttpRouter, serveFiles } from 'bunshine';
+
+const app = new HttpRouter();
+
+app.get('/assets/:name.png', c => {
+  const name = c.params.name;
+  const filePath = `${import.meta.dir}/assets/${name}.png`;
+  // you can pass a string path
+  return c.file(filePath);
+  // Bun will set Content-Type based on the string file extension
+});
+
+app.get('/build/:hash.map', c => {
+  const hash = c.params.hash;
+  const filePath = `${import.meta.dir}/assets/${name}.png`;
+  // you can pass a BunFile
+  return c.file(
+    Bun.file(filePath, {
+      // Bun will automatically set Content-Type based on the file's extension
+      // but you can set it or override it, for instance if Bun doesn't know it's type
+      headers: { 'Content-type': 'application/json' },
+    })
+  );
+});
+
+app.get('/profile/*.jpg', async c => {
+  // you can pass a Buffer, Readable, or TypedArray
+  const intArray = getBytesFromExternal(c.params[0]);
+  const resp = c.file(bytes);
+  // You can use something like file-type on npm
+  // To get a mime type based on binary data
+  const { mime } = await fileTypeFromBuffer(intArray);
+  resp.headers.set('Content-type', mime);
+  return resp;
+});
+
+app.get('/files/*', async c => {
+  // c.file() accepts 4 options:
+  return c.file(path, {
+    disposition, // Use a Content-Disposition header with "inline" or "attachment"
+    headers, // additional headers to add
+    acceptRanges, // unless false, will support partial (ranged) downloads
+    chunkSize, // Size for ranged downloads when client doesn't specify chunk size. Defaults to 3MB
+  });
+});
+```
 
 ## Writing middleware
 
@@ -601,11 +652,11 @@ app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
     sc.readyState; // 0=connecting, 1=connected, 2=closing, 3=close
     sc.binaryType; // nodebuffer, arraybuffer, uint8array
     sc.send(message, compress /*optional*/); // compress is optional
-    //      message can be string, data to be JSON.stringified, or binary data such as Buffer or Uint8Array.
-    //               compress can be true to compress message
+    //   message can be string, data to be JSON.stringified, or binary data such as Buffer or Uint8Array.
+    //   compress can be true to compress message
     sc.close(status /*optional*/, reason /*optional*/); // status and reason are optional
-    //       status can be a valid WebSocket status number (in the 1000s)
-    //               reason can be text to tell client why you are closing
+    //   status can be a valid WebSocket status number (in the 1000s)
+    //   reason can be text to tell client why you are closing
     sc.terminate(); // terminates socket without telling client why
     sc.subscribe(topic); // The name of a topic to subscribe this client
     sc.unsubscribe(topic); // Name of topic to unsubscribe
@@ -620,8 +671,9 @@ app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
     `${message}`; // will do the same as .text()
     message.buffer(); // get data as Buffer
     message.arrayBuffer(); // get data as array buffer
-    message.readableString(); // get data as a ReadableString object
+    message.readableStream(); // get data as a ReadableStream object
     message.json(); // parse data with JSON.parse()
+    message.type; // message, ping, or pong
   },
   // called when a handler throws any error
   error: (sc: SocketContext, error: Error) => {
@@ -1129,7 +1181,7 @@ example:
 
 Screenshot:
 
-<img alt="devLogger" src="https://github.com/kensnyder/bunshine/raw/main/assets/devLogger-screenshot.png?v=3.1.1" width="524" height="78" />
+<img alt="devLogger" src="https://github.com/kensnyder/bunshine/raw/main/assets/devLogger-screenshot.png?v=3.1.2" width="524" height="78" />
 
 `prodLogger` outputs logs in JSON with the following shape:
 
@@ -1145,7 +1197,7 @@ Request log:
   "method": "GET",
   "pathname": "/home",
   "runtime": "Bun v1.1.34",
-  "poweredBy": "Bunshine v3.1.1",
+  "poweredBy": "Bunshine v3.1.2",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123
@@ -1164,7 +1216,7 @@ Response log:
   "method": "GET",
   "pathname": "/home",
   "runtime": "Bun v1.1.34",
-  "poweredBy": "Bunshine v3.1.1",
+  "poweredBy": "Bunshine v3.1.2",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123,
@@ -1354,7 +1406,25 @@ app.get('/', c => {
   c.url.searchParams; // URLSearchParams object
   Object.fromEntries(c.url.searchParams); // as plain object (but repeated keys are dropped)
   for (const [key, value] of c.url.searchParams) {
-  } // iterate params
+    // iterate params
+  }
+});
+
+// Or set c.query via middleware
+app.use(c => {
+  c.query = Object.fromEntries(c.url.searchParams);
+});
+
+// how to read json payload
+app.post('/api/user', async c => {
+  const data = await c.request.json();
+});
+
+// Or set c.body via middleware
+app.on(['POST', 'PUT', 'PATCH'], async c => {
+  if (c.request.headers.get('Content-Type')?.includes('application/json')) {
+    c.body = await c.request.json();
+  }
 });
 
 // create small functions that always return the same thing
@@ -1363,12 +1433,6 @@ const respondWith404 = c => c.text('Not found', { status: 404 });
 app.get(/^\./, respondWith404);
 // block URLs that end with .env and other dumb endings
 app.all(/\.(env|bak|old|tmp|backup|log|ini|conf)$/, respondWith404);
-// block WordPress URLs such as /wordpress/wp-includes/wlwmanifest.xml
-app.all(/(^wordpress\/|\/wp-includes\/)/, respondWith404);
-// block Other language URLs such as /phpinfo.php and /admin.cgi
-app.all(/^[^/]+\.(php|cgi)$/, respondWith404);
-// block Commonly probed application paths
-app.all(/^(phpmyadmin|mysql|cgi-bin|cpanel|plesk)/i, respondWith404);
 
 // middleware to add CSP
 app.use(async (c, next) => {
@@ -1398,7 +1462,7 @@ app.headGet('/embeds/*', async (c, next) => {
 });
 
 // Persist data in c.locals
-app.get('/api/*', async (c, next) => {
+app.all('/api/*', async (c, next) => {
   const authValue = c.request.headers.get('Authorization');
   // subsequent handler will have access to this auth information
   c.locals.auth = {
@@ -1413,7 +1477,7 @@ function castSchema(zodSchema: ZodObject): Middleware {
   return async c => {
     const result = zodSchema.safeParse(await c.json());
     if (result.error) {
-      return c.json(result.error, { status: 400 });
+      return c.text(result.error, { status: 400 });
     }
     c.locals.safePayload = result.data;
   };
@@ -1424,8 +1488,11 @@ app.post('/api/users', castSchema(userCreateSchema), createUser);
 // Destructure context object
 app.get('/api/*', async ({ url, request, json }) => {
   // do stuff with url and request
-  return json({ message: 'my json response' });
+  return json({ message: `my json response at ${url.pathname}` });
 });
+
+// listen on random port
+app.listen({ port: 0, reusePort: true });
 ```
 
 ## Design Decisions
