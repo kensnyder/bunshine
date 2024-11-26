@@ -259,22 +259,17 @@ app.get('/build/:hash.map', c => {
   // you can pass a BunFile
   return c.file(
     Bun.file(filePath, {
-      // Bun will automatically set Content-Type based on the file's extension
-      // but you can set it or override it, for instance if Bun doesn't know it's type
+      // Bunshine will automatically set Content-Type based on the file bytes
+      // but you can set it or override it for non-standard mime types
       headers: { 'Content-type': 'application/json' },
     })
   );
 });
 
 app.get('/profile/*.jpg', async c => {
-  // you can pass a Buffer, Readable, or TypedArray
+  // you can pass a Buffer or Uint8Array
   const intArray = getBytesFromExternal(c.params[0]);
-  const resp = c.file(bytes);
-  // You can use something like file-type on npm
-  // To get a mime type based on binary data
-  const { mime } = await fileTypeFromBuffer(intArray);
-  resp.headers.set('Content-type', mime);
-  return resp;
+  return c.file(bytes);
 });
 
 app.get('/files/*', async c => {
@@ -283,7 +278,8 @@ app.get('/files/*', async c => {
     disposition, // Use a Content-Disposition header with "inline" or "attachment"
     headers, // additional headers to add
     acceptRanges, // unless false, will support partial (ranged) downloads
-    chunkSize, // Size for ranged downloads when client doesn't specify chunk size. Defaults to 3MB
+    sendLastModified, // unless false, will report file modification date (if givine a string or Bun file)
+    chunkSize, // Size for ranged downloads when client doesn't specify chunk size. Defaults to 1MB
   });
 });
 ```

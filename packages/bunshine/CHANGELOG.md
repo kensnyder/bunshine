@@ -1,10 +1,13 @@
 # Changelog
 
+## v3.2.0 - Nov xx, 2024
+
+- Auto-detect file mime type with c.file()
+
 ## v3.1.2 - Nov 25, 2024
 
 - Change default range chunk size 3MB => 1MB
 - Support passing headers to c.file()
-- Return 206 in ranged downloads even if whole file is requested (Safari bug)
 
 ## v3.1.1 - Nov 23, 2024
 

@@ -14,7 +14,7 @@ export type FileResponseOptions = {
   chunkSize?: number;
   disposition?: 'inline' | 'attachment';
   acceptRanges?: boolean;
-  giveLastModified?: boolean;
+  sendLastModified?: boolean;
   headers?: HeadersInit;
 };
 
@@ -71,7 +71,7 @@ async function getFileResponse(
   }
   const supportRangedRequest = fileOptions.acceptRanges !== false;
   const maybeModifiedHeader: ResponseInit['headers'] =
-    lastModified instanceof Date && fileOptions.giveLastModified !== false
+    lastModified instanceof Date && fileOptions.sendLastModified !== false
       ? { 'Last-Modified': lastModified.toUTCString() }
       : {};
   const maybeAcceptRangesHeader: ResponseInit['headers'] = supportRangedRequest
