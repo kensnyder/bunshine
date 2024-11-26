@@ -57,15 +57,15 @@ describe('parseRangeHeader', () => {
       status: 416,
     });
   });
-  it('should return 206 on full byte range', () => {
+  it('should return 200 on full byte range', () => {
     const result = parseRangeHeader({
       rangeHeader: 'bytes=0-999',
       totalFileSize: 1000,
     });
     expect(result).toEqual({
-      slice: { start: 0, end: 999 },
+      slice: null,
       contentLength: 1000,
-      status: 206,
+      status: 200,
     });
   });
   it('should return 206 on first bytes', () => {
