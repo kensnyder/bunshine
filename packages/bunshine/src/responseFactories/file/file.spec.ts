@@ -172,7 +172,7 @@ describe('c.file()', () => {
     'fixture-office365.xlsx.data':
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'fixture.woff2.data': 'font/woff2',
-    'fixture-bali.tif.data': 'image/tiff',
+    'fixture-bali.tif': 'image/tiff',
     'fixture-ffe3.mp3.data': 'audio/mpeg',
     'fixture-mp4v2.mp4.data': 'video/mp4',
     'fixture.m4v.data': 'video/x-m4v',
@@ -186,6 +186,26 @@ describe('c.file()', () => {
       );
       const resp = await fetch(`${server.url}${name}`);
       expect(resp.status).toBe(200);
+      expect(resp.headers.get('Content-Type')).toInclude(mime);
+    });
+    it(`should detect mime from partial bytes - ${name}`, async () => {
+      app.get(`/${name}`, c =>
+        c.file(`${import.meta.dir}/../../../testFixtures/file-type/${name}`)
+      );
+      const resp = await fetch(`${server.url}${name}`, {
+        headers: { Range: 'bytes=0-5000' },
+      });
+      expect(resp.status).toBeOneOf([206, 416, 200]);
+      expect(resp.headers.get('Content-Type')).toInclude(mime);
+    });
+    it(`should detect mime from bytes 0-1 request - ${name}`, async () => {
+      app.get(`/${name}`, c =>
+        c.file(`${import.meta.dir}/../../../testFixtures/file-type/${name}`)
+      );
+      const resp = await fetch(`${server.url}${name}`, {
+        headers: { Range: 'bytes=0-1' },
+      });
+      expect(resp.status).toBe(206);
       expect(resp.headers.get('Content-Type')).toInclude(mime);
     });
   }

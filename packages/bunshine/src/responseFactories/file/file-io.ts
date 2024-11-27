@@ -6,6 +6,7 @@ import path from 'node:path';
 export type FileLike = string | BunFile | Blob | Uint8Array | ArrayBuffer;
 
 const defaultMimeType = 'application/octet-stream';
+const detectMimeChunkSize = 4100;
 
 function isBunFile(file: FileLike): file is BunFile {
   // @ts-expect-error - Only way I know to distinguish Blob from BunFile is to check .exists
@@ -51,7 +52,7 @@ export async function getFileMime(
 }
 
 export async function getChunkMime(path: string) {
-  const chunk = await readChunk(path, 0, 4100);
+  const chunk = await readChunk(path, 0, detectMimeChunkSize);
   return chunk ? getBufferMime(chunk) : null;
 }
 
@@ -65,7 +66,7 @@ export function getFileBaseName(file: FileLike) {
   }
 }
 
-const textMimes = {
+const unambiguiousExtensions = {
   cjs: 'text/javascript',
   css: 'text/css',
   html: 'text/html',
@@ -76,11 +77,13 @@ const textMimes = {
   mjs: 'text/javascript',
   txt: 'text/plain',
   webmanifest: 'application/json',
+  tif: 'image/tiff',
+  tiff: 'image/tiff',
   xml: 'text/xml',
 };
 
 export function getMimeByExt(extension: string) {
-  return textMimes[extension.toLowerCase()];
+  return unambiguiousExtensions[extension.toLowerCase()];
 }
 
 export async function getFileStats(file: FileLike) {
