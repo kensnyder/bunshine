@@ -3,18 +3,16 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import HttpRouter from '../../HttpRouter/HttpRouter';
 
 describe('c.file()', () => {
-  let port = 50400;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {
     app = new HttpRouter();
-    app.onError(c => console.log(c.error));
-    server = app.listen({ port: port++ });
+    server = app.listen({ port: 0 });
   });
   afterEach(() => {
     server.stop(true);
   });
-  it('should handle files with disposition="attachment', async () => {
+  it('should handle files with disposition="attachment"', async () => {
     app.get('/home.html', c =>
       c.file(`${import.meta.dir}/../../../testFixtures/home.html`, {
         disposition: 'attachment',
@@ -44,6 +42,7 @@ describe('c.file()', () => {
     });
     const getResp = await app.fetch(new Request('http://localhost/'), server);
     expect(getResp.status).toBe(200);
+    expect(getResp.headers.get('content-type')).toInclude('text/html');
     expect(await getResp.text()).toInclude('Welcome home');
     const headResp = await app.fetch(
       new Request('http://localhost/', { method: 'HEAD' }),
@@ -159,4 +158,35 @@ describe('c.file()', () => {
     expect(content).toContain('Requested range is not satisfiable');
     expect(content).toContain(`${fileSize}`);
   });
+  // spot test some files from the file-type package test fixtures
+  const fileTypes = {
+    'fixture.jpg.data': 'image/jpeg',
+    'fixture.mov.data': 'video/quicktime',
+    'fixture.ogg.data': 'audio/ogg',
+    'fixture.pdf.data': 'application/pdf',
+    'fixture.png.data': 'image/png',
+    'fixture-office365.pptx.data':
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'fixture-office365.docx.data':
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'fixture-office365.xlsx.data':
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'fixture.woff2.data': 'font/woff2',
+    'fixture-bali.tif.data': 'image/tiff',
+    'fixture-ffe3.mp3.data': 'audio/mpeg',
+    'fixture-mp4v2.mp4.data': 'video/mp4',
+    'fixture.m4v.data': 'video/x-m4v',
+    'fixture.ico.data': 'image/x-icon',
+    'fixture-null.webm.data': 'video/webm',
+  };
+  for (const [name, mime] of Object.entries(fileTypes)) {
+    it(`should detect mime from bytes - ${name}`, async () => {
+      app.get(`/${name}`, c =>
+        c.file(`${import.meta.dir}/../../../testFixtures/file-type/${name}`)
+      );
+      const resp = await fetch(`${server.url}${name}`);
+      expect(resp.status).toBe(200);
+      expect(resp.headers.get('Content-Type')).toInclude(mime);
+    });
+  }
 });

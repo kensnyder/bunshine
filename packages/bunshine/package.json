@@ -46,8 +46,7 @@
   "homepage": "https://github.com/kensnyder/bunshine#readme",
   "dependencies": {
     "file-type": "19.6.0",
-    "lru-cache": "11.0.2",
-    "read-chunk": "5.0.0"
+    "lru-cache": "11.0.2"
   },
   "devDependencies": {
     "@types/bun": "1.1.13",

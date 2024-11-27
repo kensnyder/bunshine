@@ -1,9 +1,9 @@
-import path from 'node:path';
 import Context from '../../Context/Context';
 import parseRangeHeader from '../../parseRangeHeader/parseRangeHeader';
 import {
   FileLike,
   getBufferMime,
+  getFileBaseName,
   getFileChunk,
   getFileFull,
   getFileMime,
@@ -34,8 +34,8 @@ export default async function file(
   fileOptions: FileResponseOptions = {}
 ) {
   const resp = await getFileResponse(this.request, fileLike, fileOptions);
-  if (fileOptions.disposition === 'attachment' && file.name) {
-    const filename = path.basename(file.name);
+  if (fileOptions.disposition === 'attachment') {
+    const filename = getFileBaseName(fileLike);
     resp.headers.set(
       'Content-Disposition',
       `${fileOptions.disposition}; filename="${filename}"`
@@ -95,7 +95,7 @@ async function getFileResponse(
   if (supportRangedRequest && rangeHeader) {
     const { slice, status } = parseRangeHeader({
       rangeHeader: rangeHeader,
-      totalFileSize: size,
+      totalFileSize: size || 0,
       defaultChunkSize: fileOptions.chunkSize,
     });
     if (status === 416) {
@@ -137,7 +137,7 @@ async function getFileResponse(
   return new Response(buffer, {
     status: 200,
     headers: {
-      'Content-Type': await getBufferMime(buffer),
+      'Content-Type': await getFileMime(file, buffer),
       // Content-length will get sent automatically
       ...maybeModifiedHeader,
       ...maybeAcceptRangesHeader,
