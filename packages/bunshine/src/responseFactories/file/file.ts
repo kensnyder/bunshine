@@ -2,7 +2,6 @@ import Context from '../../Context/Context';
 import parseRangeHeader from '../../parseRangeHeader/parseRangeHeader';
 import {
   FileLike,
-  getBufferMime,
   getFileBaseName,
   getFileChunk,
   getFileFull,
@@ -87,6 +86,7 @@ async function getFileResponse(
         ...maybeModifiedHeader,
         ...maybeAcceptRangesHeader,
         // Currently Bun overrides the Content-Length header to be 0
+        // see https://github.com/oven-sh/bun/issues/15355
         'X-Content-Length': String(size),
       },
     });
@@ -108,30 +108,28 @@ async function getFileResponse(
             'Content-Range': `bytes */${size}`,
             ...maybeModifiedHeader,
             'Accept-Ranges': 'bytes',
-            // Content-length set automatically based on the size of error message
+            // Content-length set automatically based on the string length of error message
           },
         }
       );
     }
-
-    const buffer = slice
-      ? await getFileChunk(file, slice.start, slice.end - slice.start + 1)
-      : await getFileFull(file);
-    const maybeContentRange: ResponseInit['headers'] = slice
-      ? { 'Content-Range': `bytes ${slice.start}-${slice.end}/${size}` }
-      : {};
-    return new Response(buffer, {
-      status, // could be 200 or 206
-      headers: {
-        'Content-Type': slice
-          ? await getFileMime(file)
-          : await getBufferMime(buffer),
-        // Content-length will get sent automatically
-        ...maybeModifiedHeader,
-        ...maybeContentRange,
-        'Accept-Ranges': 'bytes',
-      },
-    });
+    if (slice) {
+      const buffer = await getFileChunk(
+        file,
+        slice.start,
+        slice.end - slice.start + 1
+      );
+      return new Response(buffer, {
+        status: 206,
+        headers: {
+          'Content-Type': await getFileMime(file),
+          // Content-length will get sent automatically
+          ...maybeModifiedHeader,
+          'Content-Range': `bytes ${slice.start}-${slice.end}/${size}`,
+          'Accept-Ranges': 'bytes',
+        },
+      });
+    }
   }
   const buffer = await getFileFull(file);
   return new Response(buffer, {
