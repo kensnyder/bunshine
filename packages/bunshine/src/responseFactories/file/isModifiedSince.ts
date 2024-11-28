@@ -12,7 +12,7 @@ export default function isModifiedSince(
   // Check if the parsed date is valid
   if (isNaN(imsDate.getTime())) {
     // If the date is invalid, assume the resource has been modified
-    return false;
+    return true;
   }
 
   // Compare the parsed date with the resource's last modified date
