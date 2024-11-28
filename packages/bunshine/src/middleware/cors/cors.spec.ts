@@ -4,13 +4,12 @@ import HttpRouter from '../../HttpRouter/HttpRouter';
 import { cors } from './cors';
 
 describe('cors middleware', () => {
-  let port = 50700;
   let server: Server;
   let app: HttpRouter;
   let fetchInit: RequestInit;
   beforeEach(() => {
     app = new HttpRouter();
-    server = app.listen({ port: port++ });
+    server = app.listen({ port: 0 });
     fetchInit = {
       method: 'OPTIONS',
       headers: {

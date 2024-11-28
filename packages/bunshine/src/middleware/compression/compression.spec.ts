@@ -12,13 +12,12 @@ describe('compression middleware', () => {
   testWithOptions('should support "br"', { prefer: 'br' });
   testWithOptions('should support "none"', { prefer: 'none' });
   describe('compression rules', () => {
-    let port = 50200;
     let server: Server;
     let app: HttpRouter;
     beforeEach(() => {
       app = new HttpRouter();
       app.use(compression());
-      server = app.listen({ port: port++ });
+      server = app.listen({ port: 0 });
     });
     afterEach(() => {
       server.stop(true);
@@ -85,13 +84,12 @@ function testWithOptions(
   options: Partial<CompressionOptions>
 ) {
   describe('regular payload', () => {
-    let port = 50600;
     let server: Server;
     let app: HttpRouter;
     beforeEach(() => {
       app = new HttpRouter();
       app.use(compression(options));
-      server = app.listen({ port: port++ });
+      server = app.listen({ port: 0 });
       app.get('/', c => c.html(html));
     });
     afterEach(() => {

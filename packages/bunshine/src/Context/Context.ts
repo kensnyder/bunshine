@@ -1,7 +1,8 @@
-import type { BunFile, Server } from 'bun';
+import type { Server } from 'bun';
 import type HttpRouter from '../HttpRouter/HttpRouter';
 import factory from '../responseFactories/factory/factory';
 import file, { type FileResponseOptions } from '../responseFactories/file/file';
+import { FileLike } from '../responseFactories/file/file-io';
 import json from '../responseFactories/json/json';
 import redirect from '../responseFactories/redirect/redirect';
 import sse, { type SseSetupFunction } from '../responseFactories/sse/sse';
@@ -79,10 +80,10 @@ export default class Context<
   };
   /** A shorthand for `new Response(bunFile, fileHeaders)` plus range features */
   file = async (
-    filenameOrBunFile: string | BunFile,
+    pathOrData: FileLike,
     fileOptions: FileResponseOptions = {}
   ) => {
-    return file.call(this, filenameOrBunFile, {
+    return file.call(this, pathOrData, {
       range: this.request.headers.get('Range') || undefined,
       ...fileOptions,
     });

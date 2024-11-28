@@ -1,114 +1,153 @@
-import { BunFile } from 'bun';
-import path from 'node:path';
 import Context from '../../Context/Context';
-import getMimeType from '../../getMimeType/getMimeType';
 import parseRangeHeader from '../../parseRangeHeader/parseRangeHeader';
+import {
+  FileLike,
+  getFileBaseName,
+  getFileChunk,
+  getFileFull,
+  getFileMime,
+  getFileStats,
+  isFileLike,
+} from './file-io';
+import isModifiedSince from './isModifiedSince';
 
 export type FileResponseOptions = {
   chunkSize?: number;
-  disposition?: 'inline' | 'attachment';
+  disposition?: 'inline' | 'attachment' | 'form-data';
   acceptRanges?: boolean;
+  sendLastModified?: boolean;
   headers?: HeadersInit;
 };
 
+const headersWeAdd = [
+  'content-type',
+  'content-length',
+  'x-content-length',
+  'content-range',
+  'accept-ranges',
+  'last-modified',
+  'content-disposition',
+];
+
 export default async function file(
   this: Context,
-  filenameOrBunFile: string | BunFile,
+  fileLike: FileLike,
   fileOptions: FileResponseOptions = {}
 ) {
-  let file =
-    typeof filenameOrBunFile === 'string'
-      ? Bun.file(filenameOrBunFile)
-      : filenameOrBunFile;
-  if (!(await file.exists())) {
-    return new Response('File not found', { status: 404 });
-  }
-  const resp = await buildFileResponse({
-    file,
-    acceptRanges: fileOptions.acceptRanges !== false,
-    chunkSize: fileOptions.chunkSize,
-    rangeHeader: this.request.headers.get('Range'),
-    method: this.request.method,
-  });
-  // add last modified
-  resp.headers.set('Last-Modified', new Date(file.lastModified).toUTCString());
-  // optionally add disposition
-  if (fileOptions.disposition === 'attachment' && file.name) {
-    const filename = path.basename(file.name);
-    resp.headers.set(
-      'Content-Disposition',
-      `${fileOptions.disposition}; filename="${filename}"`
-    );
-  } else if (fileOptions.disposition === 'inline') {
-    resp.headers.set('Content-Disposition', 'inline');
+  const resp = await getFileResponse(this.request, fileLike, fileOptions);
+  if (fileOptions.disposition && /^attachment$/.test(fileOptions.disposition)) {
+    const filename = getFileBaseName(fileLike);
+    let disposition = 'attachment';
+    if (filename) {
+      disposition += `; filename="${filename}"`;
+    }
+    resp.headers.set('Content-Disposition', disposition);
+  } else if (
+    fileOptions.disposition &&
+    /^inline|form-data$/.test(fileOptions.disposition)
+  ) {
+    resp.headers.set('Content-Disposition', fileOptions.disposition);
   }
   // optionally add headers
   if (fileOptions.headers) {
     const headers = new Headers(fileOptions.headers);
-    for (const [name, value] of Object.entries(headers)) {
-      resp.headers.set(name, value);
+    for (const [name, value] of headers.entries()) {
+      if (headersWeAdd.includes(name.toLowerCase())) {
+        resp.headers.set(name, value);
+      } else {
+        resp.headers.append(name, value);
+      }
     }
   }
   return resp;
 }
 
-async function buildFileResponse({
-  file,
-  acceptRanges,
-  chunkSize,
-  rangeHeader,
-  method,
-}: {
-  file: BunFile;
-  acceptRanges: boolean;
-  chunkSize?: number;
-  rangeHeader?: string | null;
-  method: string;
-}) {
-  const { slice, status } = parseRangeHeader({
-    rangeHeader: acceptRanges ? rangeHeader : null,
-    totalFileSize: file.size,
-    defaultChunkSize: chunkSize,
-  });
-  if (status === 416) {
-    return new Response(
-      method === 'HEAD'
-        ? ''
-        : `Requested range is not satisfiable. Total size is ${file.size} bytes.`,
-      {
-        status: 416,
-        headers: {
-          'Content-Range': `bytes */${file.size}`,
-        },
-      }
-    );
+async function getFileResponse(
+  request: Request,
+  file: FileLike,
+  fileOptions: FileResponseOptions
+) {
+  if (!file || !isFileLike(file)) {
+    return new Response('File not found', { status: 404 });
   }
-  if (method === 'HEAD') {
+  const { size, lastModified, doesExist } = await getFileStats(file);
+  if (!doesExist) {
+    return new Response('File not found', { status: 404 });
+  }
+  if (lastModified instanceof Date && !isModifiedSince(request, lastModified)) {
+    return new Response(null, { status: 304 });
+  }
+  const supportRangedRequest = fileOptions.acceptRanges !== false;
+  const maybeModifiedHeader: ResponseInit['headers'] =
+    lastModified instanceof Date && fileOptions.sendLastModified !== false
+      ? { 'Last-Modified': lastModified.toUTCString() }
+      : {};
+  const maybeAcceptRangesHeader: ResponseInit['headers'] = supportRangedRequest
+    ? { 'Accept-Ranges': 'bytes' }
+    : {};
+  if (request.method === 'HEAD') {
+    const mime = await getFileMime(file);
     return new Response(null, {
-      status,
+      status: 200,
       headers: {
-        'Content-Type': getMimeType(file),
-        'Content-Length': String(file.size),
+        'Content-Type': mime,
+        'Content-Length': String(size),
+        ...maybeModifiedHeader,
+        ...maybeAcceptRangesHeader,
         // Currently Bun overrides the Content-Length header to be 0
-        'X-Content-Length': String(file.size),
-        ...(acceptRanges ? { 'Accept-Ranges': 'bytes' } : {}),
+        // see https://github.com/oven-sh/bun/issues/15355
+        'X-Content-Length': String(size),
       },
     });
   }
-  let buffer = await file.arrayBuffer();
-  if (slice) {
-    buffer = buffer.slice(slice.start, slice.end + 1);
+  const rangeHeader = request.headers.get('Range');
+  if (supportRangedRequest && rangeHeader) {
+    const { slice, status } = parseRangeHeader({
+      rangeHeader: rangeHeader,
+      totalFileSize: size || 0,
+      defaultChunkSize: fileOptions.chunkSize,
+    });
+    if (status === 416) {
+      return new Response(
+        `Requested range is not satisfiable. Total size is ${size} bytes.`,
+        {
+          status: 416,
+          headers: {
+            'Content-Type': await getFileMime(file),
+            'Content-Range': `bytes */${size}`,
+            ...maybeModifiedHeader,
+            'Accept-Ranges': 'bytes',
+            // Content-length set automatically based on the string length of error message
+          },
+        }
+      );
+    }
+    if (slice) {
+      const buffer = await getFileChunk(
+        file,
+        slice.start,
+        slice.end - slice.start + 1
+      );
+      return new Response(buffer, {
+        status: 206,
+        headers: {
+          'Content-Type': await getFileMime(file),
+          // Content-length will get sent automatically
+          ...maybeModifiedHeader,
+          'Content-Range': `bytes ${slice.start}-${slice.end}/${size}`,
+          'Accept-Ranges': 'bytes',
+        },
+      });
+    }
   }
+  const buffer = await getFileFull(file);
   return new Response(buffer, {
-    status,
+    status: 200,
     headers: {
-      'Content-Type': getMimeType(file),
-      'Content-Length': String(buffer.byteLength),
-      'X-Content-Length': String(buffer.byteLength),
-      ...(slice
-        ? { 'Content-Range': `bytes ${slice.start}-${slice.end}/${file.size}` }
-        : {}),
-      ...(acceptRanges ? { 'Accept-Ranges': 'bytes' } : {}),
+      'Content-Type': await getFileMime(file, buffer),
+      // Content-length will get sent automatically
+      ...maybeModifiedHeader,
+      ...maybeAcceptRangesHeader,
     },
   });
 }

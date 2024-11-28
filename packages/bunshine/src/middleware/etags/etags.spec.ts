@@ -4,14 +4,13 @@ import HttpRouter from '../../HttpRouter/HttpRouter';
 import { etags } from './etags';
 
 describe('etags middleware', () => {
-  let port = 50800;
   const helloWorldEtag = '"c6a1dfa4103602ad"';
   let server: Server;
   let app: HttpRouter;
   beforeEach(() => {
     app = new HttpRouter();
     app.use(etags());
-    server = app.listen({ port: port++ });
+    server = app.listen({ port: 0 });
   });
   afterEach(() => {
     server.stop(true);

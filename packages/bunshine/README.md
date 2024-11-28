@@ -7,9 +7,8 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 [![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.1.2)](https://npmjs.com/package/bunshine)
 [![Language: TypeScript](https://badgen.net/static/language/TS?v=3.1.2)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
 [![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.1.2)](https://codecov.io/gh/kensnyder/bunshine)
-[![Dependencies: 1](https://badgen.net/static/dependencies/1/green?v=3.1.2)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
 ![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.1.2)
-[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.1.2)](https://opensource.org/licenses/ISC)
+[![ISC License](https://badgen.net/github/license/kensnyder/bunshine/packages/bunshine?v=3.1.2)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
@@ -260,22 +259,17 @@ app.get('/build/:hash.map', c => {
   // you can pass a BunFile
   return c.file(
     Bun.file(filePath, {
-      // Bun will automatically set Content-Type based on the file's extension
-      // but you can set it or override it, for instance if Bun doesn't know it's type
+      // Bunshine will automatically set Content-Type based on the file bytes
+      // but you can set it or override it for non-standard mime types
       headers: { 'Content-type': 'application/json' },
     })
   );
 });
 
 app.get('/profile/*.jpg', async c => {
-  // you can pass a Buffer, Readable, or TypedArray
+  // you can pass a Buffer or Uint8Array
   const intArray = getBytesFromExternal(c.params[0]);
-  const resp = c.file(bytes);
-  // You can use something like file-type on npm
-  // To get a mime type based on binary data
-  const { mime } = await fileTypeFromBuffer(intArray);
-  resp.headers.set('Content-type', mime);
-  return resp;
+  return c.file(bytes);
 });
 
 app.get('/files/*', async c => {
@@ -284,7 +278,8 @@ app.get('/files/*', async c => {
     disposition, // Use a Content-Disposition header with "inline" or "attachment"
     headers, // additional headers to add
     acceptRanges, // unless false, will support partial (ranged) downloads
-    chunkSize, // Size for ranged downloads when client doesn't specify chunk size. Defaults to 3MB
+    sendLastModified, // unless false, will report file modification date (if givine a string or Bun file)
+    chunkSize, // Size for ranged downloads when client doesn't specify chunk size. Defaults to 1MB
   });
 });
 ```

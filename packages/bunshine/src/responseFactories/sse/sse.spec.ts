@@ -11,12 +11,11 @@ type SseTestEvent = {
 };
 
 describe('sse', () => {
-  let port = 50000;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {
     app = new HttpRouter();
-    server = app.listen({ port: port++ });
+    server = app.listen({ port: 0 });
   });
   afterEach(() => {
     server.stop(true);
@@ -28,6 +27,7 @@ describe('sse', () => {
   }: {
     port: number;
     payloads:
+      | Array<[string, any, string, number]>
       | Array<[string, any, string]>
       | Array<[string, any]>
       | Array<[string]>;
@@ -65,7 +65,7 @@ describe('sse', () => {
             stream.close();
           }
         });
-        resolve(port);
+        resolve(server.port);
       }) as Promise<number>;
       Promise.all([readyToSend, readyToListen])
         .then(([doSend]) => doSend())
@@ -75,7 +75,7 @@ describe('sse', () => {
   it('should handle unnamed data', async () => {
     const events = await sseTest({
       event: 'message',
-      port: port++,
+      port: 0,
       payloads: [['Hello'], ['World']],
     });
     expect(events.length).toBe(2);
@@ -85,7 +85,7 @@ describe('sse', () => {
   it('should send last event id and origin', async () => {
     const events = await sseTest({
       event: 'myEvent',
-      port: port++,
+      port: 0,
       payloads: [
         ['myEvent', 'hi1', 'id1'],
         ['myEvent', 'hi2', 'id2'],
@@ -99,10 +99,27 @@ describe('sse', () => {
     expect(events[0].origin).toStartWith(`http://localhost:`);
     expect(events[0].origin).toBe(String(events[1].origin));
   });
+  it('should accept retry milliseconds', async () => {
+    const events = await sseTest({
+      event: 'myEvent',
+      port: 0,
+      payloads: [
+        ['myEvent', 'hi1', 'id1', 10000],
+        ['myEvent', 'hi2', 'id2', 10000],
+      ],
+    });
+    expect(events.length).toBe(2);
+    expect(events[0].data).toBe('hi1');
+    expect(events[1].data).toBe('hi2');
+    expect(events[0].lastEventId).toBe('id1');
+    expect(events[1].lastEventId).toBe('id2');
+    expect(events[0].origin).toStartWith(`http://localhost:`);
+    expect(events[0].origin).toBe(String(events[1].origin));
+  });
   it('should JSON encode data if needed', async () => {
     const events = await sseTest({
       event: 'myEvent',
-      port: port++,
+      port: 0,
       payloads: [['myEvent', { name: 'Bob' }]],
     });
     expect(events.length).toBe(1);
@@ -112,7 +129,7 @@ describe('sse', () => {
     spyOn(console, 'warn').mockImplementation(() => {});
     await sseTest({
       event: 'myEvent',
-      port: port++,
+      port: 0,
       payloads: [['myEvent', { name: 'Bob' }]],
       headers: {
         'Content-Type': 'text/plain',
@@ -128,7 +145,7 @@ describe('sse', () => {
     spyOn(console, 'warn').mockImplementation(() => {});
     await sseTest({
       event: 'myEvent',
-      port: port++,
+      port: 0,
       payloads: [['myEvent', { name: 'Bob' }]],
       headers: {
         'Content-Type': 'text/event-stream',

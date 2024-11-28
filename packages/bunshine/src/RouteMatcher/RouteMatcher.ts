@@ -85,7 +85,7 @@ export default class RouteMatcher<Target extends any> {
       this.registered.push({
         methodFilter,
         pattern,
-        regex: new RegExp(`^${pattern}$`),
+        regex: new RegExp(`^${regexEsc(pattern)}$`),
         matcher: subject => (subject === pattern ? {} : null),
         target,
       });

@@ -3,12 +3,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import HttpRouter from '../../HttpRouter/HttpRouter';
 
 describe('c.redirect()', () => {
-  let port = 50350;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {
     app = new HttpRouter();
-    server = app.listen({ port: port++ });
+    server = app.listen({ port: 0 });
   });
   afterEach(() => {
     server.stop(true);

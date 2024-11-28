@@ -4,12 +4,11 @@ import HttpRouter from '../../HttpRouter/HttpRouter';
 import { trailingSlashes } from './trailingSlashes';
 
 describe('trailingSlashes middleware', () => {
-  let port = 50250;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {
     app = new HttpRouter();
-    server = app.listen({ port: port++ });
+    server = app.listen({ port: 0 });
   });
   afterEach(() => {
     server.stop(true);

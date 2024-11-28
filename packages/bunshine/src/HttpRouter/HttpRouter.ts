@@ -1,4 +1,4 @@
-import type { ServeOptions, Server } from 'bun';
+import { Server, TLSServeOptions } from 'bun';
 import os from 'node:os';
 import bunshinePkg from '../../package.json' assert { type: 'json' };
 import Context from '../Context/Context';
@@ -24,7 +24,9 @@ export type Handler<
   ParamsShape extends Record<string, string> = Record<string, string>,
 > = SingleHandler<ParamsShape> | Handler<ParamsShape>[];
 
-export type ListenOptions = Omit<ServeOptions, 'fetch' | 'websocket'> | number;
+export type ListenOptions =
+  | Omit<TLSServeOptions, 'fetch' | 'websocket'>
+  | number;
 
 export type HttpMethods =
   | 'ALL'
@@ -100,12 +102,12 @@ export default class HttpRouter {
     }
     to(message);
   }
-  getExport(options: Omit<ServeOptions, 'fetch' | 'websocket'> = {}) {
+  getExport(options: Omit<TLSServeOptions, 'fetch' | 'websocket'> = {}) {
     const config = {
       port: 0,
       ...options,
       fetch: this.fetch,
-    } as ServeOptions;
+    } as TLSServeOptions;
     if (this._wsRouter) {
       // @ts-expect-error
       config.websocket = this._wsRouter.handlers;
