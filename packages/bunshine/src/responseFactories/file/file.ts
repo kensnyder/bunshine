@@ -9,6 +9,7 @@ import {
   getFileStats,
   isFileLike,
 } from './file-io';
+import isModifiedSince from './isModifiedSince';
 
 export type FileResponseOptions = {
   chunkSize?: number;
@@ -72,6 +73,9 @@ async function getFileResponse(
   const { size, lastModified, doesExist } = await getFileStats(file);
   if (!doesExist) {
     return new Response('File not found', { status: 404 });
+  }
+  if (lastModified instanceof Date && !isModifiedSince(request, lastModified)) {
+    return new Response(null, { status: 304 });
   }
   const supportRangedRequest = fileOptions.acceptRanges !== false;
   const maybeModifiedHeader: ResponseInit['headers'] =

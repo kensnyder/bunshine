@@ -384,4 +384,29 @@ describe('c.file()', () => {
     expect(resp.status).toBe(200);
     expect(resp.headers.get('Content-Type')).toInclude('audio/ogg');
   });
+  it('should support if-modified-since past', async () => {
+    app.get(`/podcast.ogg`, async c => {
+      const path = `${import.meta.dir}/../../../testFixtures/file-type/fixture.ogg.data`;
+      return c.file(path);
+    });
+    const resp = await fetch(`${server.url}podcast.ogg`, {
+      headers: { 'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT' },
+    });
+    expect(resp.status).toBe(200);
+    expect(resp.headers.get('Content-Type')).toInclude('audio/ogg');
+    expect(parseInt(resp.headers.get('Content-Length') || '')).toBeGreaterThan(
+      0
+    );
+  });
+  it('should support if-modified-since future', async () => {
+    app.get(`/podcast.ogg`, async c => {
+      const path = `${import.meta.dir}/../../../testFixtures/file-type/fixture.ogg.data`;
+      return c.file(path);
+    });
+    const resp = await fetch(`${server.url}podcast.ogg`, {
+      headers: { 'If-Modified-Since': 'Thu, 01 Jan 3000 00:00:00 GMT' },
+    });
+    expect(resp.status).toBe(304);
+    expect(resp.headers.get('Content-Length')).toInclude('0');
+  });
 });

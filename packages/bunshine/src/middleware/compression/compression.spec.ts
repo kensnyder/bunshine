@@ -12,7 +12,6 @@ describe('compression middleware', () => {
   testWithOptions('should support "br"', { prefer: 'br' });
   testWithOptions('should support "none"', { prefer: 'none' });
   describe('compression rules', () => {
-    let port = 50200;
     let server: Server;
     let app: HttpRouter;
     beforeEach(() => {
@@ -85,7 +84,6 @@ function testWithOptions(
   options: Partial<CompressionOptions>
 ) {
   describe('regular payload', () => {
-    let port = 50600;
     let server: Server;
     let app: HttpRouter;
     beforeEach(() => {

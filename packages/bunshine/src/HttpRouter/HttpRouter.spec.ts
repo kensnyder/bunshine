@@ -488,7 +488,6 @@ describe('HttpRouter', () => {
           ),
         },
       });
-      console.log('server', server);
     });
     afterEach(() => {
       server.stop(true);
@@ -503,7 +502,6 @@ describe('HttpRouter', () => {
           rejectUnauthorized: false,
         },
       });
-      console.log('resp', resp);
       expect(resp.status).toBe(200);
       expect(await resp.text()).toBe('Hello https');
     });

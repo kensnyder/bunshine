@@ -13,7 +13,6 @@ const fixturesPath = path.join(
 );
 
 describe('serveFiles middleware', () => {
-  let port = 50900;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {
@@ -78,6 +77,16 @@ describe('serveFiles middleware', () => {
       expect(resp.headers.get('last-modified')).toMatch(
         /^\w{3}, \d+ \w+ \d+ \d+:\d+:\d+ \w+$/
       );
+    });
+    it('should allow supressing last-modified', async () => {
+      app.get(
+        '/files/*',
+        serveFiles(fixturesPath, {
+          lastModified: false,
+        })
+      );
+      const resp = await fetch(`${server.url}files/home.html`);
+      expect(resp.headers.get('last-modified')).toBe(null);
     });
     it('should add accept-ranges header', async () => {
       app.get('/files/*', serveFiles(fixturesPath));

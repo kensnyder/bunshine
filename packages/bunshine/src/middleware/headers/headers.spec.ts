@@ -4,7 +4,6 @@ import HttpRouter from '../../HttpRouter/HttpRouter';
 import { headers } from './headers';
 
 describe('headers middleware', () => {
-  let port = 50300;
   let server: Server;
   let app: HttpRouter;
   beforeEach(() => {

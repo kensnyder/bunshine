@@ -4,7 +4,6 @@ import HttpRouter from '../../HttpRouter/HttpRouter';
 import { performanceHeader } from './performanceHeader';
 
 describe('performanceHeader middleware', () => {
-  let port = 50500;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {

@@ -11,7 +11,6 @@ type SseTestEvent = {
 };
 
 describe('sse', () => {
-  let port = 50000;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {
@@ -28,6 +27,7 @@ describe('sse', () => {
   }: {
     port: number;
     payloads:
+      | Array<[string, any, string, number]>
       | Array<[string, any, string]>
       | Array<[string, any]>
       | Array<[string]>;
@@ -65,7 +65,7 @@ describe('sse', () => {
             stream.close();
           }
         });
-        resolve(port);
+        resolve(server.port);
       }) as Promise<number>;
       Promise.all([readyToSend, readyToListen])
         .then(([doSend]) => doSend())
@@ -89,6 +89,23 @@ describe('sse', () => {
       payloads: [
         ['myEvent', 'hi1', 'id1'],
         ['myEvent', 'hi2', 'id2'],
+      ],
+    });
+    expect(events.length).toBe(2);
+    expect(events[0].data).toBe('hi1');
+    expect(events[1].data).toBe('hi2');
+    expect(events[0].lastEventId).toBe('id1');
+    expect(events[1].lastEventId).toBe('id2');
+    expect(events[0].origin).toStartWith(`http://localhost:`);
+    expect(events[0].origin).toBe(String(events[1].origin));
+  });
+  it('should accept retry milliseconds', async () => {
+    const events = await sseTest({
+      event: 'myEvent',
+      port: 0,
+      payloads: [
+        ['myEvent', 'hi1', 'id1', 10000],
+        ['myEvent', 'hi2', 'id2', 10000],
       ],
     });
     expect(events.length).toBe(2);

@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import HttpRouter from '../HttpRouter/HttpRouter';
 
 describe('server', () => {
-  let port = 50150;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {

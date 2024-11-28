@@ -4,7 +4,6 @@ import HttpRouter from '../../HttpRouter/HttpRouter';
 import { trailingSlashes } from './trailingSlashes';
 
 describe('trailingSlashes middleware', () => {
-  let port = 50250;
   let app: HttpRouter;
   let server: Server;
   beforeEach(() => {

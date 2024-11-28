@@ -4,7 +4,6 @@ import HttpRouter from '../../HttpRouter/HttpRouter';
 import { cors } from './cors';
 
 describe('cors middleware', () => {
-  let port = 50700;
   let server: Server;
   let app: HttpRouter;
   let fetchInit: RequestInit;

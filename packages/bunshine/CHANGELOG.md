@@ -5,6 +5,7 @@
 - Auto-detect file mime type with c.file()
 - Properly match fixed paths
 - Fix TypeScript types for HTTPS configuration
+- Support If-Modified-Since header
 - Tweaks to range header handling
 
 ## v3.1.2 - Nov 25, 2024
