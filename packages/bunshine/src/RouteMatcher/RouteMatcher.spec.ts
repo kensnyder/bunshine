@@ -98,8 +98,13 @@ describe('RouteMatcher', () => {
   });
   it('should escape special characters', () => {
     matcher.add('GET', '/assets/*.js', 42);
-    const found = matcher.match('GET', '/assets/abcjs');
-    expect(found).toEqual([]);
+    const found = matcher.match('GET', '/assets/abc.js');
+    expect(found).toEqual([[42, { '0': 'abc' }]]);
+  });
+  it('should allow exact paths', () => {
+    matcher.add('GET', '/index.html', 42);
+    const found = matcher.match('GET', '/index.html');
+    expect(found).toEqual([[42, {}]]);
   });
   it('should produce safe regexes', () => {
     function main() {
