@@ -3,10 +3,19 @@ import { fileTypeFromBuffer } from 'file-type';
 import fs from 'fs/promises';
 import path from 'node:path';
 
-export type FileLike = string | BunFile | Blob | Uint8Array | ArrayBuffer;
+export type FileLike = string | Blob | Uint8Array | ArrayBuffer;
 
 const defaultMimeType = 'application/octet-stream';
-const detectMimeChunkSize = 4100;
+const detectMimeChunkSize = 4100; // from file-type reasonableDetectionSizeInBytes
+
+export function isFileLike(file: any): file is FileLike {
+  return (
+    typeof file === 'string' ||
+    file instanceof Blob ||
+    file instanceof Uint8Array ||
+    file instanceof ArrayBuffer
+  );
+}
 
 function isBunFile(file: FileLike): file is BunFile {
   // @ts-expect-error - Only way I know to distinguish Blob from BunFile is to check .exists
@@ -28,27 +37,20 @@ export async function getFileMime(
   file: FileLike,
   maybeBuffer?: ArrayBuffer | Uint8Array
 ) {
-  try {
-    if (typeof file === 'string') {
-      return (
-        getMimeByExt(path.extname(file).slice(1)) ||
-        (maybeBuffer
-          ? await getBufferMime(maybeBuffer)
-          : await getChunkMime(file)) ||
-        defaultMimeType
-      );
-    }
-    if (isBunFile(file)) {
-      // you can look at file.name for the file name
-      return file.type || defaultMimeType;
-    }
-    if (file instanceof Blob) {
-      return getBufferMime(await file.arrayBuffer());
-    }
-    return getBufferMime(file);
-  } catch (e) {
-    return defaultMimeType;
+  if (typeof file === 'string') {
+    return (
+      getMimeByExt(path.extname(file).slice(1)) ||
+      (maybeBuffer
+        ? await getBufferMime(maybeBuffer)
+        : await getChunkMime(file)) ||
+      defaultMimeType
+    );
   }
+  if (file instanceof Blob) {
+    const mime = await getBufferMime(await file.arrayBuffer());
+    return mime || file.type || defaultMimeType;
+  }
+  return getBufferMime(file);
 }
 
 export async function getChunkMime(path: string) {
@@ -59,10 +61,10 @@ export async function getChunkMime(path: string) {
 export function getFileBaseName(file: FileLike) {
   if (typeof file === 'string') {
     return path.basename(file);
-  } else if (isBunFile(file)) {
-    return file.name;
+  } else if (isBunFile(file) && file.name) {
+    return path.basename(file.name);
   } else {
-    return 'file';
+    return '';
   }
 }
 
@@ -133,8 +135,7 @@ export async function getFileChunk(
   if (typeof file === 'string') {
     return readChunk(file, start, start + length);
   }
-  const buffer =
-    isBunFile(file) || file instanceof Blob ? await file.arrayBuffer() : file;
+  const buffer = file instanceof Blob ? await file.arrayBuffer() : file;
   return buffer.slice(start, start + length);
 }
 
@@ -145,7 +146,7 @@ export async function getFileFull(file: FileLike) {
     // Convert Buffer to Uint8Array
     return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   }
-  if (isBunFile(file) || file instanceof Blob) {
+  if (file instanceof Blob) {
     return await file.arrayBuffer();
   }
   if (Buffer.isBuffer(file)) {

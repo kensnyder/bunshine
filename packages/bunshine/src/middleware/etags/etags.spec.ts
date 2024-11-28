@@ -11,7 +11,7 @@ describe('etags middleware', () => {
   beforeEach(() => {
     app = new HttpRouter();
     app.use(etags());
-    server = app.listen({ port: port++ });
+    server = app.listen({ port: 0 });
   });
   afterEach(() => {
     server.stop(true);

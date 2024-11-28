@@ -3,6 +3,7 @@
 ## v3.2.0 - Nov xx, 2024
 
 - Auto-detect file mime type with c.file()
+- Properly match fixed paths
 - Tweaks to range header handling
 
 ## v3.1.2 - Nov 25, 2024

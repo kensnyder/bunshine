@@ -18,7 +18,7 @@ describe('compression middleware', () => {
     beforeEach(() => {
       app = new HttpRouter();
       app.use(compression());
-      server = app.listen({ port: port++ });
+      server = app.listen({ port: 0 });
     });
     afterEach(() => {
       server.stop(true);
@@ -91,7 +91,7 @@ function testWithOptions(
     beforeEach(() => {
       app = new HttpRouter();
       app.use(compression(options));
-      server = app.listen({ port: port++ });
+      server = app.listen({ port: 0 });
       app.get('/', c => c.html(html));
     });
     afterEach(() => {

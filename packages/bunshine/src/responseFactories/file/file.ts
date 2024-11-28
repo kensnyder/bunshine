@@ -7,11 +7,12 @@ import {
   getFileFull,
   getFileMime,
   getFileStats,
+  isFileLike,
 } from './file-io';
 
 export type FileResponseOptions = {
   chunkSize?: number;
-  disposition?: 'inline' | 'attachment';
+  disposition?: 'inline' | 'attachment' | 'form-data';
   acceptRanges?: boolean;
   sendLastModified?: boolean;
   headers?: HeadersInit;
@@ -33,19 +34,23 @@ export default async function file(
   fileOptions: FileResponseOptions = {}
 ) {
   const resp = await getFileResponse(this.request, fileLike, fileOptions);
-  if (fileOptions.disposition === 'attachment') {
+  if (fileOptions.disposition && /^attachment$/.test(fileOptions.disposition)) {
     const filename = getFileBaseName(fileLike);
-    resp.headers.set(
-      'Content-Disposition',
-      `${fileOptions.disposition}; filename="${filename}"`
-    );
-  } else if (fileOptions.disposition === 'inline') {
-    resp.headers.set('Content-Disposition', 'inline');
+    let disposition = 'attachment';
+    if (filename) {
+      disposition += `; filename="${filename}"`;
+    }
+    resp.headers.set('Content-Disposition', disposition);
+  } else if (
+    fileOptions.disposition &&
+    /^inline|form-data$/.test(fileOptions.disposition)
+  ) {
+    resp.headers.set('Content-Disposition', fileOptions.disposition);
   }
   // optionally add headers
   if (fileOptions.headers) {
     const headers = new Headers(fileOptions.headers);
-    for (const [name, value] of Object.entries(headers)) {
+    for (const [name, value] of headers.entries()) {
       if (headersWeAdd.includes(name.toLowerCase())) {
         resp.headers.set(name, value);
       } else {
@@ -61,7 +66,7 @@ async function getFileResponse(
   file: FileLike,
   fileOptions: FileResponseOptions
 ) {
-  if (!file) {
+  if (!file || !isFileLike(file)) {
     return new Response('File not found', { status: 404 });
   }
   const { size, lastModified, doesExist } = await getFileStats(file);

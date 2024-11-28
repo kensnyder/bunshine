@@ -10,7 +10,7 @@ describe('cors middleware', () => {
   let fetchInit: RequestInit;
   beforeEach(() => {
     app = new HttpRouter();
-    server = app.listen({ port: port++ });
+    server = app.listen({ port: 0 });
     fetchInit = {
       method: 'OPTIONS',
       headers: {

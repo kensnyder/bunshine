@@ -41,7 +41,7 @@ describe('server', () => {
           });
         },
       });
-      server = app.listen({ port: port++ });
+      server = app.listen({ port: 0 });
       const chat = new WebSocket(`${server.url}chat/123`);
       chat.addEventListener('open', evt => {
         chat.send('hello');
@@ -63,7 +63,7 @@ describe('server', () => {
           sc.send(Buffer.from('hello'));
         },
       });
-      server = app.listen({ port: port++ });
+      server = app.listen({ port: 0 });
       const chat = new WebSocket(`${server.url}chat/123`);
       chat.addEventListener('message', evt => {
         resolve(evt.data);
@@ -80,7 +80,7 @@ describe('server', () => {
           sc.send(Buffer.from('hello'));
         },
       });
-      server = app.listen({ port: port++ });
+      server = app.listen({ port: 0 });
       const chat = new WebSocket(`${server.url}chat/123`);
       chat.addEventListener('message', evt => {
         resolve(evt.data);
@@ -96,7 +96,7 @@ describe('server', () => {
           sc.send(Buffer.from('hello').buffer);
         },
       });
-      server = app.listen({ port: port++ });
+      server = app.listen({ port: 0 });
       const chat = new WebSocket(`${server.url}chat/123`);
       chat.addEventListener('message', evt => {
         resolve(evt.data);
@@ -112,7 +112,7 @@ describe('server', () => {
           sc.send({ hello: 'world' });
         },
       });
-      server = app.listen({ port: port++ });
+      server = app.listen({ port: 0 });
       const chat = new WebSocket(`${server.url}chat/123`);
       chat.addEventListener('message', evt => {
         resolve(JSON.parse(evt.data));
@@ -150,7 +150,7 @@ describe('server', () => {
           sc.send('world');
         },
       });
-      server = app.listen({ port: port++ });
+      server = app.listen({ port: 0 });
       const chat = new WebSocket(`${server.url}chat/123`);
       chat.addEventListener('open', evt => {
         chat.send('hello');
@@ -202,7 +202,7 @@ describe('server', () => {
           throw new Error('message!');
         },
       });
-      server = app.listen({ port: port++ });
+      server = app.listen({ port: 0 });
       const chat = new WebSocket(`${server.url}chat/123`);
       chat.addEventListener('open', evt => {
         chat.send('hello');
@@ -223,7 +223,7 @@ describe('server', () => {
         throw new Error('open!');
       },
     });
-    server = app.listen({ port: port++ });
+    server = app.listen({ port: 0 });
     new WebSocket(`${server.url}chat/123`);
     await new Promise(r => setTimeout(r, 10));
     expect(spy).toHaveBeenCalled();
@@ -268,7 +268,7 @@ describe('server', () => {
             console.log('error', error);
           },
         });
-        server = app.listen({ port: port++ });
+        server = app.listen({ port: 0 });
         const user1 = new WebSocket(`${server.url}chat/123?user=a`);
         const user2 = new WebSocket(`${server.url}chat/123?user=b`);
         await Promise.all([
@@ -304,7 +304,7 @@ describe('server', () => {
             sc.close(1000, 'l8r');
           },
         });
-        server = app.listen({ port: port++ });
+        server = app.listen({ port: 0 });
         const chat = new WebSocket(`${server.url}chat/123`);
         chat.addEventListener('open', evt => {
           chat.send('hello');
@@ -325,7 +325,7 @@ describe('server', () => {
             sc.terminate();
           },
         });
-        server = app.listen({ port: port++ });
+        server = app.listen({ port: 0 });
         const chat = new WebSocket(`${server.url}chat/456`);
         chat.addEventListener('open', evt => {
           chat.send('hello');

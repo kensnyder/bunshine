@@ -9,7 +9,7 @@ describe('headers middleware', () => {
   let app: HttpRouter;
   beforeEach(() => {
     app = new HttpRouter();
-    server = app.listen({ port: port++ });
+    server = app.listen({ port: 0 });
   });
   afterEach(() => {
     server.stop(true);
