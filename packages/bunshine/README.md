@@ -2,13 +2,13 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/packages/bunshine/assets/bunshine-logo.png?v=3.1.2" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/packages/bunshine/assets/bunshine-logo.png?v=3.2.0" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.1.2)](https://npmjs.com/package/bunshine)
-[![Language: TypeScript](https://badgen.net/static/language/TS?v=3.1.2)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
-[![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.1.2)](https://codecov.io/gh/kensnyder/bunshine)
-![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.1.2)
-[![ISC License](https://badgen.net/github/license/kensnyder/bunshine/packages/bunshine?v=3.1.2)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.2.0)](https://npmjs.com/package/bunshine)
+[![Language: TypeScript](https://badgen.net/static/language/TS?v=3.2.0)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
+[![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.2.0)](https://codecov.io/gh/kensnyder/bunshine)
+![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.2.0)
+[![ISC License](https://badgen.net/github/license/kensnyder/bunshine/packages/bunshine?v=3.2.0)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
@@ -39,14 +39,15 @@ _Or to run Bunshine on Node,
 
 1. [Basic example](#basic-example)
 2. [Full example](#full-example)
-3. [Serving static files](#serving-static-files)
-4. [Writing middleware](#writing-middleware)
-5. [Throwing responses](#throwing-responses)
-6. [WebSockets](#websockets)
-7. [WebSocket pub-sub](#websocket-pub-sub)
-8. [Server Sent Events](#server-sent-events)
-9. [Route Matching](#route-matching)
-10. [Included middleware](#included-middleware)
+3. [SSL](#ssl)
+4. [Serving static files](#serving-static-files)
+5. [Writing middleware](#writing-middleware)
+6. [Throwing responses](#throwing-responses)
+7. [WebSockets](#websockets)
+8. [WebSocket pub-sub](#websocket-pub-sub)
+9. [Server Sent Events](#server-sent-events)
+10. [Route Matching](#route-matching)
+11. [Included middleware](#included-middleware)
     - [serveFiles](#servefiles)
     - [compression](#compression)
     - [trailingSlashes](#trailingslashes)
@@ -56,12 +57,12 @@ _Or to run Bunshine on Node,
     - [performanceHeader](#performanceheader)
     - [etags](#etags)
     - [Recommended Middleware](#recommended-middleware)
-11. [TypeScript pro-tips](#typescript-pro-tips)
-12. [Examples of common http server setup](#examples-of-common-http-server-setup)
-13. [Design Decisions](#design-decisions)
-14. [Roadmap](#roadmap)
-15. [Change Log](./CHANGELOG.md)
-16. [ISC License](./LICENSE.md)
+12. [TypeScript pro-tips](#typescript-pro-tips)
+13. [Examples of common http server setup](#examples-of-common-http-server-setup)
+14. [Design Decisions](#design-decisions)
+15. [Roadmap](#roadmap)
+16. [Change Log](./CHANGELOG.md)
+17. [ISC License](./LICENSE.md)
 
 ## Upgrading from 1.x to 2.x
 
@@ -217,10 +218,36 @@ app.get('/', ({ url, text }) => {
 app.listen({ port: 3100, reusePort: true });
 ```
 
+## SSL
+
+Supporting HTTPS is simple on Bun and Bunshine. For details on all supported
+options, see the [Bun docs on TLS](https://bun.sh/docs/api/http#tls).
+
+You can obtain free SSL certificates from a service such as
+[Let's Encrypt](https://letsencrypt.org/getting-started/).
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+const server = app.listen({
+  port: 443, // works on any port
+  reusePort: true,
+  tls: {
+    key: Bun.file(`${import.meta.dir}/certs/my.key`),
+    cert: Bun.file(`${import.meta.dir}/certs/my.crt`),
+    ca: Bun.file(`${import.meta.dir}/certs/ca.pem`), // optional
+  },
+});
+app.get('/', () => new Response('hello from https'));
+
+const resp = await fetch('https://localhost');
+```
+
 ## Serving static files
 
 Serving static files is easy with the `serveFiles` middleware. Note that ranged
-requests are supported, so you can use this for video streaming or partial
+requests are supported, so you can use Bunshine for video streaming and partial
 downloads.
 
 ```ts
@@ -278,7 +305,7 @@ app.get('/files/*', async c => {
     disposition, // Use a Content-Disposition header with "inline" or "attachment"
     headers, // additional headers to add
     acceptRanges, // unless false, will support partial (ranged) downloads
-    sendLastModified, // unless false, will report file modification date (if givine a string or Bun file)
+    sendLastModified, // unless false, will report file modification date (For paths or BunFile objects)
     chunkSize, // Size for ranged downloads when client doesn't specify chunk size. Defaults to 1MB
   });
 });
@@ -312,7 +339,7 @@ app.use(async (c, next) => {
   if (resp.status === 403) {
     logThatUserWasForbidden(c.request.url);
   }
-  // return the response from the other handlers
+  // pass the response to other handlers
   return resp;
 });
 
@@ -346,9 +373,6 @@ app.get('/users/:id', [
     return c.json(user);
   },
 ]);
-
-// handler affected by middleware defined above
-app.get('/', c => c.text('Hello World!'));
 
 // define a handler function to be used in multiple places
 const ensureSafeData = async (_, next) => {
@@ -484,7 +508,7 @@ app.get('/admin', getAuthMiddleware('admin'), middleware2, handler);
 // Bunshine accepts middleware as arguments or arrays, ultimately flattening to one array
 // so the following are equivalent
 app.get('/posts', middleware1, middleware2, handler);
-app.get('/users', [middleware1, middleware2, handler]);
+app.get('/users', [middleware1, middleware2], handler);
 app.get('/visitors', [[middleware1, [middleware2, handler]]]);
 
 // Why might this flattening behavior be useful?
@@ -527,7 +551,8 @@ to subsequent middleware such as loggers.
 
 ## WebSockets
 
-Setting up websockets at various paths is easy with the `socket` property.
+Setting up websockets is easy by registering handlers for one or more routes
+using the `app.socket.at()` function.
 
 ```ts
 import { HttpRouter, SocketMessage } from 'bunshine';
@@ -609,16 +634,18 @@ They're simpler than you think. What Bun does internally:
 - Keeps objects in memory to represent each connected client
 - Tracks topic subscription and un-subscription for each client
 
-In Node, the process is complicated because you have to import and orchestrate http/https, and net.
-But Bun provides Bun.serve() which handles everything. Bunshine is a wrapper
-around Bun.serve that adds routing and convenience functions.
+In Node, the process is complicated because you have to import and orchestrate
+http/https, and net. But Bun provides Bun.serve() which handles everything.
+Bunshine is a wrapper around Bun.serve that adds routing and convenience
+functions.
 
 With Bunshine you don't need to use Socket.IO or any other framework.
 Connecting from the client requires no library either. You can simply
-create a new WebSocket() object and use it to listen and send data.
+create a `new WebSocket()` object and use it to listen and send data.
 
-For pub-sub, Bun internally handles subscriptions and broadcasts. See below for
-pub-sub examples using Bunshine.
+Bun also includes built-in subscription and broadcasting for pub-sub
+applications. See [below](#websocket-pub-sub) for pub-sub examples using
+Bunshine.
 
 ### Socket Context properties
 
@@ -783,8 +810,9 @@ livePrice.addEventListener('price', e => {
 ```
 
 Note that with SSE, the client must ultimately decide when to stop listening.
-Creating an `EventSource` object will open a connection to the server, and if
-the server closes the connection, a browser will automatically reconnect.
+Creating an `EventSource` object in the browser will open a connection to the
+server, and if the server closes the connection, a browser will automatically
+reconnect.
 
 So if you want to tell the browser you are done sending events, send a
 message that your client-side code will understand to mean "stop listening".
@@ -1176,7 +1204,7 @@ example:
 
 Screenshot:
 
-<img alt="devLogger" src="https://github.com/kensnyder/bunshine/raw/main/assets/devLogger-screenshot.png?v=3.1.2" width="524" height="78" />
+<img alt="devLogger" src="https://github.com/kensnyder/bunshine/raw/main/assets/devLogger-screenshot.png?v=3.2.0" width="524" height="78" />
 
 `prodLogger` outputs logs in JSON with the following shape:
 
@@ -1192,7 +1220,7 @@ Request log:
   "method": "GET",
   "pathname": "/home",
   "runtime": "Bun v1.1.34",
-  "poweredBy": "Bunshine v3.1.2",
+  "poweredBy": "Bunshine v3.2.0",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123
@@ -1211,7 +1239,7 @@ Response log:
   "method": "GET",
   "pathname": "/home",
   "runtime": "Bun v1.1.34",
-  "poweredBy": "Bunshine v3.1.2",
+  "poweredBy": "Bunshine v3.2.0",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123,
@@ -1380,7 +1408,7 @@ app.listen({ port: 3100, reusePort: true });
 ### Typing middleware
 
 ```ts
-import { HttpRouter, type Middleware } from 'bunshine';
+import { type Middleware } from 'bunshine';
 
 function myMiddleware(options: Options): Middleware {
   return (c, next) => {
@@ -1544,8 +1572,8 @@ Some additional design decisions:
 - ✅ HttpRouter
 - ✅ SocketRouter
 - ✅ Context
-- ✅ examples/kitchen-sink.ts
-- 🔲 more examples
+- ✅ ./examples/kitchen-sink.ts
+- 🔲 more examples in ./examples
 - ✅ middleware > compression
 - ✅ middleware > cors
 - ✅ middleware > devLogger
@@ -1565,7 +1593,7 @@ Some additional design decisions:
 - 🔲 100% test coverage
 - 🔲 support and document flags to bin/serve.ts with commander
 - 🔲 example of mini app that uses bin/serve.ts (maybe our own docs?)
-- 🔲 GitHub Actions to run tests and coverage
+- ✅ GitHub Actions to run tests and coverage
 - ✅ Replace "ms" with a small and simple implementation
 
 ## License
