@@ -37,7 +37,6 @@ describe('c.file()', () => {
       });
     });
     const resp = await fetch(`${server.url}home.html`);
-    console.log('resp.headers', resp.headers);
     expect(resp.status).toBe(200);
     expect(resp.headers.get('Hello')).toBe('bun, world');
   });

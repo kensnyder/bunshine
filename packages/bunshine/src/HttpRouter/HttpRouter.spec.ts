@@ -6,7 +6,6 @@ import HttpRouter from './HttpRouter';
 const server: Server = {};
 
 describe('HttpRouter', () => {
-  let port = 50100;
   describe('handlers', () => {
     let app: HttpRouter;
     let oldEnv: string | undefined;
@@ -470,6 +469,43 @@ describe('HttpRouter', () => {
       const resp = await fetch(`${server.url}/home`);
       expect(resp.status).toBe(200);
       expect(await resp.text()).toBe('bar');
+    });
+  });
+  describe('ssl', () => {
+    let app: HttpRouter;
+    let server: Server;
+    beforeEach(() => {
+      app = new HttpRouter();
+      server = app.listen({
+        port: 0,
+        reusePort: true,
+        tls: {
+          // files generated with the following:
+          // openssl req -newkey rsa:2048 -nodes -keyout private.key -x509 -days 365 -out certificate.crt -subj "/C=US/ST=State/L=City/O=Organization/OU=Unit/CN=localhost"
+          key: Bun.file(`${import.meta.dir}/../../testFixtures/private.key`),
+          cert: Bun.file(
+            `${import.meta.dir}/../../testFixtures/certificate.crt`
+          ),
+        },
+      });
+      console.log('server', server);
+    });
+    afterEach(() => {
+      server.stop(true);
+    });
+    it('should work on https', async () => {
+      app.get('/', () => new Response('Hello https'));
+      expect(server.url.protocol).toBe('https:');
+      const resp = await fetch(`${server.url}`, {
+        // @ts-expect-error  Type is wrong
+        tls: {
+          // Accept self-signed certificates
+          rejectUnauthorized: false,
+        },
+      });
+      console.log('resp', resp);
+      expect(resp.status).toBe(200);
+      expect(await resp.text()).toBe('Hello https');
     });
   });
 });
