@@ -1,3 +1,5 @@
+import type Context from '../../Context/Context';
+
 const textEncoder = new TextEncoder();
 
 export type SseSend = (
@@ -15,6 +17,7 @@ export type SseSetupFunction = (
 ) => void | (() => void);
 
 export default function sse(
+  this: Context,
   signal: AbortSignal,
   setup: SseSetupFunction,
   init: ResponseInit = {}

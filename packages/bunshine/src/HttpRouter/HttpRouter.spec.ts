@@ -1,20 +1,11 @@
 import type { Server } from 'bun';
-import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import EventSource from 'eventsource';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import HttpRouter from './HttpRouter';
-
-type SseTestEvent = {
-  type: string;
-  data: string;
-  lastEventId?: string;
-  origin?: string;
-};
 
 // @ts-expect-error
 const server: Server = {};
 
 describe('HttpRouter', () => {
-  let port = 7500;
   describe('handlers', () => {
     let app: HttpRouter;
     let oldEnv: string | undefined;
@@ -179,29 +170,6 @@ describe('HttpRouter', () => {
       expect(resp2.status).toBe(200);
       expect(await resp2.text()).toBe('Method was PUT');
     });
-    it('should allow headGet', async () => {
-      app.headGet('/', c => {
-        if (c.request.method === 'GET') {
-          return c.file(`${import.meta.dirname}/../../testFixtures/home.html`);
-        } else {
-          return new Response('', {
-            headers: {
-              'Content-type': 'text/html',
-              'Content-length': '22',
-            },
-          });
-        }
-      });
-      const getResp = await app.fetch(new Request('http://localhost/'), server);
-      expect(getResp.status).toBe(200);
-      expect(await getResp.text()).toInclude('Welcome home');
-      const headResp = await app.fetch(
-        new Request('http://localhost/', { method: 'HEAD' }),
-        server
-      );
-      expect(headResp.status).toBe(200);
-      expect(await headResp.text()).toBe('');
-    });
     it('should allow RegExp paths', async () => {
       app.get(/^\/user\/(.+)\/(.+)/, c => {
         return new Response(
@@ -296,117 +264,31 @@ describe('HttpRouter', () => {
       expect(await resp2.text()).toBe('Hi');
     });
   });
+  describe('listening', () => {
+    let server: Server;
+    afterEach(() => {
+      server.stop(true);
+    });
+    it('should assign default port', async () => {
+      const app = new HttpRouter();
+      server = app.listen();
+      app.get('/', () => new Response('Hi'));
+      const resp = await fetch(server.url);
+      expect(typeof server.port).toBe('number');
+      expect(server.port).toBeGreaterThan(0);
+      expect(resp.status).toBe(200);
+      expect(await resp.text()).toBe('Hi');
+    });
+  });
   describe('server', () => {
     let app: HttpRouter;
     let server: Server;
     beforeEach(() => {
       app = new HttpRouter();
-      server = app.listen({ port: port++ });
+      server = app.listen({ port: 0 });
     });
     afterEach(() => {
       server.stop(true);
-    });
-    // it('should assign random port', async () => {
-    //   app.get('/', () => new Response('Hi'));
-    //   server = app.listen({ port: 7769 });
-    //   const resp = await fetch(`http://localhost:${server.port}/`);
-    //   expect(typeof server.port).toBe('number');
-    //   expect(server.port).toBeGreaterThan(0);
-    //   expect(resp.status).toBe(200);
-    //   expect(await resp.text()).toBe('Hi');
-    // });
-    it('should return correct statuses, headers, and bytes', async () => {
-      app.headGet('/bun-logo.jpg', c => {
-        return c.file(`${import.meta.dirname}/../../testFixtures/bun-logo.jpg`);
-      });
-      const url = `${server.url}/bun-logo.jpg`;
-
-      // Step 1: Fetch entire file
-      const fullResponse = await fetch(url);
-      const fullFileBytes = await fullResponse.blob();
-      const fullContentLength = parseInt(
-        fullResponse.headers.get('content-length'),
-        10
-      );
-      const acceptRanges = fullResponse.headers.get('accept-ranges');
-
-      expect(fullResponse.status).toBe(200);
-      expect(fullFileBytes.size).toBe(fullContentLength);
-      expect(acceptRanges).toBe('bytes');
-
-      // Step 2: Fetch HEAD and validate
-      const headResponse = await fetch(url, { method: 'HEAD' });
-
-      const headContentLength = parseInt(
-        headResponse.headers.get('content-length'),
-        10
-      );
-      const headAcceptRanges = headResponse.headers.get('accept-ranges');
-
-      expect(headResponse.status).toBe(200);
-      expect(headContentLength).toBe(fullContentLength);
-      expect(headAcceptRanges).toBe('bytes');
-
-      // Step 3: Fetch range "bytes=0-" and validate
-      const rangeResponse1 = await fetch(url, {
-        headers: { Range: 'bytes=0-' },
-      });
-
-      const range1Bytes = await rangeResponse1.blob();
-      const range1AcceptRanges = rangeResponse1.headers.get('accept-ranges');
-      const range1ContentLength = parseInt(
-        rangeResponse1.headers.get('content-length'),
-        10
-      );
-
-      expect(rangeResponse1.status).toBe(206);
-      expect(range1AcceptRanges).toBe('bytes');
-      expect(range1Bytes.size).toBe(fullContentLength);
-      expect(range1ContentLength).toBe(fullContentLength);
-      expect(range1Bytes).toEqual(fullFileBytes);
-
-      // Step 4: Fetch range "bytes=0-999" and validate
-      const rangeResponse2 = await fetch(url, {
-        headers: { Range: 'bytes=0-999' },
-      });
-
-      const range2Bytes = await rangeResponse2.blob();
-      const range2ContentRange = rangeResponse2.headers.get('content-range');
-      const range2ContentLength = parseInt(
-        rangeResponse2.headers.get('content-length'),
-        10
-      );
-
-      expect(rangeResponse2.status).toBe(206);
-      expect(rangeResponse2.headers.get('accept-ranges')).toBe('bytes');
-      expect(range2ContentLength).toBe(1000);
-      expect(range2Bytes.size).toBe(1000);
-      expect(range2ContentRange).toBe(`bytes 0-999/${fullContentLength}`);
-      expect(range2Bytes).toEqual(fullFileBytes.slice(0, 1000));
-
-      // Step 5: Fetch range "bytes=1000-1999" and validate
-      const rangeResponse3 = await fetch(url, {
-        headers: { Range: 'bytes=1000-1999' },
-      });
-      const range3Bytes = await rangeResponse3.blob();
-      const range3ContentRange = rangeResponse3.headers.get('content-range');
-      const range3ContentLength = parseInt(
-        rangeResponse3.headers.get('content-length'),
-        10
-      );
-
-      expect(rangeResponse3.status).toBe(206);
-      expect(rangeResponse3.headers.get('accept-ranges')).toBe('bytes');
-      expect(range3ContentLength).toBe(1000);
-      expect(range3Bytes.size).toBe(1000);
-      expect(range3ContentRange).toBe(`bytes 1000-1999/${fullContentLength}`);
-      expect(range3Bytes).toEqual(fullFileBytes.slice(1000, 2000));
-
-      // Step 6: Request invalid range
-      const rangeResponse4 = await fetch(url, {
-        headers: { Range: 'bytes=9999999-' },
-      });
-      expect(rangeResponse4.status).toBe(416);
     });
     it('should get client ip info', async () => {
       app.get('/', c => c.json(c.ip));
@@ -422,7 +304,7 @@ describe('HttpRouter', () => {
     });
     it('should emit url', async () => {
       app.all('/', () => new Response('Hi'));
-      let output: string;
+      let output: string = '';
       const to = (message: string) => (output = message);
       app.emitUrl({ to });
       expect(output).toContain(String(server.url));
@@ -589,135 +471,39 @@ describe('HttpRouter', () => {
       expect(await resp.text()).toBe('bar');
     });
   });
-  describe('sse', () => {
+  describe('ssl', () => {
     let app: HttpRouter;
     let server: Server;
     beforeEach(() => {
       app = new HttpRouter();
+      server = app.listen({
+        port: 0,
+        reusePort: true,
+        tls: {
+          // files generated with the following:
+          // openssl req -newkey rsa:2048 -nodes -keyout private.key -x509 -days 365 -out certificate.crt -subj "/C=US/ST=State/L=City/O=Organization/OU=Unit/CN=localhost"
+          key: Bun.file(`${import.meta.dir}/../../testFixtures/private.key`),
+          cert: Bun.file(
+            `${import.meta.dir}/../../testFixtures/certificate.crt`
+          ),
+        },
+      });
     });
     afterEach(() => {
       server.stop(true);
     });
-    function sseTest({
-      port,
-      payloads,
-      event,
-      headers = {},
-    }: {
-      port: number;
-      payloads:
-        | Array<[string, any, string]>
-        | Array<[string, any]>
-        | Array<[string]>;
-      event: string;
-      headers?: Record<string, string>;
-    }): Promise<SseTestEvent[]> {
-      return new Promise((outerResolve, outerReject) => {
-        const events: SseTestEvent[] = [];
-        const readyToSend = new Promise((resolve, reject) => {
-          app.get('/sse', c => {
-            return c.sse(
-              send => {
-                resolve(() => {
-                  for (const payload of payloads) {
-                    // @ts-expect-error
-                    send(...payload);
-                  }
-                });
-              },
-              { headers }
-            );
-          });
-          app.onError(c => reject(c.error));
-          server = app.listen({ port });
-        }) as Promise<() => void>;
-        const readyToListen = new Promise((resolve, reject) => {
-          const stream = new EventSource(`http://localhost:${port}/sse`);
-          stream.addEventListener('error', evt => {
-            reject(evt);
-            stream.close();
-          });
-          stream.addEventListener(event, evt => {
-            events.push(evt);
-            if (events.length === payloads.length) {
-              outerResolve(events);
-              stream.close();
-            }
-          });
-          resolve(port);
-        }) as Promise<number>;
-        Promise.all([readyToSend, readyToListen])
-          .then(([doSend]) => doSend())
-          .catch(outerReject);
-      });
-    }
-    it('should handle unnamed data', async () => {
-      const events = await sseTest({
-        event: 'message',
-        port: port++,
-        payloads: [['Hello'], ['World']],
-      });
-      expect(events.length).toBe(2);
-      expect(events[0].data).toBe('Hello');
-      expect(events[1].data).toBe('World');
-    });
-    it('should send last event id and origin', async () => {
-      const events = await sseTest({
-        event: 'myEvent',
-        port: port++,
-        payloads: [
-          ['myEvent', 'hi1', 'id1'],
-          ['myEvent', 'hi2', 'id2'],
-        ],
-      });
-      expect(events.length).toBe(2);
-      expect(events[0].data).toBe('hi1');
-      expect(events[1].data).toBe('hi2');
-      expect(events[0].lastEventId).toBe('id1');
-      expect(events[1].lastEventId).toBe('id2');
-      expect(events[0].origin).toBe(`http://localhost:${port - 1}`);
-      expect(events[1].origin).toBe(`http://localhost:${port - 1}`);
-    });
-    it('should JSON encode data if needed', async () => {
-      const events = await sseTest({
-        event: 'myEvent',
-        port: port++,
-        payloads: [['myEvent', { name: 'Bob' }]],
-      });
-      expect(events.length).toBe(1);
-      expect(events[0].data).toBe('{"name":"Bob"}');
-    });
-    it('should warn when overriding some headers', async () => {
-      spyOn(console, 'warn').mockImplementation(() => {});
-      await sseTest({
-        event: 'myEvent',
-        port: port++,
-        payloads: [['myEvent', { name: 'Bob' }]],
-        headers: {
-          'Content-Type': 'text/plain',
-          'Cache-Control': 'foo',
-          Connection: 'whatever',
+    it('should work on https', async () => {
+      app.get('/', () => new Response('Hello https'));
+      expect(server.url.protocol).toBe('https:');
+      const resp = await fetch(`${server.url}`, {
+        // @ts-expect-error  Type is wrong
+        tls: {
+          // Accept self-signed certificates
+          rejectUnauthorized: false,
         },
       });
-      expect(console.warn).toHaveBeenCalledTimes(3);
-      // @ts-expect-error
-      console.warn.mockRestore();
-    });
-    it('should not warn if those headers are correct', async () => {
-      spyOn(console, 'warn').mockImplementation(() => {});
-      await sseTest({
-        event: 'myEvent',
-        port: port++,
-        payloads: [['myEvent', { name: 'Bob' }]],
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
-      });
-      expect(console.warn).toHaveBeenCalledTimes(0);
-      // @ts-expect-error
-      console.warn.mockRestore();
+      expect(resp.status).toBe(200);
+      expect(await resp.text()).toBe('Hello https');
     });
   });
 });

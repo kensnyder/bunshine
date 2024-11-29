@@ -1,7 +1,6 @@
 import path from 'path';
 import type { Middleware } from '../../HttpRouter/HttpRouter';
 import ms from '../../ms/ms';
-import buildFileResponse from '../../responseFactories/buildFileResponse';
 
 // see https://expressjs.com/en/4x/api.html#express.static
 // and https://www.npmjs.com/package/send#dotfiles
@@ -49,13 +48,10 @@ export function serveFiles(
         return;
       }
     }
-    // get file path
+    // get full file path
     const filePath = path.join(directory, filename);
-    // init file
     let file = Bun.file(filePath);
-    // handle existence
     let exists = await file.exists();
-    // console.log('----------=========------- exists?', { exists, filePath });
     // handle index files
     if (!exists && index.length > 0) {
       // try to find index file such as index.html or index.js
@@ -68,30 +64,22 @@ export function serveFiles(
         }
       }
     }
+    // otherwise truly cannot find it
     if (!exists) {
       if (fallthrough) {
         return;
       }
       return new Response('404 Not Found', { status: 404 });
     }
-    const rangeHeader = c.request.headers.get('range');
-    const response = await buildFileResponse({
-      file,
+    const response = await c.file(file, {
       acceptRanges,
-      chunkSize: 0,
-      rangeHeader,
-      method: c.request.method,
     });
-    // add last modified
-    if (lastModified) {
-      response.headers.set(
-        'Last-Modified',
-        new Date(file.lastModified).toUTCString()
-      );
-    }
     // add Cache-Control header
     if (cacheControlHeader) {
       response.headers.set('Cache-Control', cacheControlHeader);
+    }
+    if (lastModified === false) {
+      response.headers.delete('Last-Modified');
     }
     return response;
   };

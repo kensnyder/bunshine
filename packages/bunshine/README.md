@@ -2,14 +2,13 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/packages/bunshine/assets/bunshine-logo.png?v=3.0.0" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/packages/bunshine/assets/bunshine-logo.png?v=3.2.0" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.0.0)](https://npmjs.com/package/bunshine)
-[![Language: TypeScript](https://badgen.net/static/language/TS?v=3.0.0)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
-[![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.0.0)](https://codecov.io/gh/kensnyder/bunshine)
-[![Dependencies: 1](https://badgen.net/static/dependencies/1/green?v=3.0.0)](https://www.npmjs.com/package/bunshine?activeTab=dependencies)
-![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.0.0)
-[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.0.0)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.2.0)](https://npmjs.com/package/bunshine)
+[![Language: TypeScript](https://badgen.net/static/language/TS?v=3.2.0)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
+[![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.2.0)](https://codecov.io/gh/kensnyder/bunshine)
+![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.2.0)
+[![ISC License](https://badgen.net/github/license/kensnyder/bunshine/packages/bunshine?v=3.2.0)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
@@ -40,14 +39,15 @@ _Or to run Bunshine on Node,
 
 1. [Basic example](#basic-example)
 2. [Full example](#full-example)
-3. [Serving static files](#serving-static-files)
-4. [Writing middleware](#writing-middleware)
-5. [Throwing responses](#throwing-responses)
-6. [WebSockets](#websockets)
-7. [WebSocket pub-sub](#websocket-pub-sub)
-8. [Server Sent Events](#server-sent-events)
-9. [Route Matching](#route-matching)
-10. [Included middleware](#included-middleware)
+3. [SSL](#ssl)
+4. [Serving static files](#serving-static-files)
+5. [Writing middleware](#writing-middleware)
+6. [Throwing responses](#throwing-responses)
+7. [WebSockets](#websockets)
+8. [WebSocket pub-sub](#websocket-pub-sub)
+9. [Server Sent Events](#server-sent-events)
+10. [Route Matching](#route-matching)
+11. [Included middleware](#included-middleware)
     - [serveFiles](#servefiles)
     - [compression](#compression)
     - [trailingSlashes](#trailingslashes)
@@ -57,11 +57,12 @@ _Or to run Bunshine on Node,
     - [performanceHeader](#performanceheader)
     - [etags](#etags)
     - [Recommended Middleware](#recommended-middleware)
-11. [TypeScript pro-tips](#typescript-pro-tips)
-12. [Examples of common http server setup](#examples-of-common-http-server-setup)
-13. [Design Decisions](#design-decisions)
-14. [Roadmap](#roadmap)
-15. [ISC License](./LICENSE.md)
+12. [TypeScript pro-tips](#typescript-pro-tips)
+13. [Examples of common http server setup](#examples-of-common-http-server-setup)
+14. [Design Decisions](#design-decisions)
+15. [Roadmap](#roadmap)
+16. [Change Log](./CHANGELOG.md)
+17. [ISC License](./LICENSE.md)
 
 ## Upgrading from 1.x to 2.x
 
@@ -183,30 +184,70 @@ app.get('/hello', (c: Context, next: NextFunction) => {
   });
 
   // Or create Response objects with convenience functions:
-  return c.json(data, init);
-  return c.text(text, init);
-  return c.js(jsText, init);
-  return c.xml(xmlText, init);
-  return c.html(htmlText, init);
-  return c.css(cssText, init);
-  return c.file(pathOrSource, init);
+  return c.json(data, init); // data to pass to JSON.stringify
+  return c.text(text, init); // plain text
+  return c.js(jsText, init); // plain-text js
+  return c.xml(xmlText, init); // plain-text xml
+  return c.html(htmlText, init); // plain-text html
+  return c.css(cssText, init); // plain-text css
+  return c.file(pathOrSource, init); // file path, BunFile or binary source
 
-  // above init is ResponseInit:
-  {
-    headers: Headers | Record<string, string> | Array<[string, string]>;
-    status: number;
-    statusText: string;
-  }
+  // above init is the Web Standards ResponseInit:
+  type ResponseInit = {
+    headers?: Headers | Record<string, string> | Array<[string, string]>;
+    status?: number;
+    statusText?: string;
+  };
 
   // Create a redirect Response:
   return c.redirect(url, status); // status defaults to 302 (Temporary Redirect)
 });
 ```
 
+And `c` is destructureable. For example, you can write:
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+
+app.get('/', ({ url, text }) => {
+  return text('Hello at ' + url.pathname);
+});
+
+app.listen({ port: 3100, reusePort: true });
+```
+
+## SSL
+
+Supporting HTTPS is simple on Bun and Bunshine. For details on all supported
+options, see the [Bun docs on TLS](https://bun.sh/docs/api/http#tls).
+
+You can obtain free SSL certificates from a service such as
+[Let's Encrypt](https://letsencrypt.org/getting-started/).
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+const server = app.listen({
+  port: 443, // works on any port
+  reusePort: true,
+  tls: {
+    key: Bun.file(`${import.meta.dir}/certs/my.key`),
+    cert: Bun.file(`${import.meta.dir}/certs/my.crt`),
+    ca: Bun.file(`${import.meta.dir}/certs/ca.pem`), // optional
+  },
+});
+app.get('/', () => new Response('hello from https'));
+
+const resp = await fetch('https://localhost');
+```
+
 ## Serving static files
 
 Serving static files is easy with the `serveFiles` middleware. Note that ranged
-requests are supported, so you can use this for video streaming or partial
+requests are supported, so you can use Bunshine for video streaming and partial
 downloads.
 
 ```ts
@@ -223,6 +264,52 @@ See the [serveFiles](#serveFiles) section for more info.
 
 Also note you can serve files with Bunshine anywhere with `bunx bunshine-serve`.
 It currently uses the default `serveFiles()` options.
+
+If you want to manually manage serving a file, you can use the following approach.
+
+```ts
+import { HttpRouter, serveFiles } from 'bunshine';
+
+const app = new HttpRouter();
+
+app.get('/assets/:name.png', c => {
+  const name = c.params.name;
+  const filePath = `${import.meta.dir}/assets/${name}.png`;
+  // you can pass a string path
+  return c.file(filePath);
+  // Bun will set Content-Type based on the string file extension
+});
+
+app.get('/build/:hash.map', c => {
+  const hash = c.params.hash;
+  const filePath = `${import.meta.dir}/assets/${name}.png`;
+  // you can pass a BunFile
+  return c.file(
+    Bun.file(filePath, {
+      // Bunshine will automatically set Content-Type based on the file bytes
+      // but you can set it or override it for non-standard mime types
+      headers: { 'Content-type': 'application/json' },
+    })
+  );
+});
+
+app.get('/profile/*.jpg', async c => {
+  // you can pass a Buffer or Uint8Array
+  const intArray = getBytesFromExternal(c.params[0]);
+  return c.file(bytes);
+});
+
+app.get('/files/*', async c => {
+  // c.file() accepts 4 options:
+  return c.file(path, {
+    disposition, // Use a Content-Disposition header with "inline" or "attachment"
+    headers, // additional headers to add
+    acceptRanges, // unless false, will support partial (ranged) downloads
+    sendLastModified, // unless false, will report file modification date (For paths or BunFile objects)
+    chunkSize, // Size for ranged downloads when client doesn't specify chunk size. Defaults to 1MB
+  });
+});
+```
 
 ## Writing middleware
 
@@ -252,7 +339,7 @@ app.use(async (c, next) => {
   if (resp.status === 403) {
     logThatUserWasForbidden(c.request.url);
   }
-  // return the response from the other handlers
+  // pass the response to other handlers
   return resp;
 });
 
@@ -286,9 +373,6 @@ app.get('/users/:id', [
     return c.json(user);
   },
 ]);
-
-// handler affected by middleware defined above
-app.get('/', c => c.text('Hello World!'));
 
 // define a handler function to be used in multiple places
 const ensureSafeData = async (_, next) => {
@@ -424,7 +508,7 @@ app.get('/admin', getAuthMiddleware('admin'), middleware2, handler);
 // Bunshine accepts middleware as arguments or arrays, ultimately flattening to one array
 // so the following are equivalent
 app.get('/posts', middleware1, middleware2, handler);
-app.get('/users', [middleware1, middleware2, handler]);
+app.get('/users', [middleware1, middleware2], handler);
 app.get('/visitors', [[middleware1, [middleware2, handler]]]);
 
 // Why might this flattening behavior be useful?
@@ -467,24 +551,25 @@ to subsequent middleware such as loggers.
 
 ## WebSockets
 
-Setting up websockets at various paths is easy with the `socket` property.
+Setting up websockets is easy by registering handlers for one or more routes
+using the `app.socket.at()` function.
 
 ```ts
-import { HttpRouter } from 'bunshine';
+import { HttpRouter, SocketMessage } from 'bunshine';
 
 const app = new HttpRouter();
 
-// regular routes
+// register regular routes on app.get()/post()/etc
 app.get('/', c => c.text('Hello World!'));
 
-// WebSocket routes
+// Register WebSocket routes with app.socket.at()
 type ParamsShape = { room: string };
 type DataShape = { user: User };
 app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
   // Optional. Allows you to specify arbitrary data to attach to ws.data.
-  upgrade: sc => {
+  upgrade: c => {
     // upgrade is called on first connection, before HTTP 101 is issued
-    const cookies = sc.request.headers.get('cookie');
+    const cookies = c.request.headers.get('cookie');
     const user = getUserFromCookies(cookies);
     return { user };
   },
@@ -511,10 +596,115 @@ app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
   },
   // Optional. Called when the client disconnects
   // List of codes and messages: https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code
-  close(sc, code, message) {
+  close(sc, code, reason) {
     const room = sc.params.room;
     const user = sc.data.user;
     markUserExit(room, user);
+  },
+});
+
+// start the server
+app.listen({ port: 3100, reusePort: true });
+
+//
+// Browser side:
+//
+const gameRoom = new WebSocket('ws://localhost:3100/games/rooms/1?user=42');
+gameRoom.onmessage = e => {
+  // receiving messages
+  const data = JSON.parse(e.data);
+  if (data.type === 'GameState') {
+    setGameState(data);
+  } else if (data.type === 'GameMove') {
+    playMove(data);
+  }
+};
+gameRoom.onerror = handleGameError;
+// send message to server
+gameRoom.send(JSON.stringify({ type: 'GameMove', move: 'rock' }));
+```
+
+### Are sockets magical?
+
+They're simpler than you think. What Bun does internally:
+
+- Responds to a regular HTTP request with HTTP 101 (Switching Protocols)
+- Tells the client to make socket connection on another port
+- Keeps connection open and sends/receives messages
+- Keeps objects in memory to represent each connected client
+- Tracks topic subscription and un-subscription for each client
+
+In Node, the process is complicated because you have to import and orchestrate
+http/https, and net. But Bun provides Bun.serve() which handles everything.
+Bunshine is a wrapper around Bun.serve that adds routing and convenience
+functions.
+
+With Bunshine you don't need to use Socket.IO or any other framework.
+Connecting from the client requires no library either. You can simply
+create a `new WebSocket()` object and use it to listen and send data.
+
+Bun also includes built-in subscription and broadcasting for pub-sub
+applications. See [below](#websocket-pub-sub) for pub-sub examples using
+Bunshine.
+
+### Socket Context properties
+
+```ts
+import { Context, HttpRouter, NextFunction, SocketContext } from 'bunshine';
+
+const app = new HttpRouter();
+
+// WebSocket routes
+type ParamsShape = { room: string };
+type DataShape = { user: User };
+app.socket.at<ParmasShape, DataShape>('/games/rooms/:room', {
+  // Optional. Allows you to specify arbitrary data to attach to ws.data.
+  upgrade: (c: Context, next: NextFunction) => {
+    // Functions are type annotated for illustrations, but is not neccessary
+    // c and next here are the same as regular http endpoings
+    return data; // data returned becomes available on sc.data
+  },
+  // Optional. Called when the client sends a message
+  message(sc, message) {
+    sc.url; // the URL object for the request
+    sc.server; // Same as app.server
+    sc.params; // Route params for the request (in this case { room: string; })
+    sc.data; // Any data you return from the upgrade handler
+    sc.remoteAddress; // the client or load balancer IP Address
+    sc.readyState; // 0=connecting, 1=connected, 2=closing, 3=close
+    sc.binaryType; // nodebuffer, arraybuffer, uint8array
+    sc.send(message, compress /*optional*/); // compress is optional
+    //   message can be string, data to be JSON.stringified, or binary data such as Buffer or Uint8Array.
+    //   compress can be true to compress message
+    sc.close(status /*optional*/, reason /*optional*/); // status and reason are optional
+    //   status can be a valid WebSocket status number (in the 1000s)
+    //   reason can be text to tell client why you are closing
+    sc.terminate(); // terminates socket without telling client why
+    sc.subscribe(topic); // The name of a topic to subscribe this client
+    sc.unsubscribe(topic); // Name of topic to unsubscribe
+    sc.isSubscribed(topic); // True if subscribed to that topic name
+    sc.cork(topic); // Normally there is no reason to use this function
+    sc.publish(topic, message, compress /*optional*/); // Publish message to all subscribed clients
+    sc.ping(data /*optional*/); // Tell client to stay connected
+    sc.pong(data /*optional*/); // Way to respond to client request to stay connected
+
+    message.raw(); // get the raw string or Buffer of the message
+    message.text(encoding /*optional*/); // get message as string
+    `${message}`; // will do the same as .text()
+    message.buffer(); // get data as Buffer
+    message.arrayBuffer(); // get data as array buffer
+    message.readableStream(); // get data as a ReadableStream object
+    message.json(); // parse data with JSON.parse()
+    message.type; // message, ping, or pong
+  },
+  // called when a handler throws any error
+  error: (sc: SocketContext, error: Error) => {
+    // sc is the same as above
+  },
+  // Optional. Called when the client disconnects
+  // List of codes and messages: https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code
+  close(sc: SocketContext, code: number, reason: string) {
+    // sc is the same as above
   },
 });
 
@@ -549,8 +739,6 @@ import { HttpRouter } from 'bunshine';
 
 const app = new HttpRouter();
 
-app.get('/', c => c.text('Hello World!'));
-
 type ParamsShape = { room: string };
 type DataShape = { username: string };
 app.socket.at<ParamsShape, DataShape>('/chat/:room', {
@@ -567,11 +755,12 @@ app.socket.at<ParamsShape, DataShape>('/chat/:room', {
   message(sc, message) {
     // the server re-broadcasts incoming messages
     // to each connection's message handler
-    const fullMessage = `${sc.data.username}: ${message}`;
+    // so you need to call sc.publish() and sc.send()
+    const fullMessage = `${sc.data.username}: ${message.text()}`;
     sc.publish(`chat-room-${sc.params.room}`, fullMessage);
     sc.send(fullMessage);
   },
-  close(sc, code, message) {
+  close(sc, code, reason) {
     const msg = `${sc.data.username} has left the chat`;
     sc.publish(`chat-room-${sc.params.room}`, msg);
     sc.unsubscribe(`chat-room-${sc.params.room}`);
@@ -621,8 +810,9 @@ livePrice.addEventListener('price', e => {
 ```
 
 Note that with SSE, the client must ultimately decide when to stop listening.
-Creating an `EventSource` object will open a connection to the server, and if
-the server closes the connection, a browser will automatically reconnect.
+Creating an `EventSource` object in the browser will open a connection to the
+server, and if the server closes the connection, a browser will automatically
+reconnect.
 
 So if you want to tell the browser you are done sending events, send a
 message that your client-side code will understand to mean "stop listening".
@@ -1014,7 +1204,7 @@ example:
 
 Screenshot:
 
-<img alt="devLogger" src="https://github.com/kensnyder/bunshine/raw/main/assets/devLogger-screenshot.png?v=3.0.0" width="524" height="78" />
+<img alt="devLogger" src="https://github.com/kensnyder/bunshine/raw/main/assets/devLogger-screenshot.png?v=3.2.0" width="524" height="78" />
 
 `prodLogger` outputs logs in JSON with the following shape:
 
@@ -1030,7 +1220,7 @@ Request log:
   "method": "GET",
   "pathname": "/home",
   "runtime": "Bun v1.1.34",
-  "poweredBy": "Bunshine v3.0.0",
+  "poweredBy": "Bunshine v3.2.0",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123
@@ -1049,7 +1239,7 @@ Response log:
   "method": "GET",
   "pathname": "/home",
   "runtime": "Bun v1.1.34",
-  "poweredBy": "Bunshine v3.0.0",
+  "poweredBy": "Bunshine v3.2.0",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123,
@@ -1205,7 +1395,7 @@ app.socket.at<{ room: string }, { user: User }>('/games/rooms/:room', {
     // TypeScript knows that ws.data.params.room is a string
     // TypeScript knows that ws.data.user is a User
   },
-  close(ws, code, message) {
+  close(ws, code, reason) {
     // TypeScript knows that ws.data.params.room is a string
     // TypeScript knows that ws.data.user is a User
   },
@@ -1218,7 +1408,7 @@ app.listen({ port: 3100, reusePort: true });
 ### Typing middleware
 
 ```ts
-import { HttpRouter, type Middleware } from 'bunshine';
+import { type Middleware } from 'bunshine';
 
 function myMiddleware(options: Options): Middleware {
   return (c, next) => {
@@ -1239,7 +1429,25 @@ app.get('/', c => {
   c.url.searchParams; // URLSearchParams object
   Object.fromEntries(c.url.searchParams); // as plain object (but repeated keys are dropped)
   for (const [key, value] of c.url.searchParams) {
-  } // iterate params
+    // iterate params
+  }
+});
+
+// Or set c.query via middleware
+app.use(c => {
+  c.query = Object.fromEntries(c.url.searchParams);
+});
+
+// how to read json payload
+app.post('/api/user', async c => {
+  const data = await c.request.json();
+});
+
+// Or set c.body via middleware
+app.on(['POST', 'PUT', 'PATCH'], async c => {
+  if (c.request.headers.get('Content-Type')?.includes('application/json')) {
+    c.body = await c.request.json();
+  }
 });
 
 // create small functions that always return the same thing
@@ -1248,12 +1456,6 @@ const respondWith404 = c => c.text('Not found', { status: 404 });
 app.get(/^\./, respondWith404);
 // block URLs that end with .env and other dumb endings
 app.all(/\.(env|bak|old|tmp|backup|log|ini|conf)$/, respondWith404);
-// block WordPress URLs such as /wordpress/wp-includes/wlwmanifest.xml
-app.all(/(^wordpress\/|\/wp-includes\/)/, respondWith404);
-// block Other language URLs such as /phpinfo.php and /admin.cgi
-app.all(/^[^/]+\.(php|cgi)$/, respondWith404);
-// block Commonly probed application paths
-app.all(/^(phpmyadmin|mysql|cgi-bin|cpanel|plesk)/i, respondWith404);
 
 // middleware to add CSP
 app.use(async (c, next) => {
@@ -1283,7 +1485,7 @@ app.headGet('/embeds/*', async (c, next) => {
 });
 
 // Persist data in c.locals
-app.get('/api/*', async (c, next) => {
+app.all('/api/*', async (c, next) => {
   const authValue = c.request.headers.get('Authorization');
   // subsequent handler will have access to this auth information
   c.locals.auth = {
@@ -1298,7 +1500,7 @@ function castSchema(zodSchema: ZodObject): Middleware {
   return async c => {
     const result = zodSchema.safeParse(await c.json());
     if (result.error) {
-      return c.json(result.error, { status: 400 });
+      return c.text(result.error, { status: 400 });
     }
     c.locals.safePayload = result.data;
   };
@@ -1309,8 +1511,11 @@ app.post('/api/users', castSchema(userCreateSchema), createUser);
 // Destructure context object
 app.get('/api/*', async ({ url, request, json }) => {
   // do stuff with url and request
-  return json({ message: 'my json response' });
+  return json({ message: `my json response at ${url.pathname}` });
 });
+
+// listen on random port
+app.listen({ port: 0, reusePort: true });
 ```
 
 ## Design Decisions
@@ -1367,8 +1572,8 @@ Some additional design decisions:
 - ✅ HttpRouter
 - ✅ SocketRouter
 - ✅ Context
-- ✅ examples/kitchen-sink.ts
-- 🔲 more examples
+- ✅ ./examples/kitchen-sink.ts
+- 🔲 more examples in ./examples
 - ✅ middleware > compression
 - ✅ middleware > cors
 - ✅ middleware > devLogger
@@ -1388,7 +1593,7 @@ Some additional design decisions:
 - 🔲 100% test coverage
 - 🔲 support and document flags to bin/serve.ts with commander
 - 🔲 example of mini app that uses bin/serve.ts (maybe our own docs?)
-- 🔲 GitHub Actions to run tests and coverage
+- ✅ GitHub Actions to run tests and coverage
 - ✅ Replace "ms" with a small and simple implementation
 
 ## License

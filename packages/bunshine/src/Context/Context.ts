@@ -1,10 +1,11 @@
-import type { BunFile, Server } from 'bun';
+import type { Server } from 'bun';
 import type HttpRouter from '../HttpRouter/HttpRouter';
-import factory from '../responseFactories/factory';
-import file, { type FileResponseOptions } from '../responseFactories/file';
-import json from '../responseFactories/json';
-import redirect from '../responseFactories/redirect';
-import sse, { type SseSetupFunction } from '../responseFactories/sse';
+import factory from '../responseFactories/factory/factory';
+import file, { type FileResponseOptions } from '../responseFactories/file/file';
+import { FileLike } from '../responseFactories/file/file-io';
+import json from '../responseFactories/json/json';
+import redirect from '../responseFactories/redirect/redirect';
+import sse, { type SseSetupFunction } from '../responseFactories/sse/sse';
 
 const textPlain = factory('text/plain');
 const textJs = factory('text/javascript');
@@ -74,21 +75,21 @@ export default class Context<
     return json.call(this, data, init);
   };
   /** A shorthand for `new Response(null, { headers: { Location: url }, status: 301 })` */
-  redirect = (url: string, status = 302) => {
+  redirect = (url: string, status?: number) => {
     return redirect(url, status);
   };
   /** A shorthand for `new Response(bunFile, fileHeaders)` plus range features */
   file = async (
-    filenameOrBunFile: string | BunFile,
+    pathOrData: FileLike,
     fileOptions: FileResponseOptions = {}
   ) => {
-    return file(filenameOrBunFile, {
+    return file.call(this, pathOrData, {
       range: this.request.headers.get('Range') || undefined,
       ...fileOptions,
     });
   };
   /** A shorthand for `new Response({ headers: { 'Content-type': 'text/event-stream' } })` */
   sse = (setup: SseSetupFunction, init: ResponseInit = {}) => {
-    return sse(this.request.signal, setup, init);
+    return sse.call(this, this.request.signal, setup, init);
   };
 }

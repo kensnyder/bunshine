@@ -1,4 +1,4 @@
-import type { ServeOptions, Server } from 'bun';
+import { Server, TLSServeOptions } from 'bun';
 import os from 'node:os';
 import bunshinePkg from '../../package.json' assert { type: 'json' };
 import Context from '../Context/Context';
@@ -24,7 +24,9 @@ export type Handler<
   ParamsShape extends Record<string, string> = Record<string, string>,
 > = SingleHandler<ParamsShape> | Handler<ParamsShape>[];
 
-export type ListenOptions = Omit<ServeOptions, 'fetch' | 'websocket'> | number;
+export type ListenOptions =
+  | Omit<TLSServeOptions, 'fetch' | 'websocket'>
+  | number;
 
 export type HttpMethods =
   | 'ALL'
@@ -100,12 +102,12 @@ export default class HttpRouter {
     }
     to(message);
   }
-  getExport(options: Omit<ServeOptions, 'fetch' | 'websocket'> = {}) {
+  getExport(options: Omit<TLSServeOptions, 'fetch' | 'websocket'> = {}) {
     const config = {
       port: 0,
       ...options,
       fetch: this.fetch,
-    } as ServeOptions;
+    } as TLSServeOptions;
     if (this._wsRouter) {
       // @ts-expect-error
       config.websocket = this._wsRouter.handlers;
@@ -194,17 +196,17 @@ export default class HttpRouter {
   ) {
     return this.on<ParamsShape>(['HEAD', 'GET'], path, handlers);
   }
-  use(...handlers: Handler<{}>[]) {
+  use = (...handlers: Handler<{}>[]) => {
     return this.all('*', handlers);
-  }
-  on404(...handlers: SingleHandler<Record<string, string>>[]) {
+  };
+  on404 = (...handlers: SingleHandler<Record<string, string>>[]) => {
     this._on404Handlers.push(...handlers.flat(9));
     return this;
-  }
-  on500(...handlers: SingleHandler<Record<string, string>>[]) {
+  };
+  on500 = (...handlers: SingleHandler<Record<string, string>>[]) => {
     this._on500Handlers.push(...handlers.flat(9));
     return this;
-  }
+  };
   fetch = async (request: Request, server: Server) => {
     const context = new Context(request, server, this);
     const pathname = context.url.pathname;
@@ -226,17 +228,12 @@ export default class HttpRouter {
       context.params = match[1];
 
       try {
-        let result = handler(context, next);
+        let result = await handler(context, next);
         if (result instanceof Response) {
           return result;
+        } else {
+          return next();
         }
-        if (typeof result?.then === 'function') {
-          result = await result;
-          if (result instanceof Response) {
-            return result;
-          }
-        }
-        return next();
       } catch (e) {
         return errorHandler(e as Error);
       }

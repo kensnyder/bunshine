@@ -1,4 +1,4 @@
-import Context from '../Context/Context';
+import Context from '../../Context/Context';
 
 export default function json(
   this: Context,

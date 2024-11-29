@@ -18,7 +18,7 @@ app.headGet(
     index: ['index.html'],
   })
 );
-app.listen();
+app.listen({ port: 0, reusePort: true });
 
 console.log(`☀️ Bunshine serving static files at ${app.server!.url}`);
 

@@ -8,6 +8,7 @@ describe('performanceHeader middleware', () => {
   let server: Server;
   beforeEach(() => {
     app = new HttpRouter();
+    server = app.listen({ port: 0 });
   });
   afterEach(() => {
     server.stop(true);
@@ -15,8 +16,7 @@ describe('performanceHeader middleware', () => {
   it('should add X-Took header', async () => {
     app.use(performanceHeader());
     app.get('/foo', c => c.text('Hello'));
-    server = app.listen({ port: 7900 });
-    const resp = await fetch('http://localhost:7900/foo');
+    const resp = await fetch(`${server.url}foo`);
     expect(resp.headers.get('X-Took')).toMatch(/\d+\.\d{3}/);
     const text = await resp.text();
     expect(text).toBe('Hello');
