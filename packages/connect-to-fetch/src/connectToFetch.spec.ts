@@ -5,7 +5,6 @@ import { ConnectErrorHandler, ConnectRouteHandler } from './handler.types';
 
 describe('connectToBunshine', () => {
   let server: Server;
-  let port = 7777;
   afterEach(() => server.stop(true));
   it('should run handler', async () => {
     const connectHandler: ConnectRouteHandler = (req, res, next) => {
@@ -13,7 +12,7 @@ describe('connectToBunshine', () => {
     };
     server = Bun.serve({
       fetch: connectToFetch(connectHandler),
-      port: port++,
+      port: 0,
     });
     const resp = await fetch(server.url);
     const text = await resp.text();
@@ -26,7 +25,7 @@ describe('connectToBunshine', () => {
     };
     server = Bun.serve({
       fetch: connectToFetch(connectHandler),
-      port: port++,
+      port: 0,
     });
     const resp = await fetch(server.url);
     const text = await resp.text();
@@ -44,7 +43,7 @@ describe('connectToBunshine', () => {
     };
     server = Bun.serve({
       fetch: connectToFetch(connect1, connect2),
-      port: port++,
+      port: 0,
     });
     const resp = await fetch(server.url);
     const text = await resp.text();
@@ -63,7 +62,7 @@ describe('connectToBunshine', () => {
     };
     server = Bun.serve({
       fetch: connectToFetch([connect1, [connect2]]),
-      port: port++,
+      port: 0,
     });
     const resp = await fetch(server.url);
     const text = await resp.text();
@@ -85,7 +84,7 @@ describe('connectToBunshine', () => {
     };
     server = Bun.serve({
       fetch: connectToFetch(connect1, connect2, connect3),
-      port: port++,
+      port: 0,
     });
     const resp = await fetch(server.url, {
       redirect: 'manual',
@@ -103,7 +102,7 @@ describe('connectToBunshine', () => {
     };
     server = Bun.serve({
       fetch: connectToFetch([connect1, connect2]),
-      port: port++,
+      port: 0,
     });
     const resp = await fetch(server.url);
     const text = await resp.text();
@@ -113,9 +112,9 @@ describe('connectToBunshine', () => {
   });
   it('should have correct properties on req', async () => {
     const connectHandler: ConnectRouteHandler = (req, res, next) => {
-      const body = [];
+      const body: Uint8Array[] = [];
       req
-        .on('data', (chunk: Buffer) => {
+        .on('data', (chunk: Uint8Array) => {
           body.push(chunk);
         })
         .on('end', () => {
@@ -133,7 +132,7 @@ describe('connectToBunshine', () => {
     };
     server = Bun.serve({
       fetch: connectToFetch(connectHandler),
-      port: port++,
+      port: 0,
     });
     const resp = await fetch(server.url, {
       method: 'POST',
@@ -165,7 +164,7 @@ describe('connectToBunshine', () => {
     };
     server = Bun.serve({
       fetch: connectToFetch([connect1, connect2, connect3]),
-      port: port++,
+      port: 0,
     });
     const resp = await fetch(server.url);
     const text = await resp.text();
@@ -190,7 +189,7 @@ describe('connectToBunshine', () => {
     };
     server = Bun.serve({
       fetch: connectToFetch([connect1, connect2, connect3]),
-      port: port++,
+      port: 0,
     });
     const resp = await fetch(server.url);
     const text = await resp.text();
@@ -209,7 +208,7 @@ describe('connectToBunshine', () => {
     };
     server = Bun.serve({
       fetch: connectToFetch([connect1, connect2]),
-      port: port++,
+      port: 0,
     });
     const resp = await fetch(server.url);
     const text = await resp.text();

@@ -21,7 +21,6 @@ export default function createIncomingMessage(
   return Object.assign(body, {
     url: pathnameAndQuery,
     method: request.method,
-    // @ts-expect-error  We can't mimic IncomingMessage perfectly
     headers: Object.fromEntries(request.headers),
   }) as IncomingMessage;
 }

@@ -29,7 +29,7 @@ export default function connectToFetch(...connectHandlers: FlatHandlers[]) {
       req as unknown as IncomingMessage
     );
 
-    return new Promise<Response | undefined>((resolve, reject) => {
+    return new Promise<Response>((resolve, reject) => {
       // onReadable is called when res.end(content) is called
       onReadable(({ readable, headers, statusCode }) => {
         const responseBody = statusCodesWithoutBody.includes(statusCode)
@@ -59,7 +59,14 @@ export default function connectToFetch(...connectHandlers: FlatHandlers[]) {
             reject(globalError);
           } else {
             // 404
-            resolve(undefined);
+            reject(
+              new Response('Not found', {
+                status: 404,
+                headers: {
+                  'X-Connect-To-Fetch': 'unhandled',
+                },
+              })
+            );
           }
           return;
         }
@@ -80,7 +87,7 @@ export default function connectToFetch(...connectHandlers: FlatHandlers[]) {
             }
           }
         } catch (e) {
-          next(e);
+          next(e as Error);
         }
       };
 
