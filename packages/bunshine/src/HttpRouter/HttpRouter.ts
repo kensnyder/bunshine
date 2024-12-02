@@ -16,11 +16,11 @@ export type SingleHandler<
   next: NextFunction
 ) => Response | void | Promise<Response | void>;
 
-export type Middleware<
-  ParamsShape extends Record<string, string> = Record<string, string>,
-> = SingleHandler<ParamsShape>;
-
 export type Handler<
+  ParamsShape extends Record<string, string> = Record<string, string>,
+> = SingleHandler<ParamsShape> | Handler<ParamsShape>[];
+
+export type Middleware<
   ParamsShape extends Record<string, string> = Record<string, string>,
 > = SingleHandler<ParamsShape> | Handler<ParamsShape>[];
 
@@ -196,15 +196,15 @@ export default class HttpRouter {
   ) {
     return this.on<ParamsShape>(['HEAD', 'GET'], path, handlers);
   }
-  use = (...handlers: Handler<{}>[]) => {
+  use = (...handlers: Handler[]) => {
     return this.all('*', handlers);
   };
-  on404 = (...handlers: SingleHandler<Record<string, string>>[]) => {
-    this._on404Handlers.push(...handlers.flat(9));
+  on404 = (...handlers: Handler[]) => {
+    this._on404Handlers.push(...(handlers.flat(9) as SingleHandler[]));
     return this;
   };
-  on500 = (...handlers: SingleHandler<Record<string, string>>[]) => {
-    this._on500Handlers.push(...handlers.flat(9));
+  on500 = (...handlers: Handler[]) => {
+    this._on500Handlers.push(...(handlers.flat(9) as SingleHandler[]));
     return this;
   };
   fetch = async (request: Request, server: Server) => {

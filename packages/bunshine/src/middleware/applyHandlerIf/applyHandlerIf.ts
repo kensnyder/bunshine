@@ -1,5 +1,9 @@
 import Context from '../../Context/Context';
-import { Middleware, SingleHandler } from '../../HttpRouter/HttpRouter';
+import {
+  Handler,
+  Middleware,
+  SingleHandler,
+} from '../../HttpRouter/HttpRouter';
 
 export type ApplyHandlerIfArgs = {
   requestCondition?: (c: Context) => Promise<boolean> | boolean;
@@ -7,7 +11,7 @@ export type ApplyHandlerIfArgs = {
     c: Context,
     resp: Response
   ) => Promise<boolean> | boolean;
-  handler: SingleHandler;
+  handler: Handler;
 };
 
 export function applyHandlerIf(conditions: ApplyHandlerIfArgs): Middleware {
@@ -18,6 +22,7 @@ export function applyHandlerIf(conditions: ApplyHandlerIfArgs): Middleware {
   } else if (!conditions.responseCondition) {
     conditions.responseCondition = () => true;
   }
+  const handlers = [conditions.handler].flat(9) as SingleHandler[];
   return async (c, next) => {
     if (await conditions.requestCondition!(c)) {
       const conditionalNext = async () => {
@@ -28,7 +33,12 @@ export function applyHandlerIf(conditions: ApplyHandlerIfArgs): Middleware {
         // throwing will give control to the next registered handler that awaits `next()`
         throw resp;
       };
-      return conditions.handler(c, conditionalNext);
+      for (const handler of handlers) {
+        const resp = await handler(c, conditionalNext);
+        if (resp instanceof Response) {
+          return resp;
+        }
+      }
     }
   };
 }

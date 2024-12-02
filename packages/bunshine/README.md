@@ -2,13 +2,13 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/packages/bunshine/assets/bunshine-logo.png?v=3.2.0" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/packages/bunshine/assets/bunshine-logo.png?v=3.2.1" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.2.0)](https://npmjs.com/package/bunshine)
-[![Language: TypeScript](https://badgen.net/static/language/TS?v=3.2.0)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
-[![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.2.0)](https://codecov.io/gh/kensnyder/bunshine)
-![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.2.0)
-[![ISC License](https://badgen.net/github/license/kensnyder/bunshine/packages/bunshine?v=3.2.0)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.2.1)](https://npmjs.com/package/bunshine)
+[![Language: TypeScript](https://badgen.net/static/language/TS?v=3.2.1)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
+[![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.2.1)](https://codecov.io/gh/kensnyder/bunshine)
+![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.2.1)
+[![ISC License](https://badgen.net/github/license/kensnyder/bunshine/packages/bunshine?v=3.2.1)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
@@ -277,35 +277,32 @@ app.get('/assets/:name.png', c => {
   const filePath = `${import.meta.dir}/assets/${name}.png`;
   // you can pass a string path
   return c.file(filePath);
-  // Bun will set Content-Type based on the string file extension
+  // Bunshine will set Content-Type based on the file contents or string file extension
 });
 
 app.get('/build/:hash.map', c => {
   const hash = c.params.hash;
-  const filePath = `${import.meta.dir}/assets/${name}.png`;
-  // you can pass a BunFile
-  return c.file(
-    Bun.file(filePath, {
-      // Bunshine will automatically set Content-Type based on the file bytes
-      // but you can set it or override it for non-standard mime types
-      headers: { 'Content-type': 'application/json' },
-    })
-  );
+  const filePath = `${import.meta.dir}/assets/${name}.mystuff`;
+  // or you can pass a BunFile
+  return c.file(Bun.file(filePath), {
+    // You can override Content-type for non-standard mime types
+    headers: { 'Content-type': 'application/json' },
+  });
 });
 
 app.get('/profile/*.jpg', async c => {
-  // you can pass a Buffer or Uint8Array
+  // or you can pass a Buffer or Uint8Array
   const intArray = getBytesFromExternal(c.params[0]);
   return c.file(bytes);
 });
 
 app.get('/files/*', async c => {
-  // c.file() accepts 4 options:
+  // c.file() accepts some options:
   return c.file(path, {
-    disposition, // Use a Content-Disposition header with "inline" or "attachment"
+    disposition, // Use a Content-Disposition header with "inline", "attachment" or "form-data"
     headers, // additional headers to add
-    acceptRanges, // unless false, will support partial (ranged) downloads
     sendLastModified, // unless false, will report file modification date (For paths or BunFile objects)
+    acceptRanges, // unless false, will support partial (ranged) downloads
     chunkSize, // Size for ranged downloads when client doesn't specify chunk size. Defaults to 1MB
   });
 });
@@ -1204,7 +1201,7 @@ example:
 
 Screenshot:
 
-<img alt="devLogger" src="https://github.com/kensnyder/bunshine/raw/main/assets/devLogger-screenshot.png?v=3.2.0" width="524" height="78" />
+<img alt="devLogger" src="https://github.com/kensnyder/bunshine/raw/main/assets/devLogger-screenshot.png?v=3.2.1" width="524" height="78" />
 
 `prodLogger` outputs logs in JSON with the following shape:
 
@@ -1220,7 +1217,7 @@ Request log:
   "method": "GET",
   "pathname": "/home",
   "runtime": "Bun v1.1.34",
-  "poweredBy": "Bunshine v3.2.0",
+  "poweredBy": "Bunshine v3.2.1",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123
@@ -1239,7 +1236,7 @@ Response log:
   "method": "GET",
   "pathname": "/home",
   "runtime": "Bun v1.1.34",
-  "poweredBy": "Bunshine v3.2.0",
+  "poweredBy": "Bunshine v3.2.1",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123,

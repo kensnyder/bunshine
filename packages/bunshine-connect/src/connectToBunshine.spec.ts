@@ -1,28 +1,29 @@
 import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { HttpRouter } from 'bunshine';
+import {
+  ConnectErrorHandler,
+  ConnectRouteHandler,
+} from '../../connect-to-fetch/src/handler.types';
 import connectToBunshine from './connectToBunshine';
-import { ConnectErrorHandler, ConnectRouteHandler } from './handler.types';
 
 describe('connectToBunshine', () => {
   let server: Server;
   let app: HttpRouter;
   let error: Error | null;
-  let port = 7777;
   beforeEach(() => {
     app = new HttpRouter();
-    error = null;
     app.onError(c => {
       error = c.error;
-      if (error.message !== 'foobar') {
+      if (error && error.message !== 'foobar') {
         console.log(c.error);
       }
     });
-    server = app.listen({
-      port: port++,
-    });
+    server = app.listen({ port: 0 });
   });
-  afterEach(() => server.stop(true));
+  afterEach(() => {
+    server.stop(true);
+  });
   it('should run handler', async () => {
     const connectHandler: ConnectRouteHandler = (req, res, next) => {
       res.end('Hello world');
@@ -50,7 +51,7 @@ describe('connectToBunshine', () => {
     app.get('/', connectToBunshine(connectHandler));
     const resp = await fetch(server.url);
     expect(resp.status).toBe(500);
-    expect(error.message).toBe('foobar');
+    expect(error?.message).toBe('foobar');
   });
   it("should pass next() errors to Bunshine's onError callback", async () => {
     const connectHandler: ConnectRouteHandler = (req, res, next) => {
@@ -59,7 +60,7 @@ describe('connectToBunshine', () => {
     app.get('/', connectToBunshine(connectHandler));
     const resp = await fetch(server.url);
     expect(resp.status).toBe(500);
-    expect(error.message).toBe('foobar');
+    expect(error?.message).toBe('foobar');
   });
   it('should handle 404s', async () => {
     const connectHandler: ConnectRouteHandler = (req, res, next) => {
@@ -139,9 +140,9 @@ describe('connectToBunshine', () => {
   });
   it('should have correct properties on req', async () => {
     const connectHandler: ConnectRouteHandler = (req, res, next) => {
-      const body = [];
+      const body: Uint8Array[] = [];
       req
-        .on('data', (chunk: Buffer) => {
+        .on('data', (chunk: Uint8Array) => {
           body.push(chunk);
         })
         .on('end', () => {
@@ -249,7 +250,9 @@ describe('connectToBunshine', () => {
   it('should allow multiple groups of handlers', async () => {
     let was1Called = false;
     const connect1: ConnectRouteHandler = (req, res, next) => {
+      was1Called = true;
       res.setHeader('Content-type', 'text/html');
+      next();
     };
     app.get('/', connectToBunshine(connect1), c => {
       return c.text('Bunshine!');
