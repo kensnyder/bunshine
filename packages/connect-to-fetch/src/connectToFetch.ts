@@ -1,5 +1,5 @@
 // Adapted from https://github.com/vikejs/vike-node/blob/main/packages/vike-node/src/runtime/adapters/connectToWeb.ts
-import { type IncomingMessage } from 'http';
+import { type IncomingMessage } from 'node:http';
 import { Readable } from 'node:stream';
 import createIncomingMessage from './createIncomingMessage';
 import createServerResponse from './createServerResponse';
@@ -58,15 +58,8 @@ export default function connectToFetch(...connectHandlers: FlatHandlers[]) {
             // unhandled error
             reject(globalError);
           } else {
-            // 404
-            reject(
-              new Response('Not found', {
-                status: 404,
-                headers: {
-                  'X-Connect-To-Fetch': 'unhandled',
-                },
-              })
-            );
+            // unhandled route (e.g. 404)
+            reject(new Error('UNHANDLED'));
           }
           return;
         }

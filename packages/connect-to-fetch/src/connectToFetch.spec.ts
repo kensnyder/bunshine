@@ -200,6 +200,7 @@ describe('connectToBunshine', () => {
   it('should skip error handlers when registered first', async () => {
     let was1Called = false;
     const connect1: ConnectErrorHandler = (error, req, res, next) => {
+      // connect1 should be skipped
       was1Called = true;
       next();
     };

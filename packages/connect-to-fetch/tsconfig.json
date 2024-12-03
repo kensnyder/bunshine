@@ -19,6 +19,6 @@
     "strict": true,
     "downlevelIteration": true,
     "noImplicitAny": false,
-    "types": []
+    "types": ["node", "bun"]
   }
 }
