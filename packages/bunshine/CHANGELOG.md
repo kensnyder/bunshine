@@ -1,21 +1,27 @@
 # Changelog
 
-## v3.2.0 - Nov xx, 2024
+## v3.2.1 - Dec 2, 2024
 
-- Auto-detect file mime type with c.file()
+- Update dependencies to allow minor version changes
+- Docs improvements
+- Align `Handler` and `Middleware` type definitions
+
+## v3.2.0 - Nov 29, 2024
+
+- Auto-detect file mime type with `c.file()`
 - Properly match fixed paths
 - Fix TypeScript types for HTTPS configuration
-- Support If-Modified-Since header
+- Support `If-Modified-Since` header
 - Tweaks to range header handling
 
 ## v3.1.2 - Nov 25, 2024
 
 - Change default range chunk size 3MB => 1MB
-- Support passing headers to c.file()
+- Support passing headers to `c.file()`
 
 ## v3.1.1 - Nov 23, 2024
 
-- Fix Content-Range header when file size is 0
+- Fix `Content-Range` header when file size is 0
 
 ## v3.1.0 - Nov 23, 2024
 

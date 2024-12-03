@@ -1,7 +1,6 @@
 telemetry = false
 
 [install]
-exact = true
 auto = "auto"
 
 [test]
