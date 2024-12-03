@@ -31,6 +31,9 @@ export function serveFiles(
   const cacheControlHeader =
     maxAge === undefined ? null : getCacheControl(maxAge, immutable);
   return async c => {
+    if (c.request.method !== 'GET' && c.request.method !== 'HEAD') {
+      return;
+    }
     const filename = c.params[0] || c.url.pathname;
     if (filename.startsWith('.')) {
       if (dotfiles === 'ignore') {
