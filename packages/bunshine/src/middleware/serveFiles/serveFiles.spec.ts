@@ -162,6 +162,14 @@ describe('serveFiles middleware', () => {
       const resp = await fetch(`${server.url}files/folder`);
       const text = await resp.text();
       expect(text).toBe('index.html\n');
+      expect(resp.headers.get('content-type')).toContain('text/html');
+    });
+    it('should serve index.css', async () => {
+      app.get('/files/*', serveFiles(fixturesPath));
+      const resp = await fetch(`${server.url}files/folder/index.css`);
+      const text = await resp.text();
+      expect(text).toContain('body');
+      expect(resp.headers.get('content-type')).toContain('text/css');
     });
     it('should find index.js', async () => {
       app.get(
@@ -173,6 +181,7 @@ describe('serveFiles middleware', () => {
       const resp = await fetch(`${server.url}files/folder`);
       const text = await resp.text();
       expect(text).toBe('// index.js\n');
+      expect(resp.headers.get('content-type')).toContain('text/javascript');
     });
     it('should support fallbacks', async () => {
       app.get(
@@ -184,6 +193,7 @@ describe('serveFiles middleware', () => {
       const resp = await fetch(`${server.url}files/folder`);
       const text = await resp.text();
       expect(text).toBe('// index.js\n');
+      expect(resp.headers.get('content-type')).toContain('text/javascript');
     });
     it('should should not follow directories', async () => {
       app.get(

@@ -1313,14 +1313,14 @@ import { HttpRouter, compression, etags, performanceHeader } from 'bunshine';
 
 const app = new HttpRouter();
 
+// use etag headers
+app.use(etags());
 // add total execution time in milliseconds
-app.use(performanceHeader);
+app.use(performanceHeader());
 // log all requests
 app.use(process.env.NODE_ENV === 'development' ? devLogger() : prodLogger());
 // strip trailing slashes
 app.use(trailingSlashes('remove'));
-// use etag headers
-app.use(etags());
 // compress all payloads
 app.use(compression());
 ```
@@ -1585,7 +1585,7 @@ Some additional design decisions:
 - ✅ tests for cors
 - 🔲 tests for devLogger
 - 🔲 tests for prodLogger
-- 🔲 tests for responseFactories
+- ✅ tests for responseFactories
 - ✅ tests for serveFiles
 - 🔲 100% test coverage
 - 🔲 support and document flags to bin/serve.ts with commander
