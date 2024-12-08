@@ -37,13 +37,20 @@ export async function getFileMime(
   file: FileLike,
   maybeBuffer?: ArrayBuffer | Uint8Array
 ) {
+  const filename = getFileBaseName(file);
+  if (filename) {
+    const ext = path.extname(filename).slice(1);
+    const mime = getMimeByExt(ext);
+    if (mime) {
+      // string or BunFile with unambiguous extension
+      return mime;
+    }
+  }
   if (typeof file === 'string') {
     return (
-      getMimeByExt(path.extname(file).slice(1)) ||
       (maybeBuffer
         ? await getBufferMime(maybeBuffer)
-        : await getChunkMime(file)) ||
-      defaultMimeType
+        : await getChunkMime(file)) || defaultMimeType
     );
   }
   if (file instanceof Blob) {

@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.2.2 - Dec 7, 2024
+
+- Fix mime-type on css
+
 ## v3.2.1 - Dec 2, 2024
 
 - Update dependencies to allow minor version changes
