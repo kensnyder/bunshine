@@ -12,6 +12,7 @@ export default function connectToBunshine(
       const error = e as Error;
       if (error.message === 'UNHANDLED') {
         // handler called next(), but there are no other connect handlers
+        // so continue to next bunshine handlers
       } else {
         // send off to our 500 error handler
         throw error;
