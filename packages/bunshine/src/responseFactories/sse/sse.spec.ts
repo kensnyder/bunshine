@@ -125,6 +125,16 @@ describe('sse', () => {
     expect(events.length).toBe(1);
     expect(events[0].data).toBe('{"name":"Bob"}');
   });
+  it('should allow newlines', async () => {
+    const events = await sseTest({
+      event: 'message',
+      port: 0,
+      payloads: [['Hello\n\n\n3'], ['World\n\n2']],
+    });
+    expect(events.length).toBe(2);
+    expect(events[0].data).toBe('Hello\n\n\n3');
+    expect(events[1].data).toBe('World\n\n2');
+  });
   it('should warn when overriding some headers', async () => {
     spyOn(console, 'warn').mockImplementation(() => {});
     await sseTest({

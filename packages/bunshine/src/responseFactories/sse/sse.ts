@@ -32,12 +32,16 @@ export default function sse(
       ) {
         let encoded: Uint8Array;
         if (arguments.length === 1) {
-          encoded = textEncoder.encode(`data: ${eventName}\n\n`);
+          encoded = textEncoder.encode(
+            `data: ${handleNewlines(eventName)}\n\n`
+          );
         } else {
           if (data && typeof data !== 'string') {
             data = JSON.stringify(data);
+          } else {
+            data = handleNewlines(String(data));
           }
-          let message = `event: ${eventName}\ndata:${String(data)}`;
+          let message = `event: ${eventName}\ndata:${data}`;
           if (id) {
             message += `\nid: ${id}`;
           }
@@ -99,4 +103,8 @@ export default function sse(
   headers.set('Connection', 'keep-alive');
   // @ts-ignore
   return new Response(stream, { ...init, headers });
+}
+
+function handleNewlines(data: string) {
+  return data.replace(/\n/g, '\ndata: ');
 }
