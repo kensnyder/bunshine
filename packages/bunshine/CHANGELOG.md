@@ -1,10 +1,14 @@
 # Changelog
 
+## v3.2.4 - Jan 13, 2024
+
+- Avoid etags when body is a stream
+
 ## v3.2.3 - Jan 13, 2024
 
 - `c.sse()` to support multi-line messages
 - Accommodate Bun 1.1.43 bugfix to HEAD content-length header
-- Avoid etags and compression when body is a stream
+- Avoid compression when body is a stream
 - Add `maxSize` option to compression middleware (default 2GB)
 - Add LRU cache for file-based mime detection
 

@@ -18,7 +18,7 @@ export function etags({
 }: EtagOptions = {}): Middleware {
   return async (context: Context, next: NextFunction) => {
     const resp = await next();
-    if (!_shouldGenerateEtag(resp)) {
+    if (!_shouldGenerateEtag(context.request, resp)) {
       return resp;
     }
     const { buffer, hash } = await calculator(context, resp);
@@ -60,35 +60,39 @@ function _includesEtag(header: string, etag: string) {
   return matches.includes(etag);
 }
 
-function _shouldGenerateEtag(response: Response) {
+function _shouldGenerateEtag(request: Request, response: Response) {
   // Ensure the response object is valid
   if (!(response instanceof Response)) {
     return false;
   }
 
-  // List of status codes where ETags generally make sense
-  // Technically 404 could be included, but the application should use custom logic
+  // Do not generate ETag for status codes that don't make sense
+  // Technically 404 could be included, but each application should use custom logic
   const validStatusCodes = [200, 201, 203, 204, 206, /*404,*/ 410];
-
-  // Check if the response status code is in the valid list
   if (!validStatusCodes.includes(response.status)) {
     return false;
   }
 
-  // Check if the response is cacheable
+  // Do not generate ETag for non-cacheable responses
   const cacheControl = response.headers.get('Cache-Control');
   if (cacheControl && /no-store/i.test(cacheControl)) {
-    return false; // Do not generate ETag for non-cacheable responses
+    return false;
   }
 
-  // Check if the response method supports ETag generation
-  const method = response.headers.get('X-Request-Method') || 'GET'; // Custom header to track the request method
-  const methodsThatSupportEtag = ['GET', 'HEAD', 'PUT', 'POST', 'PATCH'];
+  // Do not generate ETag for streams
+  const contentType = response.headers.get('Content-Type');
+  if (contentType && /stream/i.test(contentType)) {
+    return false;
+  }
+
+  // Do not generate ETag for HEAD nor DELETE
+  const method = request.headers.get('X-Request-Method') || request.method;
+  const methodsThatSupportEtag = ['GET', 'PUT', 'POST', 'PATCH'];
   if (!methodsThatSupportEtag.includes(method.toUpperCase())) {
     return false;
   }
 
-  // Check if the response has a body or meaningful representation
+  // Do not generate Etag on empty bodies
   const contentLength = response.headers.get('Content-Length');
   if (
     response.status === 204 ||
@@ -97,7 +101,6 @@ function _shouldGenerateEtag(response: Response) {
     return false; // No body, no ETag
   }
 
-  // If all conditions are met, it makes sense to generate an ETag
   return true;
 }
 

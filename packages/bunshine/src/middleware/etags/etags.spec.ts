@@ -77,4 +77,37 @@ describe('etags middleware', () => {
     expect(resp.headers.has('Etag')).toBe(true);
     expect(text).toBe('');
   });
+  it('should not generate for streams', async () => {
+    app.post('/', c => {
+      const encoder = new TextEncoder();
+
+      const readable = new ReadableStream({
+        async start(controller) {
+          try {
+            controller.enqueue(encoder.encode('Hello world'));
+          } catch (err) {
+            console.error('error streaming response');
+          } finally {
+            controller.close();
+          }
+        },
+      });
+      return new Response(readable, {
+        headers: {
+          'Content-Type': 'text/stream',
+          'Transfer-Encoding': 'chunked',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      });
+    });
+    const resp = await fetch(server.url, {
+      method: 'POST',
+      headers: {
+        'If-None-Match': helloWorldEtag,
+      },
+    });
+    expect(resp.status).toBe(200);
+    expect(resp.headers.has('Etag')).toBe(false);
+  });
 });
