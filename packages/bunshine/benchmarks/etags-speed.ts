@@ -1,5 +1,5 @@
-import { defaultEtagsCalculator } from '../src/middleware/etags/etags.ts';
-import { runBenchmarks } from './runBenchmarks.ts';
+import { defaultEtagsCalculator } from '../src/middleware/etags/etags';
+import { runBenchmarks } from './runBenchmarks';
 
 /*
 Conclusions:
@@ -17,6 +17,7 @@ const html = await fetch('https://www.npmjs.com/package/bunshine').then(res =>
 const t1k = html.slice(1000, 2000);
 const t10k = html.slice(1000, 11000);
 const t100k = html.slice(1000, 101000);
+const t100M = t100k.repeat(1024);
 
 async function getResponse(input: string) {
   return new Response(input, {
@@ -40,6 +41,7 @@ await runBenchmarks(
     'etags 1k': () => computeEtags(t1k),
     'etags 10k': () => computeEtags(t10k),
     'etags 100k': () => computeEtags(t100k),
+    'etags 100M': () => computeEtags(t100M),
   },
   { time: 3000 }
 );

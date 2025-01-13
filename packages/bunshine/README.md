@@ -1524,12 +1524,12 @@ The following decisions are based on scripts in /benchmarks:
   and adds only a tiny overhead.
 - `inner-functions.ts` - Context is a class, not a set of functions in a
   closure, which saves about 3% of time.
-- `compression.ts` - gzip is the default preferred format for the compression
+- `compression-speed.ts` - gzip is the default preferred format for the compression
   middleware. Deflate provides no advantage, and Brotli provides 2-8% additional
   size savings at the cost of 100x as much CPU time as gzip. Brotli takes on
   the order of 100ms to compress 100kb of html, compared to sub-milliseconds
   for gzip.
-- `etags.ts` - etag calculation is very fast. On the order of tens of
+- `etags-speed.ts` - etag calculation is very fast. On the order of tens of
   microseconds for 100kb of html.
 - `lru-matcher.ts` - The default LRU cache size used for the router is 4000.
   Cache sizes of 4000+ are all about 1.4x faster than no cache.

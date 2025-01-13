@@ -340,7 +340,7 @@ describe('HttpRouter', () => {
       app.head('/hi', ({ url }) => {
         const name = url.searchParams.get('name');
         return new Response(null, {
-          status: 204,
+          status: 200,
           headers: {
             'Content-length': '0',
             Message: `Hi ${name}`,
@@ -350,7 +350,7 @@ describe('HttpRouter', () => {
       const resp = await fetch(`${server.url}/hi?name=Bob`, {
         method: 'HEAD',
       });
-      expect(resp.status).toBe(204);
+      expect(resp.status).toBe(200);
       expect(resp.headers.get('Message')).toBe('Hi Bob');
     });
     it('should handle POST', async () => {

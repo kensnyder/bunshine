@@ -1,12 +1,14 @@
 import { BunFile } from 'bun';
 import { fileTypeFromBuffer } from 'file-type';
 import fs from 'fs/promises';
+import { LRUCache } from 'lru-cache';
 import path from 'node:path';
 
 export type FileLike = string | Blob | Uint8Array | ArrayBuffer;
 
 const defaultMimeType = 'application/octet-stream';
 const detectMimeChunkSize = 4100; // from file-type reasonableDetectionSizeInBytes
+const mimeCache = new LRUCache<string, string>({ max: 10_000 });
 
 export function isFileLike(file: any): file is FileLike {
   return (
@@ -35,7 +37,7 @@ export async function getBufferMime(arrayBuffer: ArrayBuffer | Uint8Array) {
 
 export async function getFileMime(
   file: FileLike,
-  maybeBuffer?: ArrayBuffer | Uint8Array
+  maybeEntireFile?: ArrayBuffer | Uint8Array
 ) {
   const filename = getFileBaseName(file);
   if (filename) {
@@ -48,8 +50,8 @@ export async function getFileMime(
   }
   if (typeof file === 'string') {
     return (
-      (maybeBuffer
-        ? await getBufferMime(maybeBuffer)
+      (maybeEntireFile
+        ? await getBufferMime(maybeEntireFile)
         : await getChunkMime(file)) || defaultMimeType
     );
   }
@@ -61,8 +63,14 @@ export async function getFileMime(
 }
 
 export async function getChunkMime(path: string) {
-  const chunk = await readChunk(path, 0, detectMimeChunkSize);
-  return chunk ? getBufferMime(chunk) : null;
+  const lastModified = Bun.file(path).lastModified;
+  const key = `${path}-${lastModified}`;
+  if (!mimeCache.has(key)) {
+    const chunk = await readChunk(path, 0, detectMimeChunkSize);
+    const mime = chunk ? await getBufferMime(chunk) : '';
+    mimeCache.set(key, mime);
+  }
+  return mimeCache.get(key);
 }
 
 export function getFileBaseName(file: FileLike) {

@@ -46,7 +46,7 @@ describe('serveFiles middleware', () => {
       });
       const text = await resp.text();
       expect(text).toBe('');
-      expect(resp.headers.get('content-length')).toBe('0');
+      expect(resp.headers.get('content-length')).toBe('22'); // Fixed in Bun 1.1.43
       expect(resp.status).toBe(200);
     });
     it('should 404 if file does not exist', async () => {

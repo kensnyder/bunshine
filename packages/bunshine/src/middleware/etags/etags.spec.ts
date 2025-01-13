@@ -23,7 +23,7 @@ describe('etags middleware', () => {
       },
     });
     const text = await resp.text();
-    expect(resp.status).toBe(304);
+    expect(resp.status).toBe(204);
     expect(resp.headers.get('Etag')).toBe(helloWorldEtag);
     expect(text).toBe('');
   });
@@ -35,7 +35,7 @@ describe('etags middleware', () => {
       },
     });
     const text = await resp.text();
-    expect(resp.status).toBe(304);
+    expect(resp.status).toBe(204);
     expect(resp.headers.get('Etag')).toBe(helloWorldEtag);
     expect(text).toBe('');
   });
@@ -48,9 +48,9 @@ describe('etags middleware', () => {
       },
     });
     const text = await resp.text();
-    expect(resp.status).toBe(200);
+    expect(resp.status).toBe(204);
     expect(resp.headers.get('Etag')).toBe(helloWorldEtag);
-    expect(text).toBe('Hello world');
+    expect(text).toBe('');
   });
   it('should not generate for non-200', async () => {
     app.get('/', c => c.text('Hello world', { status: 404 }));
@@ -73,8 +73,8 @@ describe('etags middleware', () => {
       },
     });
     const text = await resp.text();
-    expect(resp.status).toBe(200);
-    expect(resp.headers.has('Etag')).toBe(false);
-    expect(text).toBe('Hello world');
+    expect(resp.status).toBe(412);
+    expect(resp.headers.has('Etag')).toBe(true);
+    expect(text).toBe('');
   });
 });

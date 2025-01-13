@@ -1,6 +1,6 @@
 import { promisify } from 'node:util';
 import { brotliCompress, deflate, gzip } from 'node:zlib';
-import { runBenchmarks } from './runBenchmarks.ts';
+import { runBenchmarks } from './runBenchmarks';
 
 /*
 Conclusion:

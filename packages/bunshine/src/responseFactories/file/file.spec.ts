@@ -103,13 +103,13 @@ describe('c.file()', () => {
 
     expect(headResponse.status).toBe(200);
     expect(headResponse.headers.get('accept-ranges')).toBe('bytes');
+    expect(headResponse.headers.get('content-type')).toBe('image/jpeg');
     expect(headResponse.headers.get('content-length')).toBe(
-      // currently Bun always sets Content-Length to 0 for HEAD responses
+      // Before Bun 1.1.43 Bun always sets Content-Length to 0 for HEAD responses
       // https://github.com/oven-sh/bun/issues/15355
-      '0'
-      // String(fullFileBytes.size)
+      String(fullFileBytes.size)
     );
-    // So for now we set an X-Content-Length header to the actual file size
+    // So for old versions, we set an X-Content-Length header to the actual file size
     expect(headResponse.headers.get('x-content-length')).toBe(
       String(fullFileBytes.size)
     );
@@ -209,7 +209,7 @@ describe('c.file()', () => {
     'fixture-null.webm.data': 'video/webm',
   };
   for (const [name, mime] of Object.entries(fileTypes)) {
-    it(`should detect mime from bytes - ${name}`, async () => {
+    it(`should detect mime from bytes (${name})`, async () => {
       app.get(`/${name}`, c =>
         c.file(`${import.meta.dir}/../../../testFixtures/file-type/${name}`)
       );
@@ -217,7 +217,7 @@ describe('c.file()', () => {
       expect(resp.status).toBe(200);
       expect(resp.headers.get('Content-Type')).toInclude(mime);
     });
-    it(`should detect mime from partial bytes - ${name}`, async () => {
+    it(`should detect mime from starting bytes (${name})`, async () => {
       app.get(`/${name}`, c =>
         c.file(`${import.meta.dir}/../../../testFixtures/file-type/${name}`)
       );
@@ -227,12 +227,23 @@ describe('c.file()', () => {
       expect(resp.status).toBeOneOf([206, 416, 200]);
       expect(resp.headers.get('Content-Type')).toInclude(mime);
     });
-    it(`should detect mime from partial bytes Blob - ${name}`, async () => {
+    it(`should detect mime from middle bytes (${name})`, async () => {
+      app.get(`/${name}`, c =>
+        c.file(`${import.meta.dir}/../../../testFixtures/file-type/${name}`)
+      );
+      const resp = await fetch(`${server.url}${name}`, {
+        headers: { Range: 'bytes=999-1000' },
+      });
+      expect(resp.status).toBeOneOf([206, 416, 200]);
+      expect(resp.headers.get('Content-Type')).toInclude(mime);
+    });
+    it(`should detect mime from partial bytes Blob (${name})`, async () => {
       app.get(`/${name}`, async c => {
         const file = Bun.file(
           `${import.meta.dir}/../../../testFixtures/file-type/${name}`
         );
         const buffer = await file.bytes();
+        // set type to image/png and expect it to be overridden
         const blob = new Blob([buffer], { type: 'image/png' });
         return c.file(blob);
       });
@@ -243,7 +254,7 @@ describe('c.file()', () => {
       expect(resp.headers.get('Content-Type')).toInclude(mime);
       expect(resp.headers.get('Content-Length')).toBe('10');
     });
-    it(`should detect mime from bytes 0-1 request - ${name}`, async () => {
+    it(`should detect mime from bytes 0-1 request (${name})`, async () => {
       app.get(`/${name}`, c =>
         c.file(`${import.meta.dir}/../../../testFixtures/file-type/${name}`)
       );
@@ -253,7 +264,7 @@ describe('c.file()', () => {
       expect(resp.status).toBe(206);
       expect(resp.headers.get('Content-Type')).toInclude(mime);
     });
-    it(`should detect mime from HEAD request`, async () => {
+    it(`should detect mime from HEAD request (${name})`, async () => {
       app.headGet(`/${name}`, c =>
         c.file(`${import.meta.dir}/../../../testFixtures/file-type/${name}`)
       );

@@ -36,6 +36,8 @@ export function compression(
   return async (context, next) => {
     const resp = await next();
     if (
+      // no compression for streams such as text/stream
+      /stream/i.test(resp.headers.get('Content-Type') || '') ||
       context.request.method === 'HEAD' ||
       !isCompressibleMime(resp.headers.get('Content-Type'))
     ) {
