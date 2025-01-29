@@ -1,5 +1,6 @@
 {
   "name": "remix-adapter-bunshine",
+  "description": "Remix+Vite Adapter for Bunshine",
   "version": "1.0.0-rc.1",
   "module": "server/server.ts",
   "type": "module",
@@ -14,6 +15,8 @@
   },
   "files": [
     "dist",
+    "src",
+    "index.ts",
     "README.md",
     "LICENSE.md"
   ],
@@ -23,10 +26,10 @@
     "url": "git+https://github.com/kensnyder/bunshine.git"
   },
   "keywords": [
-    "Remix",
-    "Remix Adapter",
     "Remix Adapter Bunshine",
     "Remix Bunshine",
+    "Remix Adapter",
+    "Remix",
     "Bunshine"
   ],
   "author": "kendsnyder@gmail.com",
@@ -36,12 +39,15 @@
   },
   "homepage": "https://github.com/kensnyder/bunshine/packages/remix-adapter-bunshine#readme",
   "dependencies": {
-    "bunshine": "^3.2.4",
-    "connect-to-fetch": "^1.0.0-rc.2",
-    "@remix-run/server-runtime": "^2.15.2"
+    "@remix-run/server-runtime": "^2.15.2",
+    "connect-to-fetch": "^1.0.0-rc.2"
+  },
+  "peerDependencies": {
+    "bunshine": "^3.3.2"
   },
   "devDependencies": {
     "@types/bun": "^1.2.1",
+    "bunshine": "^3.3.2",
     "prettier": "^3.4.2",
     "prettier-plugin-organize-imports": "^4.1.0",
     "typescript": "^5.7.3"

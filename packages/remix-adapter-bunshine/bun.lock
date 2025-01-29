@@ -5,14 +5,17 @@
       "name": "bunshine",
       "dependencies": {
         "@remix-run/server-runtime": "^2.15.2",
-        "bunshine": "^3.2.4",
         "connect-to-fetch": "^1.0.0-rc.2",
       },
       "devDependencies": {
         "@types/bun": "^1.2.1",
+        "bunshine": "^3.3.2",
         "prettier": "^3.4.2",
         "prettier-plugin-organize-imports": "^4.1.0",
         "typescript": "^5.7.3",
+      },
+      "peerDependencies": {
+        "bunshine": "^3.3.2",
       },
     },
   },
@@ -37,7 +40,7 @@
 
     "bun-types": ["bun-types@1.2.1", "", { "dependencies": { "@types/node": "*", "@types/ws": "~8.5.10" } }, "sha512-p7bmXUWmrPWxhcbFVk7oUXM5jAGt94URaoa3qf4mz43MEhNAo/ot1urzBqctgvuq7y9YxkuN51u+/qm4BiIsHw=="],
 
-    "bunshine": ["bunshine@3.2.4", "", { "dependencies": { "file-type": "^19.6.0", "lru-cache": "^11.0.2" }, "bin": { "bunshine-serve": "bin/serve.ts" } }, "sha512-JcTTT3DdN7o8om4CRtRlWkhQs/rN04Xf/Ke2lT6Odta74zIXemHwPYn3VJbqur2NgAGTJg2piF0n//cdYKJCpQ=="],
+    "bunshine": ["bunshine@3.3.2", "", { "dependencies": { "file-type": "^19.6.0", "lru-cache": "^11.0.2" }, "bin": { "bunshine-serve": "bin/serve.ts" } }, "sha512-ziJzqTvgN0983m9XLT3eR1kQQlaSBR0sj6088GMsdk6bV81iCsKEX5bxbn76dUtOQplhRvys+x4PX8xxsEG81g=="],
 
     "connect-to-fetch": ["connect-to-fetch@1.0.0-rc.2", "", {}, "sha512-rNpUloHLyxatlNqyKiQCb4iVmkbg8DC/xMpDAQbL42s4zF/zFdYz2LWRiBX+ssWUD2wwxkK2T2LQqUeuimf6ug=="],
 
