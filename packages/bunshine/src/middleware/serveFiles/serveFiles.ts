@@ -1,4 +1,5 @@
 import path from 'path';
+import type Context from '../../Context/Context';
 import type { Middleware } from '../../HttpRouter/HttpRouter';
 import ms from '../../ms/ms';
 
@@ -13,6 +14,7 @@ export type ServeFilesOptions = {
   index?: string[];
   lastModified?: boolean;
   maxAge?: number | string;
+  exceptWhen?: (context: Context, response: Response | null) => boolean;
 };
 
 export function serveFiles(
@@ -26,12 +28,16 @@ export function serveFiles(
     index = [],
     lastModified = true,
     maxAge = undefined,
+    exceptWhen = () => false,
   }: ServeFilesOptions = {}
 ): Middleware {
   const cacheControlHeader =
     maxAge === undefined ? null : getCacheControl(maxAge, immutable);
   return async c => {
     if (c.request.method !== 'GET' && c.request.method !== 'HEAD') {
+      return;
+    }
+    if (exceptWhen(c, null)) {
       return;
     }
     const filename = c.params[0] || c.url.pathname;
@@ -83,6 +89,9 @@ export function serveFiles(
     }
     if (lastModified === false) {
       response.headers.delete('Last-Modified');
+    }
+    if (exceptWhen(c, response)) {
+      return;
     }
     return response;
   };

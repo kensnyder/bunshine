@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.3.0 - Jan 29, 2024
+
+- Add `exceptWhen` option to `compression`, `etags`, `serveFiles`, `devLogger`, and `prodLogger`
+- Add `maxSize` option to `etags`
+- Add `writer` option to `devLogger` and `prodLogger`
+- Use long-form type definition for `on404` and `on500` in `HttpRouter`
+
 ## v3.2.4 - Jan 13, 2024
 
 - Avoid etags when body is a stream

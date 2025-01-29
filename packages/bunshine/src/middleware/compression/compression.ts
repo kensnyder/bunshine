@@ -1,6 +1,7 @@
 import type { ZlibCompressionOptions } from 'bun';
 import { promisify } from 'node:util';
 import { type BrotliOptions, brotliCompress, gzip } from 'node:zlib';
+import type Context from '../../Context/Context';
 import { Middleware } from '../../HttpRouter/HttpRouter';
 import isCompressibleMime from './isCompressibleMime';
 
@@ -13,6 +14,7 @@ export type CompressionOptions = {
   gzip: ZlibCompressionOptions;
   minSize: number;
   maxSize: number;
+  exceptWhen: (context: Context, response: Response) => boolean;
 };
 
 export const compressionDefaults = {
@@ -24,6 +26,7 @@ export const compressionDefaults = {
   // see benchmarks/gzip.ts for more information
   minSize: 100,
   maxSize: 1024 * 1024 * 500, // 500 MB
+  exceptWhen: () => false,
 };
 
 export function compression(
@@ -35,10 +38,16 @@ export function compression(
   const resolvedOptions = { ...compressionDefaults, ...options };
   return async (context, next) => {
     const resp = await next();
+    const length = parseInt(resp.headers.get('Content-Length') || '0', 10);
     if (
+      resolvedOptions.exceptWhen(context, resp) ||
       // no compression for streams such as text/stream
       /stream/i.test(resp.headers.get('Content-Type') || '') ||
+      // avoid compressing body-less responses
       context.request.method === 'HEAD' ||
+      length > resolvedOptions.maxSize ||
+      length < resolvedOptions.minSize ||
+      // some mimes are not compressible
       !isCompressibleMime(resp.headers.get('Content-Type'))
     ) {
       return resp;
@@ -50,16 +59,6 @@ export function compression(
       return resp;
     }
     const oldBody = await resp.arrayBuffer();
-    if (
-      oldBody.byteLength < resolvedOptions.minSize ||
-      oldBody.byteLength > resolvedOptions.maxSize
-    ) {
-      return new Response(oldBody, {
-        status: resp.status,
-        statusText: resp.statusText,
-        headers: resp.headers,
-      });
-    }
     let encoding: 'br' | 'gzip';
     if (!canGz) {
       encoding = 'br';

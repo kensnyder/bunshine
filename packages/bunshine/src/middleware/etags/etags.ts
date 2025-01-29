@@ -10,15 +10,20 @@ export type EtagHashCalculator = (
 export type EtagOptions = {
   calculator?: EtagHashCalculator;
   maxSize?: number;
+  exceptWhen?: (context: Context, response: Response) => boolean;
 };
 
 export function etags({
   calculator = defaultEtagsCalculator,
   maxSize = 2 * 1024 * 1024 * 1024, // 2GB
+  exceptWhen = () => false,
 }: EtagOptions = {}): Middleware {
   return async (context: Context, next: NextFunction) => {
     const resp = await next();
-    if (!_shouldGenerateEtag(context.request, resp)) {
+    if (
+      exceptWhen(context, resp) ||
+      !_shouldGenerateEtag(context.request, resp, maxSize)
+    ) {
       return resp;
     }
     const { buffer, hash } = await calculator(context, resp);
@@ -60,9 +65,19 @@ function _includesEtag(header: string, etag: string) {
   return matches.includes(etag);
 }
 
-function _shouldGenerateEtag(request: Request, response: Response) {
-  // Ensure the response object is valid
+function _shouldGenerateEtag(
+  request: Request,
+  response: Response,
+  maxSize: number
+) {
+  // Bail if we don't have a response
   if (!(response instanceof Response)) {
+    return false;
+  }
+
+  // Check against maxSize
+  const contentLength = parseInt(response.headers.get('Content-Length') || '');
+  if (contentLength && maxSize > 0 && contentLength > maxSize) {
     return false;
   }
 
@@ -93,11 +108,7 @@ function _shouldGenerateEtag(request: Request, response: Response) {
   }
 
   // Do not generate Etag on empty bodies
-  const contentLength = response.headers.get('Content-Length');
-  if (
-    response.status === 204 ||
-    (contentLength && parseInt(contentLength, 10) === 0)
-  ) {
+  if (response.status === 204 || contentLength === 0) {
     return false; // No body, no ETag
   }
 
@@ -106,10 +117,6 @@ function _shouldGenerateEtag(request: Request, response: Response) {
 
 export async function defaultEtagsCalculator(_: Context, resp: Response) {
   const buffer = await resp.arrayBuffer();
-  if (buffer.byteLength === 0) {
-    // empty Blob hash
-    return { buffer, hash: 'dbad5038569b1467' };
-  }
   return {
     buffer,
     hash: Bun.hash(buffer).toString(16),

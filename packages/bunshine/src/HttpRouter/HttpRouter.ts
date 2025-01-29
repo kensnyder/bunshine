@@ -55,8 +55,8 @@ export default class HttpRouter {
   server: Server | undefined;
   routeMatcher: MatcherWithCache<SingleHandler>;
   _wsRouter?: SocketRouter;
-  onNotFound: typeof this.on404;
-  onError: typeof this.on500;
+  onNotFound: (...handlers: Handler[]) => HttpRouter;
+  onError: (...handlers: Handler[]) => HttpRouter;
   private _on404Handlers: SingleHandler[] = [];
   private _on500Handlers: SingleHandler[] = [];
   constructor(options: HttpRouterOptions = {}) {

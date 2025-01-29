@@ -1,12 +1,12 @@
 {
   "name": "bunshine",
-  "version": "3.2.4",
+  "version": "3.3.0",
   "module": "index.ts",
   "type": "module",
   "main": "index.ts",
   "types": "dist/index.d.ts",
   "engines": {
-    "bun": ">=1.1.33"
+    "bun": ">=1.1.43"
   },
   "scripts": {
     "test-watch": "bun test --watch",
@@ -61,5 +61,11 @@
     "tinybench": "^3.1.0",
     "type-fest": "^4.32.0",
     "typescript": "^5.7.3"
-  }
+  },
+  "files": [
+    "bin",
+    "dist",
+    "README.md",
+    "LICENSE.md"
+  ]
 }
