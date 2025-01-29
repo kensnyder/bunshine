@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.3.2 - Jan 29, 2024
+## v3.3.3 - Jan 29, 2024
 
 - Add `exceptWhen` option to `compression`, `etags`, `serveFiles`, `devLogger`, and `prodLogger`
 - Add `maxSize` option to `etags`
