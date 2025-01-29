@@ -5,7 +5,9 @@ import { ConnectErrorHandler, ConnectRouteHandler } from './handler.types';
 
 describe('connectToBunshine', () => {
   let server: Server;
-  afterEach(() => server.stop(true));
+  afterEach(() => {
+    server.stop(true);
+  });
   it('should run handler', async () => {
     const connectHandler: ConnectRouteHandler = (req, res, next) => {
       res.end('Hello world');
@@ -107,6 +109,25 @@ describe('connectToBunshine', () => {
     const resp = await fetch(server.url);
     const text = await resp.text();
     expect(resp.status).toBe(202);
+    expect(text).toBe('Hello world');
+    expect(resp.headers.get('Hello')).toBe('world');
+  });
+  it('should support res.writeHead with status text', async () => {
+    const connect1: ConnectRouteHandler = (req, res, next) => {
+      res.writeHead(400, 'Bad Request', { Hello: 'world' });
+      next();
+    };
+    const connect2: ConnectRouteHandler = (req, res, next) => {
+      res.end('Hello world');
+    };
+    server = Bun.serve({
+      fetch: connectToFetch([connect1, connect2]),
+      port: 0,
+    });
+    const resp = await fetch(server.url);
+    const text = await resp.text();
+    expect(resp.status).toBe(400);
+    expect(resp.statusText).toBe('Bad Request');
     expect(text).toBe('Hello world');
     expect(resp.headers.get('Hello')).toBe('world');
   });

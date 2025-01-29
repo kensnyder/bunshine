@@ -2,7 +2,6 @@
 import {
   ServerResponse,
   type IncomingMessage,
-  type OutgoingHttpHeader,
   type OutgoingHttpHeaders,
 } from 'node:http';
 import { PassThrough, Readable } from 'node:stream';
@@ -14,10 +13,9 @@ import { PassThrough, Readable } from 'node:stream';
  * @returns {{
  *   res: ServerResponse;
  *   onReadable: (cb: (result: { readable: Readable; headers: OutgoingHttpHeaders; statusCode: number }) => void) => void
- * }}
- * An object containing:
- *   - res: The custom ServerResponse object.
- *   - onReadable: A function that takes a callback. The callback is invoked when the response is readable,
+ * }} An object containing:
+ *   - `res`: The custom ServerResponse object.
+ *   - `onReadable`: A function that takes a callback. The callback is invoked when the response is readable,
  *     providing an object with the readable stream, headers, and status code.
  */
 export default function createServerResponse(incomingMessage: IncomingMessage) {
@@ -59,26 +57,6 @@ export default function createServerResponse(incomingMessage: IncomingMessage) {
 
   res.write = passThrough.write.bind(passThrough);
   res.end = (passThrough as any).end.bind(passThrough);
-
-  res.writeHead = function writeHead(
-    statusCode: number,
-    statusMessage?: string | OutgoingHttpHeaders | OutgoingHttpHeader[],
-    headers?: OutgoingHttpHeaders | OutgoingHttpHeader[]
-  ): ServerResponse {
-    res.statusCode = statusCode;
-    if (typeof statusMessage === 'object') {
-      headers = statusMessage;
-      statusMessage = undefined;
-    }
-    if (headers) {
-      Object.entries(headers).forEach(([key, value]) => {
-        if (value !== undefined) {
-          res.setHeader(key, value);
-        }
-      });
-    }
-    return res;
-  };
 
   return {
     res,
