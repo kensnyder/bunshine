@@ -1,6 +1,6 @@
 {
   "name": "remix-adapter-bunshine",
-  "version": "1.0.0",
+  "version": "1.0.0-rc.1",
   "module": "server/server.ts",
   "type": "module",
   "main": "index.ts",
@@ -12,6 +12,11 @@
     "build:dts": "yes | bunx dts-bundle-generator -o dist/index.d.ts index.ts",
     "example": "bun --watch ./examples/server.ts"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE.md"
+  ],
   "sideEffects": false,
   "repository": {
     "type": "git",
@@ -31,14 +36,14 @@
   },
   "homepage": "https://github.com/kensnyder/bunshine/packages/remix-adapter-bunshine#readme",
   "dependencies": {
-    "bunshine": "^3.2.1",
-    "connect-to-fetch": "^1.0.0-rc.1",
-    "@remix-run/server-runtime": "^2.15.0"
+    "bunshine": "^3.2.4",
+    "connect-to-fetch": "^1.0.0-rc.2",
+    "@remix-run/server-runtime": "^2.15.2"
   },
   "devDependencies": {
-    "@types/bun": "1.1.14",
-    "prettier": "3.4.1",
-    "prettier-plugin-organize-imports": "4.1.0",
-    "typescript": "5.7.2"
+    "@types/bun": "^1.2.1",
+    "prettier": "^3.4.2",
+    "prettier-plugin-organize-imports": "^4.1.0",
+    "typescript": "^5.7.3"
   }
 }

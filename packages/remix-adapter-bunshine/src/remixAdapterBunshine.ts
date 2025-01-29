@@ -11,19 +11,19 @@ import {
 } from 'bunshine';
 import connectToBunshine from './connectToBunshine';
 
-export type RemixViteConfig = {
+export type RemixAdapterBunshineConfig = {
   app: HttpRouter;
   buildPath: string;
   mode?: 'development' | 'production';
   logger?: Handler | boolean;
 };
 
-export async function connectRemixVite({
+export default async function remixAdapterBunshine({
   app,
   mode = process.env.NODE_ENV === 'development' ? 'development' : 'production',
   buildPath,
   logger = true,
-}: RemixViteConfig) {
+}: RemixAdapterBunshineConfig) {
   if (mode === 'development') {
     const viteDevServer = await import('vite').then(vite =>
       vite.createServer({

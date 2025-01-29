@@ -8,7 +8,7 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 [![Language: TypeScript](https://badgen.net/static/language/TS?v=3.2.2)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
 [![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.2.2)](https://codecov.io/gh/kensnyder/bunshine)
 ![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.2.2)
-[![ISC License](https://badgen.net/github/license/kensnyder/bunshine/packages/bunshine?v=3.2.2)](https://opensource.org/licenses/ISC)
+[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.2.2)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
