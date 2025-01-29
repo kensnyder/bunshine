@@ -1,6 +1,6 @@
 {
   "name": "bunshine",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "module": "index.ts",
   "type": "module",
   "main": "index.ts",
@@ -65,6 +65,7 @@
   "files": [
     "bin",
     "dist",
+    "index.ts",
     "README.md",
     "LICENSE.md"
   ]
