@@ -12,7 +12,7 @@ const poweredBy = `Bunshine v${bunshinePkg.version}`;
 export function prodLogger({
   writer = process.stdout,
   exceptWhen = () => false,
-}: LoggerOptions = {}): Middleware {
+}: LoggerOptions | undefined = {}): Middleware {
   return async (c, next) => {
     const start = performance.now();
     const { pathname, host } = c.url;

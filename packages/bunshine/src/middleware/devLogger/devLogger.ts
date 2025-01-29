@@ -4,7 +4,7 @@ import { LoggerOptions } from '../LoggerOptions';
 export function devLogger({
   writer = process.stdout,
   exceptWhen = () => false,
-}: LoggerOptions = {}): Middleware {
+}: LoggerOptions | undefined = {}): Middleware {
   return async (c, next) => {
     const start = performance.now();
     const { pathname } = c.url;
