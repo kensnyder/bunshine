@@ -2,13 +2,13 @@
 
 A Bun HTTP & WebSocket server that is a little ray of sunshine.
 
-<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/packages/bunshine/assets/bunshine-logo.png?v=3.3.1" width="200" height="187" />
+<img alt="Bunshine Logo" src="https://github.com/kensnyder/bunshine/raw/main/packages/bunshine/assets/bunshine-logo.png?v=3.3.2" width="200" height="187" />
 
-[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.3.1)](https://npmjs.com/package/bunshine)
-[![Language: TypeScript](https://badgen.net/static/language/TS?v=3.3.1)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
-[![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.3.1)](https://codecov.io/gh/kensnyder/bunshine)
-![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.3.1)
-[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.3.1)](https://opensource.org/licenses/ISC)
+[![NPM Link](https://img.shields.io/npm/v/bunshine?v=3.3.2)](https://npmjs.com/package/bunshine)
+[![Language: TypeScript](https://badgen.net/static/language/TS?v=3.3.2)](https://github.com/search?q=repo:kensnyder/bunshine++language:TypeScript&type=code)
+[![Code Coverage](https://codecov.io/gh/kensnyder/bunshine/graph/badge.svg?token=4LLWB8NBNT&v=3.3.2)](https://codecov.io/gh/kensnyder/bunshine)
+![Tree shakeable](https://badgen.net/static/tree%20shakeable/yes/green?v=3.3.2)
+[![ISC License](https://badgen.net/github/license/kensnyder/bunshine?v=3.3.2)](https://opensource.org/licenses/ISC)
 
 ## Installation
 
@@ -1204,7 +1204,7 @@ example:
 
 Screenshot:
 
-<img alt="devLogger" src="https://github.com/kensnyder/bunshine/raw/main/assets/devLogger-screenshot.png?v=3.3.1" width="524" height="78" />
+<img alt="devLogger" src="https://github.com/kensnyder/bunshine/raw/main/assets/devLogger-screenshot.png?v=3.3.2" width="524" height="78" />
 
 `prodLogger` outputs logs to `process.stdout` in JSON format with the following shape:
 
@@ -1220,7 +1220,7 @@ Request log:
   "method": "GET",
   "pathname": "/home",
   "runtime": "Bun v1.1.34",
-  "poweredBy": "Bunshine v3.3.1",
+  "poweredBy": "Bunshine v3.3.2",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123
@@ -1239,7 +1239,7 @@ Response log:
   "method": "GET",
   "pathname": "/home",
   "runtime": "Bun v1.1.34",
-  "poweredBy": "Bunshine v3.3.1",
+  "poweredBy": "Bunshine v3.3.2",
   "machine": "server1",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   "pid": 123,
