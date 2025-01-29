@@ -38,7 +38,7 @@ export default async function remixAdapterBunshine({
     app.use(connectToBunshine(viteDevServer.middlewares));
     // app.headGet('/*', serveFiles(`${buildPath}/../public`, { maxAge: '1h' }));
     if (logger === true) {
-      app.use(devLogger());
+      app.use(devLogger({ writer: process.stdout }));
     } else if (logger) {
       app.use(logger);
     }
@@ -57,7 +57,7 @@ export default async function remixAdapterBunshine({
     app.headGet('/*', serveFiles(`${buildPath}/client`, { maxAge: '1h' }));
     // app.headGet('/build/client/*', serveFiles(buildPath, fileOptions));
     if (logger === true) {
-      app.use(prodLogger());
+      app.use(prodLogger({ writer: process.stdout }));
     } else if (logger) {
       app.use(logger);
     }
