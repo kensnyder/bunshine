@@ -1,5 +1,6 @@
 import type Context from '../../Context/Context';
 import type { Middleware } from '../../HttpRouter/HttpRouter';
+import withTryCatch from '../../withTryCatch/withTryCatch';
 
 export type CorsOptions = {
   origin?:
@@ -16,6 +17,10 @@ export type CorsOptions = {
   maxAge?: number;
   credentials?: boolean;
   exposeHeaders?: string[];
+  exceptWhen?: (
+    context: Context,
+    response: Response
+  ) => boolean | Promise<boolean>;
 };
 
 type OriginResolver = (incoming: string, c: Context) => string | null;
@@ -27,6 +32,7 @@ export const corsDefaults = {
   credentials: undefined,
   allowHeaders: [],
   exposeHeaders: [],
+  exceptWhen: () => false,
 };
 
 export function cors(options: CorsOptions = {}): Middleware {
@@ -37,11 +43,19 @@ export function cors(options: CorsOptions = {}): Middleware {
   const originResolver = getOriginResolver(opts.origin);
   const optionsRequestHandler = getOptionsRequestHandler(opts, originResolver);
   const maybeAddAccessHeaders = getAccessHeaderHandler(opts, originResolver);
+  const exceptWhen = withTryCatch({
+    label: 'Bunshine cors middleware: your exceptWhen function threw an error',
+    defaultReturn: false,
+    func: opts.exceptWhen,
+  });
   return async (c, next) => {
     if (c.request.method === 'OPTIONS') {
       return optionsRequestHandler(c);
     }
     const resp = await next();
+    if (await exceptWhen(c, resp)) {
+      return resp;
+    }
     maybeAddAccessHeaders(c, resp);
     return resp;
   };

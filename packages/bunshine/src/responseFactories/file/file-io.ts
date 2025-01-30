@@ -137,6 +137,7 @@ export async function getFileStats(file: FileLike) {
 
 export function getObjectSize(obj: BunFile | Blob | Uint8Array | ArrayBuffer) {
   if (obj instanceof Blob) {
+    // BunFile and Blob
     return obj.size;
   }
   return obj.byteLength || 0;

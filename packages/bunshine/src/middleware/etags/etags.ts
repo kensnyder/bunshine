@@ -1,6 +1,7 @@
 import { TypedArray } from 'type-fest';
 import type Context from '../../Context/Context';
 import type { Middleware, NextFunction } from '../../HttpRouter/HttpRouter';
+import withTryCatch from '../../withTryCatch/withTryCatch';
 
 export type EtagHashCalculator = (
   context: Context,
@@ -18,11 +19,16 @@ export function etags({
   maxSize = 2 * 1024 * 1024 * 1024, // 2GB
   exceptWhen = () => false,
 }: EtagOptions = {}): Middleware {
+  const exceptWhenResult = withTryCatch({
+    label: 'Bunshine etags middleware exceptWhen error',
+    defaultReturn: false,
+    func: exceptWhen,
+  });
   return async (context: Context, next: NextFunction) => {
     const resp = await next();
     if (
-      exceptWhen(context, resp) ||
-      !_shouldGenerateEtag(context.request, resp, maxSize)
+      !_shouldGenerateEtag(context.request, resp, maxSize) ||
+      (await exceptWhenResult(context, resp))
     ) {
       return resp;
     }

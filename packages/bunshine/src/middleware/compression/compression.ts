@@ -3,6 +3,7 @@ import { promisify } from 'node:util';
 import { type BrotliOptions, brotliCompress, gzip } from 'node:zlib';
 import type Context from '../../Context/Context';
 import { Middleware } from '../../HttpRouter/HttpRouter';
+import withTryCatch from '../../withTryCatch/withTryCatch';
 import isCompressibleMime from './isCompressibleMime';
 
 const brPromise = promisify(brotliCompress);
@@ -14,7 +15,10 @@ export type CompressionOptions = {
   gzip: ZlibCompressionOptions;
   minSize: number;
   maxSize: number;
-  exceptWhen: (context: Context, response: Response) => boolean;
+  exceptWhen: (
+    context: Context,
+    response: Response
+  ) => boolean | Promise<boolean>;
 };
 
 export const compressionDefaults = {
@@ -36,11 +40,16 @@ export function compression(
     return () => {};
   }
   const resolvedOptions = { ...compressionDefaults, ...options };
+  const exceptWhen = withTryCatch({
+    label:
+      'Bunshine compression middleware: your exceptWhen function threw an error',
+    defaultReturn: false,
+    func: resolvedOptions.exceptWhen,
+  });
   return async (context, next) => {
     const resp = await next();
     const length = parseInt(resp.headers.get('Content-Length') || '0', 10);
     if (
-      resolvedOptions.exceptWhen(context, resp) ||
       // no compression for streams such as text/stream
       /stream/i.test(resp.headers.get('Content-Type') || '') ||
       // avoid compressing body-less responses
@@ -48,7 +57,9 @@ export function compression(
       length > resolvedOptions.maxSize ||
       length < resolvedOptions.minSize ||
       // some mimes are not compressible
-      !isCompressibleMime(resp.headers.get('Content-Type'))
+      !isCompressibleMime(resp.headers.get('Content-Type')) ||
+      // check for exceptions
+      (await exceptWhen(context, resp))
     ) {
       return resp;
     }

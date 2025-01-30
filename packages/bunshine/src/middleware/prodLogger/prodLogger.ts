@@ -1,6 +1,7 @@
 import os from 'node:os';
 import bunshinePkg from '../../../package.json' assert { type: 'json' };
 import type { Middleware } from '../../HttpRouter/HttpRouter';
+import withTryCatch from '../../withTryCatch/withTryCatch';
 import { LoggerOptions } from '../LoggerOptions';
 
 const machine = os.hostname();
@@ -10,17 +11,27 @@ const runtime = process.versions.bun
 const poweredBy = `Bunshine v${bunshinePkg.version}`;
 
 export function prodLogger({
-  writer = process.stdout,
+  writer = process.stdout.write.bind(process.stdout.write),
   exceptWhen = () => false,
 }: LoggerOptions | undefined = {}): Middleware {
+  const safeWriter = withTryCatch({
+    label: 'Bunshine devLogger middleware: your writer function threw an error',
+    func: writer,
+  });
+  const exceptWhenResult = withTryCatch({
+    label:
+      'Bunshine devLogger middleware: your exceptWhen function threw an error',
+    defaultReturn: false,
+    func: exceptWhen,
+  });
   return async (c, next) => {
     const start = performance.now();
     const { pathname, host } = c.url;
     const date = new Date().toISOString();
     const id = crypto.randomUUID();
-    if (!exceptWhen(c, null)) {
+    if (!(await exceptWhenResult(c, null))) {
       // log request
-      writer.write(
+      safeWriter(
         JSON.stringify({
           msg: `--> ${c.request.method} ${pathname}`,
           type: 'request',
@@ -39,10 +50,10 @@ export function prodLogger({
     }
     // wait for response
     const resp = await next();
-    if (!exceptWhen(c, resp)) {
+    if (!(await exceptWhen(c, resp))) {
       // log response info
       const took = Math.round((performance.now() - start) * 1000) / 1000;
-      writer.write(
+      safeWriter(
         JSON.stringify({
           msg: `${resp.status} ${c.request.method} ${pathname}`,
           type: 'response',

@@ -1,11 +1,11 @@
 # Changelog
 
-## v3.3.4 - Jan 29, 2024
+## v3.3.5 - Jan 29, 2024
 
 - Add `exceptWhen` option to `compression`, `etags`, `serveFiles`, `devLogger`, and `prodLogger`
 - Add `maxSize` option to `etags`
 - Add `writer` option to `devLogger` and `prodLogger`
-- Use long-form type definition for `on404` and `on500` in `HttpRouter`
+- Use long-form type definition for `on404` and `on500` within `HttpRouter`
 
 ## v3.2.4 - Jan 13, 2024
 

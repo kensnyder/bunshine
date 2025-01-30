@@ -1,24 +1,35 @@
 import type { Middleware } from '../../HttpRouter/HttpRouter';
+import withTryCatch from '../../withTryCatch/withTryCatch';
 import { LoggerOptions } from '../LoggerOptions';
 
 export function devLogger({
-  writer = process.stdout,
+  writer = process.stdout.write.bind(process.stdout),
   exceptWhen = () => false,
 }: LoggerOptions | undefined = {}): Middleware {
+  const safeWriter = withTryCatch({
+    label: 'Bunshine devLogger middleware writer error',
+    func: writer,
+  });
+  const exceptWhenResult = withTryCatch({
+    label:
+      'Bunshine devLogger middleware: your exceptWhen function threw aan error',
+    defaultReturn: false,
+    func: exceptWhen,
+  });
   return async (c, next) => {
     const start = performance.now();
     const { pathname } = c.url;
     const time = new Date().toISOString().slice(11);
     // get response
     const resp = await next();
-    if (exceptWhen(c, resp)) {
+    if (exceptWhenResult(c, resp)) {
       return resp;
     }
     const range = c.request.headers.get('Range');
     let maybeRange = range ? ` ${gray(range)}` : '';
     // log response status
     const ms = (performance.now() - start).toFixed(1);
-    writer.write(
+    safeWriter(
       `${gray(`[${time}]`)} ${c.request.method} ${green(pathname)} ` +
         `${cyan(String(resp.status))}${maybeRange} (${ms}ms)\n`
     );

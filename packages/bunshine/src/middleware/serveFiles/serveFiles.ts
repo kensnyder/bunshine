@@ -2,6 +2,7 @@ import path from 'path';
 import type Context from '../../Context/Context';
 import type { Middleware } from '../../HttpRouter/HttpRouter';
 import ms from '../../ms/ms';
+import withTryCatch from '../../withTryCatch/withTryCatch';
 
 // see https://expressjs.com/en/4x/api.html#express.static
 // and https://www.npmjs.com/package/send#dotfiles
@@ -33,11 +34,17 @@ export function serveFiles(
 ): Middleware {
   const cacheControlHeader =
     maxAge === undefined ? null : getCacheControl(maxAge, immutable);
+  const exceptWhenResult = withTryCatch({
+    label:
+      'Bunshine serveFiles middleware: your exceptWhen function threw an error',
+    defaultReturn: false,
+    func: exceptWhen,
+  });
   return async c => {
     if (c.request.method !== 'GET' && c.request.method !== 'HEAD') {
       return;
     }
-    if (exceptWhen(c, null)) {
+    if (await exceptWhenResult(c, null)) {
       return;
     }
     const filename = c.params[0] || c.url.pathname;
@@ -90,7 +97,7 @@ export function serveFiles(
     if (lastModified === false) {
       response.headers.delete('Last-Modified');
     }
-    if (exceptWhen(c, response)) {
+    if (await exceptWhenResult(c, response)) {
       return;
     }
     return response;
