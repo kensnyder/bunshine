@@ -4,5 +4,6 @@
 # IDEs
 .idea
 .vscode
+.history
 
 vite-examples
