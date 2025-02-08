@@ -1,6 +1,6 @@
 {
   "name": "bunshine",
-  "version": "3.3.5",
+  "version": "3.4.0",
   "module": "index.ts",
   "type": "module",
   "main": "index.ts",
@@ -48,18 +48,18 @@
   },
   "homepage": "https://github.com/kensnyder/bunshine#readme",
   "dependencies": {
-    "file-type": "^19.6.0",
+    "file-type": "^20.0.0",
     "lru-cache": "^11.0.2"
   },
   "devDependencies": {
-    "@types/bun": "^1.1.16",
-    "@types/node": "^22.10.6",
-    "eventsource": "^2.0.2",
+    "@types/bun": "^1.2.1",
+    "@types/node": "^22.13.0",
+    "eventsource": "^3.0.5",
     "prettier": "^3.4.2",
     "prettier-plugin-organize-imports": "^4.1.0",
-    "redos-detector": "^5.1.3",
-    "tinybench": "^3.1.0",
-    "type-fest": "^4.32.0",
+    "redos-detector": "^6.1.2",
+    "tinybench": "^3.1.1",
+    "type-fest": "^4.33.0",
     "typescript": "^5.7.3"
   },
   "files": [

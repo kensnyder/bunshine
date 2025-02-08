@@ -19,7 +19,7 @@ describe('withTryCatch utility', () => {
     expect(await fn()).toBe(true);
   });
   it('should swallow thrown errors', async () => {
-    const errorSpy = spyOn(console, 'error', () => {});
+    const errorSpy = spyOn(console, 'error').mockImplementation(() => {});
     const fn = withTryCatch({
       label: 'test',
       defaultReturn: 'hello',

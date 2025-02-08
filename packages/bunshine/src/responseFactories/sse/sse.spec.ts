@@ -1,6 +1,6 @@
 import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import EventSource from 'eventsource';
+import { EventSource } from 'eventsource';
 import HttpRouter from '../../HttpRouter/HttpRouter';
 
 type SseTestEvent = {

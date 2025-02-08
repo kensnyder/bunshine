@@ -1,13 +1,11 @@
 import type { ZlibCompressionOptions } from 'bun';
-import { promisify } from 'node:util';
-import { type BrotliOptions, brotliCompress, gzip } from 'node:zlib';
+import { type BrotliOptions } from 'node:zlib';
 import type Context from '../../Context/Context';
 import { Middleware } from '../../HttpRouter/HttpRouter';
 import withTryCatch from '../../withTryCatch/withTryCatch';
+import compressStreamResponse from './compressStreamResponse';
+import compressWholeResponse from './compressWholeResponse';
 import isCompressibleMime from './isCompressibleMime';
-
-const brPromise = promisify(brotliCompress);
-const gzipPromise = promisify(gzip);
 
 export type CompressionOptions = {
   prefer: 'br' | 'gzip' | 'none';
@@ -28,7 +26,7 @@ export const compressionDefaults = {
   // body must be large enough to be worth compressing
   // (54 bytes is minimum size of gzip after metadata; 100 is arbitrary choice)
   // see benchmarks/gzip.ts for more information
-  minSize: 100,
+  minSize: 100, // arbitrary choice
   maxSize: 1024 * 1024 * 500, // 500 MB
   exceptWhen: () => false,
 };
@@ -48,16 +46,12 @@ export function compression(
   });
   return async (context, next) => {
     const resp = await next();
-    const length = parseInt(resp.headers.get('Content-Length') || '0', 10);
+    const contentType = resp.headers.get('Content-Type') || '';
     if (
-      // no compression for streams such as text/stream
-      /stream/i.test(resp.headers.get('Content-Type') || '') ||
       // avoid compressing body-less responses
-      context.request.method === 'HEAD' ||
-      length > resolvedOptions.maxSize ||
-      length < resolvedOptions.minSize ||
+      !resp.body ||
       // some mimes are not compressible
-      !isCompressibleMime(resp.headers.get('Content-Type')) ||
+      !isCompressibleMime(contentType) ||
       // check for exceptions
       (await exceptWhen(context, resp))
     ) {
@@ -69,7 +63,6 @@ export function compression(
     if (!canBr && !canGz) {
       return resp;
     }
-    const oldBody = await resp.arrayBuffer();
     let encoding: 'br' | 'gzip';
     if (!canGz) {
       encoding = 'br';
@@ -80,25 +73,38 @@ export function compression(
       //   to know that prefer can't be "none" at this point
       encoding = resolvedOptions.prefer;
     }
-    const newBody = await compressBytes(oldBody, encoding, resolvedOptions);
-    resp.headers.set('Content-Encoding', encoding);
-    resp.headers.delete('Content-Length');
-    return new Response(newBody, {
-      status: resp.status,
-      statusText: resp.statusText,
-      headers: resp.headers,
-    });
-  };
-}
+    const options =
+      encoding === 'br' ? resolvedOptions.br : resolvedOptions.gzip;
 
-async function compressBytes(
-  buffer: ArrayBuffer,
-  type: 'br' | 'gzip',
-  options: CompressionOptions
-) {
-  if (type === 'br') {
-    return brPromise(buffer, options.br);
-  } else {
-    return gzipPromise(buffer, options.gzip);
-  }
+    const transferEncoding = resp.headers.get('Transfer-Encoding');
+
+    // Use streaming for:
+    // 1. Chunked transfers
+    // 2. Server-sent events
+    // 4. Specific content types that are typically large or streaming
+    // 3. Unknown content length
+    if (
+      transferEncoding === 'chunked' ||
+      contentType.includes('event-stream') ||
+      contentType.includes('video/') ||
+      contentType.includes('audio/') ||
+      !resp.headers.has('Content-Length')
+    ) {
+      return compressStreamResponse(resp, encoding, options);
+    }
+
+    const contentLength = parseInt(
+      resp.headers.get('Content-Length') || '0',
+      10
+    );
+
+    if (
+      contentLength > resolvedOptions.maxSize ||
+      contentLength < resolvedOptions.minSize
+    ) {
+      return resp;
+    }
+
+    return compressWholeResponse(resp, encoding, options);
+  };
 }

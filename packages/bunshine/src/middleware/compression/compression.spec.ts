@@ -77,6 +77,89 @@ describe('compression middleware', () => {
       expect(text).toBe(html);
     });
   });
+
+  for (const compressionType of ['gzip', 'br']) {
+    describe(`streaming responses with ${compressionType}`, () => {
+      let server: Server;
+      let app: HttpRouter;
+      beforeEach(() => {
+        app = new HttpRouter();
+        app.use(compression());
+        server = app.listen({ port: 0 });
+      });
+      afterEach(() => {
+        server.stop(true);
+      });
+
+      it('should compress chunked transfer-encoded responses', async () => {
+        const chunks = ['Hello', ' ', 'World', '!'];
+        const expected = chunks.join('');
+
+        app.get('/', () => {
+          const stream = new ReadableStream({
+            async start(controller) {
+              for (const chunk of chunks) {
+                await new Promise(resolve => setTimeout(resolve, 10));
+                controller.enqueue(chunk);
+              }
+              controller.close();
+            },
+          });
+
+          return new Response(stream, {
+            headers: {
+              'Transfer-Encoding': 'chunked',
+              'Content-Type': 'text/plain',
+            },
+          });
+        });
+
+        const resp = await fetch(server.url, {
+          headers: { 'Accept-Encoding': compressionType },
+        });
+
+        expect(resp.status).toBe(200);
+        expect(resp.headers.get('Content-encoding')).toBe(compressionType);
+        const text = await resp.text();
+        expect(text).toBe(expected);
+      });
+
+      it('should compress SSE responses', async () => {
+        const events = ['event1', 'event2', 'event3'];
+
+        app.get('/', () => {
+          const stream = new ReadableStream({
+            async start(controller) {
+              for (const event of events) {
+                await new Promise(resolve => setTimeout(resolve, 10));
+                controller.enqueue(`data: ${event}\n\n`);
+              }
+              controller.close();
+            },
+          });
+
+          return new Response(stream, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              Connection: 'keep-alive',
+            },
+          });
+        });
+
+        const resp = await fetch(server.url, {
+          headers: { 'Accept-Encoding': compressionType },
+        });
+
+        expect(resp.status).toBe(200);
+        expect(resp.headers.get('Content-encoding')).toBe(compressionType);
+
+        const text = await resp.text();
+        const expectedSSE = events.map(event => `data: ${event}\n\n`).join('');
+        expect(text).toBe(expectedSSE);
+      });
+    });
+  }
 });
 
 function testWithOptions(
