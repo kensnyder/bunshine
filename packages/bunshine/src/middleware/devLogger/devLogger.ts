@@ -2,19 +2,16 @@ import type { Middleware } from '../../HttpRouter/HttpRouter';
 import withTryCatch from '../../withTryCatch/withTryCatch';
 import { LoggerOptions } from '../LoggerOptions';
 
-export function devLogger({
-  writer = process.stdout.write.bind(process.stdout),
-  exceptWhen = () => false,
-}: LoggerOptions | undefined = {}): Middleware {
+export function devLogger(options: LoggerOptions = {}): Middleware {
   const safeWriter = withTryCatch({
     label: 'Bunshine devLogger middleware writer error',
-    func: writer,
+    func: options.writer || process.stdout.write.bind(process.stdout),
   });
   const exceptWhenResult = withTryCatch({
     label:
-      'Bunshine devLogger middleware: your exceptWhen function threw aan error',
+      'Bunshine devLogger middleware: your exceptWhen function threw an error',
     defaultReturn: false,
-    func: exceptWhen,
+    func: options.exceptWhen || (() => false),
   });
   return async (c, next) => {
     const start = performance.now();

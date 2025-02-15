@@ -10,19 +10,16 @@ const runtime = process.versions.bun
   : `Node v${process.versions.node}`;
 const poweredBy = `Bunshine v${bunshinePkg.version}`;
 
-export function prodLogger({
-  writer = process.stdout.write.bind(process.stdout.write),
-  exceptWhen = () => false,
-}: LoggerOptions | undefined = {}): Middleware {
+export function prodLogger(options: LoggerOptions = {}): Middleware {
   const safeWriter = withTryCatch({
     label: 'Bunshine devLogger middleware: your writer function threw an error',
-    func: writer,
+    func: options.writer || process.stdout.write.bind(process.stdout),
   });
   const exceptWhenResult = withTryCatch({
     label:
       'Bunshine devLogger middleware: your exceptWhen function threw an error',
     defaultReturn: false,
-    func: exceptWhen,
+    func: options.exceptWhen || (() => false),
   });
   return async (c, next) => {
     const start = performance.now();
@@ -50,7 +47,7 @@ export function prodLogger({
     }
     // wait for response
     const resp = await next();
-    if (!(await exceptWhen(c, resp))) {
+    if (!(await exceptWhenResult(c, resp))) {
       // log response info
       const took = Math.round((performance.now() - start) * 1000) / 1000;
       safeWriter(
