@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, spyOn } from 'bun:test';
+import type { Server } from 'bun';
+import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import { EventSource } from 'eventsource';
 import HttpRouter from '../../HttpRouter/HttpRouter';
 
@@ -11,8 +12,16 @@ type SseTestEvent = {
 
 describe('sse', () => {
   let app: HttpRouter;
+  let server: Server;
   beforeEach(() => {
     app = new HttpRouter();
+    server = Bun.serve({
+      fetch: app.fetch,
+      port: 0,
+    });
+  });
+  afterEach(() => {
+    server.stop(true);
   });
   function sseTest({
     payloads,
@@ -46,12 +55,7 @@ describe('sse', () => {
         });
         app.onError(c => reject(c.error));
       }) as Promise<() => void>;
-      let server;
       const readyToListen = new Promise((resolve, reject) => {
-        server = Bun.serve({
-          fetch: app.fetch,
-          port: 0,
-        });
         const stream = new EventSource(`${server.url}sse`);
         stream.addEventListener('error', evt => {
           reject(evt);
@@ -64,12 +68,11 @@ describe('sse', () => {
             stream.close();
           }
         });
-        resolve(server.port);
+        resolve(server.port || 0);
       }) as Promise<number>;
       Promise.all([readyToSend, readyToListen])
         .then(([doSend]) => doSend())
-        .catch(outerReject)
-        .finally(() => server.stop());
+        .catch(outerReject);
     });
   }
   it('should handle unnamed data', async () => {

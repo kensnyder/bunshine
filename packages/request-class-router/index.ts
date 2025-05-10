@@ -5,7 +5,6 @@ export {
   type Handler,
   type HttpMethods,
   type HttpRouterOptions,
-  type ListenOptions,
   type Middleware,
   type NextFunction,
   type SingleHandler,
@@ -14,11 +13,6 @@ export {
   applyHandlerIf,
   type ApplyHandlerIfArgs,
 } from './src/middleware/applyHandlerIf/applyHandlerIf';
-export {
-  compression,
-  compressionDefaults,
-  type CompressionOptions,
-} from './src/middleware/compression/compression';
 export {
   cors,
   corsDefaults,
@@ -40,29 +34,12 @@ export {
 export { type LoggerOptions } from './src/middleware/LoggerOptions';
 export { performanceHeader } from './src/middleware/performanceHeader/performanceHeader';
 export { prodLogger } from './src/middleware/prodLogger/prodLogger';
-export {
-  serveFiles,
-  type ServeFilesOptions,
-} from './src/middleware/serveFiles/serveFiles';
 export { trailingSlashes } from './src/middleware/trailingSlashes/trailingSlashes';
-export { default as ms } from './src/ms/ms';
-export { default as parseRangeHeader } from './src/parseRangeHeader/parseRangeHeader';
 export { default as factory } from './src/responseFactories/factory/factory';
-export { type FileResponseOptions } from './src/responseFactories/file/file';
 export {
   type SseClose,
   type SseSend,
   type SseSetupFunction,
 } from './src/responseFactories/sse/sse';
-export {
-  default as SocketRouter,
-  type BunHandlers,
-  type BunshineHandlers,
-  type SocketCloseHandler,
-  type SocketErrorHandler,
-  type SocketEventType,
-  type SocketMessageHandler,
-  type SocketPlainHandler,
-  type SocketUpgradeHandler,
-  type WsDataShape,
-} from './src/SocketRouter/SocketRouter';
+export { default as RouteMatcher } from './src/RouteMatcher/RouteMatcher';
+export { default as withTryCatch } from './src/withTryCatch/withTryCatch';

@@ -1,8 +1,8 @@
 import path from 'path';
+import { withTryCatch } from 'request-class-router';
 import type Context from '../../Context/Context';
 import type { Middleware } from '../../HttpRouter/HttpRouter';
 import ms from '../../ms/ms';
-import withTryCatch from '../../withTryCatch/withTryCatch';
 
 // see https://expressjs.com/en/4x/api.html#express.static
 // and https://www.npmjs.com/package/send#dotfiles

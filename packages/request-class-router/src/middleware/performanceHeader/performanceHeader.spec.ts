@@ -8,7 +8,7 @@ describe('performanceHeader middleware', () => {
   let server: Server;
   beforeEach(() => {
     app = new HttpRouter();
-    server = app.listen({ port: 0 });
+    server = Bun.serve({ fetch: app.fetch, port: 0 });
   });
   afterEach(() => {
     server.stop(true);

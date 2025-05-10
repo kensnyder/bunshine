@@ -12,8 +12,7 @@
     "test-watch": "bun test --watch",
     "coverage": "bun test --coverage",
     "lint": "tsc",
-    "build:dts": "yes | bunx dts-bundle-generator -o dist/index.d.ts index.ts",
-    "example": "bun --watch ./examples/kitchen-sink.ts"
+    "build:dts": "yes | bunx dts-bundle-generator -o dist/index.d.ts index.ts"
   },
   "sideEffects": false,
   "repository": {

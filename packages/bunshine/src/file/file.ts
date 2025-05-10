@@ -1,5 +1,5 @@
-import Context from '../../Context/Context';
-import parseRangeHeader from '../../parseRangeHeader/parseRangeHeader';
+import Context from '../Context/Context';
+import parseRangeHeader from '../parseRangeHeader/parseRangeHeader';
 import {
   FileLike,
   getFileBaseName,

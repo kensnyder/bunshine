@@ -1,7 +1,7 @@
-import { withTryCatch } from 'request-class-router';
 import { TypedArray } from 'type-fest';
 import type Context from '../../Context/Context';
 import type { Middleware, NextFunction } from '../../HttpRouter/HttpRouter';
+import withTryCatch from '../../withTryCatch/withTryCatch';
 
 export type EtagHashCalculator = (
   context: Context,

@@ -1,8 +1,9 @@
 import type { ServerWebSocket } from 'bun';
+import type { NextFunction } from 'request-class-router';
+import { RouteMatcher } from 'request-class-router';
 import { RequireAtLeastOne } from 'type-fest';
 import Context from '../Context/Context';
-import HttpRouter, { NextFunction } from '../HttpRouter/HttpRouter';
-import RouteMatcher from '../RouteMatcher/RouteMatcher';
+import HttpRouter from '../HttpRouter/HttpRouter';
 import SocketContext, { SocketMessage } from './SocketContext';
 
 // U = UpgradeShape

@@ -49,6 +49,14 @@ const app = new HttpRouter();
 app.get('/', c => {
   return new Response('Hello at ' + c.url.pathname);
 });
+
+// Listen with your Request class compatible server:
+// Bun
+Bun.serve({ fetch: app.fetch });
+// Deno
+Deno.serve({ handler: app.fetch });
+// Cloudflare Workers
+export default app.fetch;
 ```
 
 ## Full example
@@ -91,6 +99,13 @@ function authorize(authHeader: string) {
     throw redirect('/not-allowed');
   }
 }
+
+// Bun
+Bun.serve({ fetch: app.fetch });
+// Deno
+Deno.serve({ fetch: app.fetch });
+// Cloudflare Workers
+export default app.fetch;
 ```
 
 You can also make a path-specific error catcher like this:

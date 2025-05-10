@@ -1,6 +1,6 @@
 import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import HttpRouter from '../../HttpRouter/HttpRouter';
+import HttpRouter from '../HttpRouter/HttpRouter';
 
 describe('c.file()', () => {
   let app: HttpRouter;
@@ -14,7 +14,7 @@ describe('c.file()', () => {
   });
   it('should handle paths with disposition="attachment"', async () => {
     app.get('/home.html', c =>
-      c.file(`${import.meta.dir}/../../../testFixtures/home.html`, {
+      c.file(`${import.meta.dir}/../../testFixtures/home.html`, {
         disposition: 'attachment',
       })
     );
@@ -29,7 +29,7 @@ describe('c.file()', () => {
   });
   it('should allow multiple headers with same name', async () => {
     app.get('/home.html', c => {
-      return c.file(`${import.meta.dir}/../../../testFixtures/home.html`, {
+      return c.file(`${import.meta.dir}/../../testFixtures/home.html`, {
         headers: new Headers([
           ['Hello', 'bun'],
           ['Hello', 'world'],
@@ -42,9 +42,7 @@ describe('c.file()', () => {
   });
   it('should handle BunFile with disposition="attachment"', async () => {
     app.get('/home.html', c => {
-      const file = Bun.file(
-        `${import.meta.dir}/../../../testFixtures/home.html`
-      );
+      const file = Bun.file(`${import.meta.dir}/../../testFixtures/home.html`);
       return c.file(file, { disposition: 'attachment' });
     });
     const resp = await fetch(`${server.url}home.html`);
@@ -59,7 +57,7 @@ describe('c.file()', () => {
   it('should allow headGet', async () => {
     app.headGet('/', c => {
       if (c.request.method === 'GET') {
-        return c.file(`${import.meta.dirname}/../../../testFixtures/home.html`);
+        return c.file(`${import.meta.dirname}/../../testFixtures/home.html`);
       } else {
         return new Response('', {
           headers: {
@@ -82,9 +80,7 @@ describe('c.file()', () => {
   });
   it('should return correct statuses, headers, and bytes for range requests', async () => {
     app.headGet('/bun-logo.jpg', c => {
-      return c.file(
-        `${import.meta.dirname}/../../../testFixtures/bun-logo.jpg`
-      );
+      return c.file(`${import.meta.dirname}/../../testFixtures/bun-logo.jpg`);
     });
     const url = `${server.url}bun-logo.jpg?foo=bar`;
 
@@ -211,7 +207,7 @@ describe('c.file()', () => {
   for (const [name, mime] of Object.entries(fileTypes)) {
     it(`should detect mime from bytes (${name})`, async () => {
       app.get(`/${name}`, c =>
-        c.file(`${import.meta.dir}/../../../testFixtures/file-type/${name}`)
+        c.file(`${import.meta.dir}/../../testFixtures/file-type/${name}`)
       );
       const resp = await fetch(`${server.url}${name}`);
       expect(resp.status).toBe(200);
@@ -219,7 +215,7 @@ describe('c.file()', () => {
     });
     it(`should detect mime from starting bytes (${name})`, async () => {
       app.get(`/${name}`, c =>
-        c.file(`${import.meta.dir}/../../../testFixtures/file-type/${name}`)
+        c.file(`${import.meta.dir}/../../testFixtures/file-type/${name}`)
       );
       const resp = await fetch(`${server.url}${name}`, {
         headers: { Range: 'bytes=0-5000' },
@@ -229,7 +225,7 @@ describe('c.file()', () => {
     });
     it(`should detect mime from middle bytes (${name})`, async () => {
       app.get(`/${name}`, c =>
-        c.file(`${import.meta.dir}/../../../testFixtures/file-type/${name}`)
+        c.file(`${import.meta.dir}/../../testFixtures/file-type/${name}`)
       );
       const resp = await fetch(`${server.url}${name}`, {
         headers: { Range: 'bytes=999-1000' },
@@ -240,7 +236,7 @@ describe('c.file()', () => {
     it(`should detect mime from partial bytes Blob (${name})`, async () => {
       app.get(`/${name}`, async c => {
         const file = Bun.file(
-          `${import.meta.dir}/../../../testFixtures/file-type/${name}`
+          `${import.meta.dir}/../../testFixtures/file-type/${name}`
         );
         const buffer = await file.bytes();
         // set type to image/png and expect it to be overridden
@@ -256,7 +252,7 @@ describe('c.file()', () => {
     });
     it(`should detect mime from bytes 0-1 request (${name})`, async () => {
       app.get(`/${name}`, c =>
-        c.file(`${import.meta.dir}/../../../testFixtures/file-type/${name}`)
+        c.file(`${import.meta.dir}/../../testFixtures/file-type/${name}`)
       );
       const resp = await fetch(`${server.url}${name}`, {
         headers: { Range: 'bytes=0-1' },
@@ -266,7 +262,7 @@ describe('c.file()', () => {
     });
     it(`should detect mime from HEAD request (${name})`, async () => {
       app.headGet(`/${name}`, c =>
-        c.file(`${import.meta.dir}/../../../testFixtures/file-type/${name}`)
+        c.file(`${import.meta.dir}/../../testFixtures/file-type/${name}`)
       );
       const resp = await fetch(`${server.url}${name}`, { method: 'HEAD' });
       expect(resp.status).toBe(200);
@@ -276,7 +272,7 @@ describe('c.file()', () => {
   it('should detect mime from ArrayBuffer', async () => {
     app.get(`/video.mp4`, async c => {
       const file = Bun.file(
-        `${import.meta.dir}/../../../testFixtures/file-type/fixture-mp4v2.mp4.data`
+        `${import.meta.dir}/../../testFixtures/file-type/fixture-mp4v2.mp4.data`
       );
       const buffer = await file.arrayBuffer();
       return c.file(buffer);
@@ -288,7 +284,7 @@ describe('c.file()', () => {
   it('should detect mime from Bunfile', async () => {
     app.get(`/my.pdf`, async c => {
       const file = Bun.file(
-        `${import.meta.dir}/../../../testFixtures/file-type/fixture.pdf.data`
+        `${import.meta.dir}/../../testFixtures/file-type/fixture.pdf.data`
       );
       return c.file(file);
     });
@@ -299,7 +295,7 @@ describe('c.file()', () => {
   it('should detect mime from Uint8Array', async () => {
     app.get(`/my.jpg`, async c => {
       const file = Bun.file(
-        `${import.meta.dir}/../../../testFixtures/file-type/fixture.jpg.data`
+        `${import.meta.dir}/../../testFixtures/file-type/fixture.jpg.data`
       );
       const buffer = await file.bytes();
       return c.file(buffer);
@@ -311,7 +307,7 @@ describe('c.file()', () => {
   it('should detect mime from plain Blob - GET', async () => {
     app.get(`/my.png`, async c => {
       const file = Bun.file(
-        `${import.meta.dir}/../../../testFixtures/file-type/fixture.png.data`
+        `${import.meta.dir}/../../testFixtures/file-type/fixture.png.data`
       );
       const buffer = await file.bytes();
       const blob = new Blob([buffer], { type: 'image/png' });
@@ -324,7 +320,7 @@ describe('c.file()', () => {
   it('should detect mime from plain Blob - HEAD', async () => {
     app.headGet(`/favicon.ico`, async c => {
       const file = Bun.file(
-        `${import.meta.dir}/../../../testFixtures/file-type/fixture.ico.data`
+        `${import.meta.dir}/../../testFixtures/file-type/fixture.ico.data`
       );
       const buffer = await file.bytes();
       const blob = new Blob([buffer], { type: 'image/x-icon' });
@@ -336,7 +332,6 @@ describe('c.file()', () => {
   });
   it('should return 404 on bad input', async () => {
     app.headGet(`/video.mov`, async c => {
-      // @ts-expect-error
       return c.file(['foo']);
     });
     const resp = await fetch(`${server.url}video.mov`);
@@ -346,7 +341,7 @@ describe('c.file()', () => {
   it('should allow disposition of attachment for Uint8Array', async () => {
     app.get(`/font.woff2`, async c => {
       const file = Bun.file(
-        `${import.meta.dir}/../../../testFixtures/file-type/fixture.woff2.data`
+        `${import.meta.dir}/../../testFixtures/file-type/fixture.woff2.data`
       );
       const buffer = await file.bytes();
       return c.file(buffer, { disposition: 'attachment' });
@@ -359,7 +354,7 @@ describe('c.file()', () => {
   it('should allow disposition of attachment for Bunfile', async () => {
     app.get(`/video.webm`, async c => {
       const file = Bun.file(
-        `${import.meta.dir}/../../../testFixtures/file-type/fixture-null.webm.data`
+        `${import.meta.dir}/../../testFixtures/file-type/fixture-null.webm.data`
       );
       return c.file(file, { disposition: 'attachment' });
     });
@@ -373,7 +368,7 @@ describe('c.file()', () => {
   it('should allow disposition of form-data for Uint8Array', async () => {
     app.get(`/my.tiff`, async c => {
       const file = Bun.file(
-        `${import.meta.dir}/../../../testFixtures/file-type/fixture-bali.tif`
+        `${import.meta.dir}/../../testFixtures/file-type/fixture-bali.tif`
       );
       const buffer = await file.bytes();
       return c.file(buffer, { disposition: 'form-data' });
@@ -386,7 +381,7 @@ describe('c.file()', () => {
   it('should allow overriding content-type', async () => {
     app.get(`/podcast.ogg`, async c => {
       const file = Bun.file(
-        `${import.meta.dir}/../../../testFixtures/file-type/fixture.ogg.data`
+        `${import.meta.dir}/../../testFixtures/file-type/fixture.ogg.data`
       );
       const buffer = await file.bytes();
       return c.file(buffer, { headers: { 'Content-Type': 'audio/ogg' } });
@@ -397,7 +392,7 @@ describe('c.file()', () => {
   });
   it('should support if-modified-since past', async () => {
     app.get(`/podcast.ogg`, async c => {
-      const path = `${import.meta.dir}/../../../testFixtures/file-type/fixture.ogg.data`;
+      const path = `${import.meta.dir}/../../testFixtures/file-type/fixture.ogg.data`;
       return c.file(path);
     });
     const resp = await fetch(`${server.url}podcast.ogg`, {
@@ -411,7 +406,7 @@ describe('c.file()', () => {
   });
   it('should support if-modified-since future', async () => {
     app.get(`/podcast.ogg`, async c => {
-      const path = `${import.meta.dir}/../../../testFixtures/file-type/fixture.ogg.data`;
+      const path = `${import.meta.dir}/../../testFixtures/file-type/fixture.ogg.data`;
       return c.file(path);
     });
     const resp = await fetch(`${server.url}podcast.ogg`, {
@@ -422,7 +417,7 @@ describe('c.file()', () => {
   });
   it('should ignore invalid if-modified-since headers', async () => {
     app.get(`/podcast.ogg`, async c => {
-      const path = `${import.meta.dir}/../../../testFixtures/file-type/fixture.ogg.data`;
+      const path = `${import.meta.dir}/../../testFixtures/file-type/fixture.ogg.data`;
       return c.file(path);
     });
     const resp = await fetch(`${server.url}podcast.ogg`, {
