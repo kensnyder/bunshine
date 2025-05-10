@@ -1,0 +1,69 @@
+{
+  "name": "bunshine",
+  "version": "3.4.1",
+  "module": "index.ts",
+  "type": "module",
+  "main": "index.ts",
+  "types": "dist/index.d.ts",
+  "engines": {
+    "bun": ">=1.1.43"
+  },
+  "scripts": {
+    "test-watch": "bun test --watch",
+    "coverage": "bun test --coverage",
+    "lint": "tsc",
+    "build:dts": "yes | bunx dts-bundle-generator -o dist/index.d.ts index.ts",
+    "example": "bun --watch ./examples/kitchen-sink.ts"
+  },
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kensnyder/bunshine.git"
+  },
+  "bin": {
+    "bunshine-serve": "./bin/serve.ts"
+  },
+  "keywords": [
+    "Bun HTTP Server",
+    "Bun Socket Server",
+    "Bun Server",
+    "Bun Framework",
+    "Bun Web Framework",
+    "Bun Server Sent Events",
+    "Bun Ranged Files",
+    "Bun File Server",
+    "HTTP Server",
+    "Socket Server",
+    "Server",
+    "Server Sent Events",
+    "Ranged Files",
+    "File Server",
+    "GZIP Responses",
+    "Bun"
+  ],
+  "author": "kendsnyder@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kensnyder/bunshine/issues"
+  },
+  "homepage": "https://github.com/kensnyder/bunshine#readme",
+  "dependencies": {
+    "lru-cache": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.12",
+    "@types/node": "^22.15.17",
+    "eventsource": "^3.0.7",
+    "prettier": "^3.5.3",
+    "prettier-plugin-organize-imports": "^4.1.0",
+    "redos-detector": "^6.1.2",
+    "typescript": "^5.8.3"
+  },
+  "files": [
+    "dist",
+    "src",
+    "index.ts",
+    "README.md",
+    "LICENSE.md"
+  ]
+}
