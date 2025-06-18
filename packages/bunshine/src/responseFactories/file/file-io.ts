@@ -92,10 +92,11 @@ const unambiguiousExtensions = {
   map: 'application/json',
   md: 'text/markdown',
   mjs: 'text/javascript',
-  txt: 'text/plain',
-  webmanifest: 'application/json',
   tif: 'image/tiff',
   tiff: 'image/tiff',
+  txt: 'text/plain',
+  wasm: 'application/wasm',
+  webmanifest: 'application/json',
   xml: 'text/xml',
 };
 

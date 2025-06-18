@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.4.2 - June 18, 2025
+
+- Update deps
+- Add wasm to list of unambiguous content types
+
 ## v3.4.0 - Feb 3, 2025
 
 - `compression` middleware now supports compressing streaming responses
