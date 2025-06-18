@@ -1,5 +1,8 @@
 import { type Middleware } from 'bunshine';
-import { connectToFetch, type FlatHandlers } from 'connect-to-fetch';
+import {
+  connectToFetch,
+  type FlatHandlers,
+} from '../../connect-to-fetch/index';
 
 export default function connectToBunshine(
   ...connectHandlers: FlatHandlers[]

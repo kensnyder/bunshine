@@ -25,9 +25,11 @@ export default function connectToFetch(...connectHandlers: FlatHandlers[]) {
   // function that takes a Request and returns a Promise<Response> by running handlers
   return function (request: Request) {
     const req = createIncomingMessage(request);
+    console.log('connectToFetch request', req.url, req.method);
     const { res, onReadable } = createServerResponse(
       req as unknown as IncomingMessage
     );
+    console.log('connectToFetch response', res.statusCode, typeof res);
 
     return new Promise<Response>((resolve, reject) => {
       // onReadable is called when res.end(content) is called
@@ -35,6 +37,11 @@ export default function connectToFetch(...connectHandlers: FlatHandlers[]) {
         const responseBody = statusCodesWithoutBody.includes(statusCode)
           ? null
           : (Readable.toWeb(readable) as unknown as ReadableStream);
+        // console.log('onReadable response body', {
+        //   statusCode,
+        //   headers,
+        //   responseBody,
+        // });
         resolve(
           new Response(responseBody, {
             status: statusCode,
@@ -59,6 +66,7 @@ export default function connectToFetch(...connectHandlers: FlatHandlers[]) {
             reject(globalError);
           } else {
             // unhandled route (e.g. 404)
+            res.destroy();
             reject(new Error('UNHANDLED'));
           }
           return;
@@ -74,12 +82,18 @@ export default function connectToFetch(...connectHandlers: FlatHandlers[]) {
           } else {
             if (handler.kind === 'error') {
               // don't call error handlers without error
+              console.log(
+                'connectToFetch() skipping error handler',
+                handler.fn
+              );
               next();
             } else {
+              console.log('connectToFetch() handler', handlerIndex);
               handler.fn(req, res, next);
             }
           }
         } catch (e) {
+          console.log('connectToFetch() handler error', e);
           next(e as Error);
         }
       };

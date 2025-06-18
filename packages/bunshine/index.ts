@@ -1,4 +1,5 @@
 export {
+  MatcherWithCache,
   applyHandlerIf,
   cors,
   corsDefaults,
@@ -8,6 +9,7 @@ export {
   performanceHeader,
   prodLogger,
   trailingSlashes,
+  withTryCatch,
   type ApplyHandlerIfArgs,
   type CorsOptions,
   type Handler,

@@ -2,7 +2,6 @@ import type Context from '../Context/Context';
 
 export const fallback500 = (context: Context) => {
   const error = context.error;
-  console.log('\n-----\nfallback500\n', error);
   const headers = new Headers();
   let body: string;
   if (process.env.NODE_ENV === 'development') {

@@ -47,3 +47,70 @@ export default function runHandlers({
   };
   return next();
 }
+
+export function getResponder<Context = any>(
+  on404: (ctx: Context) => Response,
+  on500: (ctx: Context) => Response
+) {
+  return function responder(
+    context: Context,
+    toRun: Array<(ctx: Context, next: () => any) => any>
+  ) {
+    let i = 0;
+    const next: NextFunction = async () => {
+      const handler = toRun[i++];
+      if (!handler) {
+        return on404(context);
+      }
+      try {
+        let result = await handler(context, next);
+        if (result instanceof Response) {
+          return result;
+        }
+        return next();
+      } catch (e) {
+        if (e instanceof Response) {
+          return e;
+        }
+        return on500(context);
+      }
+    };
+    return next();
+  };
+}
+
+export function getResponderMulti<Context = any>(
+  on404s: Array<(ctx: Context, next: () => any) => Response>,
+  on500s: Array<(ctx: Context, next: () => any) => Response>
+) {
+  return function responder(
+    context: Context,
+    toRun: Array<(ctx: Context, next: () => any) => any>
+  ) {
+    let toRunIndex = 0;
+    let on404Index = 0;
+    let on500Index = 0;
+    const next: NextFunction = async () => {
+      const handler = context.error
+        ? on500s[on500Index++]
+        : toRun[toRunIndex++];
+      if (!handler) {
+        return on404s[on404Index++](context, next);
+      }
+      try {
+        let result = await handler(context, next);
+        if (result instanceof Response) {
+          return result;
+        }
+        return next();
+      } catch (e) {
+        if (e instanceof Response) {
+          return e;
+        }
+        context.error = e;
+        return next();
+      }
+    };
+    return next();
+  };
+}

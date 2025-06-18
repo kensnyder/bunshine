@@ -1,5 +1,6 @@
 import { type Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { cors } from '../middleware/cors/cors';
 import HttpRouter from './HttpRouter';
 
 describe('HttpRouter', () => {
@@ -7,6 +8,7 @@ describe('HttpRouter', () => {
     const server = {};
     let app: HttpRouter;
     beforeEach(() => {
+      process.env.NODE_ENV = '';
       app = new HttpRouter();
     });
     it('should respond to GET', async () => {
@@ -14,6 +16,149 @@ describe('HttpRouter', () => {
       const resp = await app.fetch(new Request('http://localhost/'), server);
       expect(resp.status).toBe(200);
       expect(await resp.text()).toBe('Hi');
+    });
+    it('should respond to HEAD', async () => {
+      app.head(
+        '/',
+        () =>
+          new Response('', {
+            status: 204,
+            headers: {
+              'Content-length': '42',
+            },
+          })
+      );
+      const resp = await app.fetch(
+        new Request('http://localhost/', {
+          method: 'HEAD',
+        }),
+        server
+      );
+      expect(resp.status).toBe(204);
+      expect(await resp.text()).toBe('');
+    });
+    it('should support app.headGet()', async () => {
+      app.headGet('/', c => {
+        if (c.request.method === 'HEAD') {
+          return new Response('', {
+            status: 204,
+            headers: {
+              'Content-length': '42',
+            },
+          });
+        }
+        return new Response('GET', {
+          status: 200,
+        });
+      });
+      const resp1 = await app.fetch(
+        new Request('http://localhost/', {
+          method: 'HEAD',
+        }),
+        server
+      );
+      expect(resp1.status).toBe(204);
+      expect(await resp1.text()).toBe('');
+      const resp2 = await app.fetch(new Request('http://localhost/'), server);
+      expect(resp2.status).toBe(200);
+      expect(await resp2.text()).toBe('GET');
+    });
+    it('should respond to PATCH', async () => {
+      app.patch(
+        '/',
+        () =>
+          new Response('PATCH', {
+            status: 204,
+          })
+      );
+      const resp = await app.fetch(
+        new Request('http://localhost/', {
+          method: 'PATCH',
+        }),
+        server
+      );
+      expect(resp.status).toBe(204);
+      expect(await resp.text()).toBe('PATCH');
+    });
+    it('should respond to POST', async () => {
+      app.post(
+        '/',
+        () =>
+          new Response('POST', {
+            status: 202,
+          })
+      );
+      const resp = await app.fetch(
+        new Request('http://localhost/', {
+          method: 'POST',
+        }),
+        server
+      );
+      expect(resp.status).toBe(202);
+      expect(await resp.text()).toBe('POST');
+    });
+    it('should respond to DELETE', async () => {
+      process.env.NODE_ENV = 'development';
+      app.delete(
+        '/',
+        () =>
+          new Response('', {
+            status: 204,
+          })
+      );
+      const resp = await app.fetch(
+        new Request('http://localhost/', {
+          method: 'DELETE',
+        }),
+        server
+      );
+      expect(resp.status).toBe(204);
+      expect(await resp.text()).toBe('');
+    });
+    it('should respond to OPTIONS', async () => {
+      app.options('/', cors(), () => new Response(''));
+      const resp = await app.fetch(
+        new Request('http://localhost/', {
+          method: 'OPTIONS',
+          headers: {
+            origin: 'http://localhost',
+          },
+        }),
+        server
+      );
+      expect(await resp.text()).toBe('');
+      expect(resp.status).toBe(200);
+    });
+    it('should respond to TRACE', async () => {
+      app.trace('/', c => {
+        const text = [`TRACE ${c.url.pathname} HTTP/1.1`];
+        for (const [key, value] of c.request.headers.entries()) {
+          text.push(`${key}: ${value}`);
+        }
+        const body = text.join('\n');
+        return new Response(body, {
+          status: 200,
+          headers: {
+            'Content-type': 'message/http',
+            'Content-length': String(body.length),
+          },
+        });
+      });
+      const resp = await app.fetch(
+        new Request('http://localhost/', {
+          method: 'TRACE',
+          headers: {
+            'X-Foo': 'bar',
+          },
+        }),
+        server
+      );
+      const text = await resp.text();
+      expect(resp.status).toBe(200);
+      expect(text).toContain('TRACE / HTTP/1.1');
+      expect(text).toContain('x-foo: bar');
+      expect(resp.headers.get('Content-type')).toBe('message/http');
+      expect(resp.headers.get('Content-length')).toBe(String(text.length));
     });
     it('should flatten handlers', async () => {
       let i = 0;

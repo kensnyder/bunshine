@@ -1,6 +1,5 @@
-import MatcherWithCache from '../src/MatcherWithCache/MatcherWithCache.ts';
-import RouteMatcher from '../src/RouteMatcher/RouteMatcher.ts';
-import { runBenchmarks } from './runBenchmarks.ts';
+import { MatcherWithCache, RouteMatcher } from 'request-class-router';
+import { runBenchmarks } from './runBenchmarks';
 
 /*
 Conclusion:

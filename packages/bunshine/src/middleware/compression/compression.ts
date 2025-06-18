@@ -1,8 +1,7 @@
 import type { ZlibCompressionOptions } from 'bun';
 import { type BrotliOptions } from 'node:zlib';
-import { withTryCatch } from 'request-class-router';
+import { withTryCatch, type Middleware } from 'request-class-router';
 import type Context from '../../Context/Context';
-import { Middleware } from '../../HttpRouter/HttpRouter';
 import compressStreamResponse from './compressStreamResponse';
 import compressWholeResponse from './compressWholeResponse';
 import isCompressibleMime from './isCompressibleMime';

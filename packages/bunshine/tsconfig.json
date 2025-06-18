@@ -19,6 +19,9 @@
     "strict": true,
     "downlevelIteration": true,
     "noImplicitAny": false,
-    "types": ["bun"]
+    "types": ["bun"],
+    "paths": {
+      "request-class-router": ["../request-class-router"]
+    }
   }
 }

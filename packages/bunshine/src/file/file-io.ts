@@ -97,6 +97,7 @@ const unambiguiousExtensions = {
   tif: 'image/tiff',
   tiff: 'image/tiff',
   xml: 'text/xml',
+  wasm: 'application/wasm',
 };
 
 export function getMimeByExt(extension: string) {

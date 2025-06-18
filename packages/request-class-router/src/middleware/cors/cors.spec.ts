@@ -30,6 +30,19 @@ describe('cors middleware', () => {
       'GET,HEAD,PUT,POST,PATCH,DELETE,OPTIONS'
     );
   });
+  // it('should support exceptWhen', async () => {
+  //   app.use(
+  //     cors({
+  //       exceptWhen: () => true,
+  //     }),
+  //     c => c.text('hello')
+  //   );
+  //   const resp = await fetch(server.url, fetchInit);
+  //   const text = await resp.text();
+  //   expect(text).toBe('');
+  //   expect(resp.headers.get('Access-Control-Allow-Origin')).toBe(null);
+  //   expect(resp.headers.get('Access-Control-Allow-Methods')).toBe(null);
+  // });
   it('should add specific origin', async () => {
     const options = {
       origin: 'example.com',

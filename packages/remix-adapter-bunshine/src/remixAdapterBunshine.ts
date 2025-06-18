@@ -27,16 +27,25 @@ export default async function remixAdapterBunshine({
   if (mode === 'development') {
     const viteDevServer = await import('vite').then(vite =>
       vite.createServer({
-        server: { middlewareMode: true },
+        server: {
+          middlewareMode: true,
+        },
+        appType: 'custom',
       })
     );
-    const build = () => {
+    const build = async () => {
       return viteDevServer.ssrLoadModule(
         'virtual:remix/server-build'
       ) as unknown as ServerBuild;
+      // const server = (await viteDevServer.ssrLoadModule(
+      //   'virtual:remix/server-build'
+      // )) as unknown as ServerBuild;
+      // // const { routes, assets, ...other } = server;
+      // // console.log('Vite dev server created', other);
+      // return server;
     };
     app.use(connectToBunshine(viteDevServer.middlewares));
-    // app.headGet('/*', serveFiles(`${buildPath}/../public`, { maxAge: '1h' }));
+    app.use(c => console.log(c.request.method, c.url.pathname));
     if (logger === true) {
       app.use(devLogger({ writer: process.stdout }));
     } else if (logger) {
@@ -44,6 +53,11 @@ export default async function remixAdapterBunshine({
     }
     const remixHandler = createRemixRequestHandler(build, mode);
     app.use(c => remixHandler(c.request, c.locals));
+    // app.use(async c => {
+    //   const resp = await remixHandler(c.request, c.locals);
+    //   console.log('got response from remixHandler', c.url.pathname);
+    //   return resp;
+    // });
   } else {
     const fileOptions = {
       immutable: true,
@@ -55,7 +69,6 @@ export default async function remixAdapterBunshine({
       serveFiles(`${buildPath}/client/assets`, fileOptions)
     );
     app.headGet('/*', serveFiles(`${buildPath}/client`, { maxAge: '1h' }));
-    // app.headGet('/build/client/*', serveFiles(buildPath, fileOptions));
     if (logger === true) {
       app.use(prodLogger({ writer: process.stdout }));
     } else if (logger) {

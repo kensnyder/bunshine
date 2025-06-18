@@ -1,7 +1,7 @@
 import {
   Bench,
+  type BenchOptions,
   type Fn,
-  type Options,
   type Task,
   type TaskResult,
 } from 'tinybench';
@@ -11,7 +11,7 @@ type CompletedTask = Merge<Task, { result: TaskResult }>;
 
 export async function runBenchmarks<Signature extends Function = () => any>(
   tasks: Record<string, Signature>,
-  options: Options
+  options: BenchOptions
 ) {
   const bench = new Bench(options);
   let count = 0;
@@ -57,11 +57,14 @@ function _displayResults(tasks: Task[]) {
   for (const task of completed) {
     table.push({
       Rank: '#' + rank++,
-      Speed: _calcSpeed(task.result.hz, last.result.hz),
+      Speed: _calcSpeed(
+        task.result.throughput.mean,
+        last.result.throughput.mean
+      ),
       'Task Name': task.name,
-      'Avg Time': _formatTime(task.result.mean),
-      Margin: `±${task.result.rme.toFixed(2)}%`,
-      Samples: task.result.samples.length.toLocaleString(),
+      'Avg Time': _formatTime(task.result.latency.mean),
+      Margin: `±${task.result.latency.rme.toFixed(2)}%`,
+      Samples: task.result.latency.samples.length.toLocaleString(),
     });
   }
   console.table(table);

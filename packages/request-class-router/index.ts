@@ -9,6 +9,7 @@ export {
   type NextFunction,
   type SingleHandler,
 } from './src/HttpRouter/HttpRouter';
+export { default as MatcherWithCache } from './src/MatcherWithCache/MatcherWithCache';
 export {
   applyHandlerIf,
   type ApplyHandlerIfArgs,
@@ -19,12 +20,6 @@ export {
   type CorsOptions,
 } from './src/middleware/cors/cors';
 export { devLogger } from './src/middleware/devLogger/devLogger';
-export {
-  defaultEtagsCalculator,
-  etags,
-  type EtagHashCalculator,
-  type EtagOptions,
-} from './src/middleware/etags/etags';
 export {
   headers,
   type HeaderCondition,

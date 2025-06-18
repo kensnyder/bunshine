@@ -1,4 +1,4 @@
-// Adapted from https://github.com/vikejs/vike-node/blob/main/packages/vike-node/src/runtime/adapters/connectToWeb.ts#L63
+// Adapted from https://github.com/magne4000/universal-middleware/blob/603eed01235371cf106244e35700837fc7d9b04a/packages/adapter-express/src/utils.ts#L84
 import type { IncomingMessage } from 'node:http';
 import { Readable } from 'node:stream';
 
