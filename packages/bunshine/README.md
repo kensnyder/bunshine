@@ -262,7 +262,7 @@ app.listen({ port: 3100, reusePort: true });
 
 See the [serveFiles](#serveFiles) section for more info.
 
-Also note you can serve files with Bunshine anywhere with `bunx bunshine-serve`.
+Also note you can serve files with Bunshine anywhere with `bunx bunshine .`.
 It currently uses the default `serveFiles()` options.
 
 If you want to manually manage serving a file, you can use the following approach.
