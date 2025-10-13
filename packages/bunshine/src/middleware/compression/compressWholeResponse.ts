@@ -21,6 +21,7 @@ export default async function compressWholeResponse(
   headers.set('Content-Encoding', compressionType);
   headers.set('Content-Length', compressed.length.toString());
 
+  // @ts-expect-error  bun-types is wrong
   return new Response(compressed, {
     status: response.status,
     statusText: response.statusText,

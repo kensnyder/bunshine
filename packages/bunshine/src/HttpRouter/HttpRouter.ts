@@ -1,4 +1,4 @@
-import { Server, TLSServeOptions } from 'bun';
+import { Server } from 'bun';
 import os from 'node:os';
 import bunshinePkg from '../../package.json' assert { type: 'json' };
 import Context from '../Context/Context';
@@ -25,7 +25,7 @@ export type Middleware<
 > = SingleHandler<ParamsShape> | Handler<ParamsShape>[];
 
 export type ListenOptions =
-  | Omit<TLSServeOptions, 'fetch' | 'websocket'>
+  | Omit<Bun.Serve.Options<any, any>, 'fetch' | 'websocket'>
   | number;
 
 export type HttpMethods =
@@ -52,7 +52,7 @@ export type EmitUrlOptions = {
 export default class HttpRouter {
   version: string = bunshinePkg.version;
   locals: Record<string, any> = {};
-  server: Server | undefined;
+  server: Server<any> | undefined;
   routeMatcher: MatcherWithCache<SingleHandler>;
   _wsRouter?: SocketRouter;
   onNotFound: (...handlers: Handler[]) => HttpRouter;
@@ -102,14 +102,15 @@ export default class HttpRouter {
     }
     to(message);
   }
-  getExport(options: Omit<TLSServeOptions, 'fetch' | 'websocket'> = {}) {
+  getExport(
+    options: Omit<Bun.Serve.Options<any, any>, 'fetch' | 'websocket'> = {}
+  ) {
     const config = {
       port: 0,
       ...options,
       fetch: this.fetch,
-    } as TLSServeOptions;
+    } as Bun.Serve.Options<any, any>;
     if (this._wsRouter) {
-      // @ts-expect-error
       config.websocket = this._wsRouter.handlers;
     }
     return config;
@@ -207,7 +208,7 @@ export default class HttpRouter {
     this._on500Handlers.push(...(handlers.flat(9) as SingleHandler[]));
     return this;
   };
-  fetch = async (request: Request, server: Server) => {
+  fetch = async (request: Request, server: Server<any>) => {
     const context = new Context(request, server, this);
     const pathname = context.url.pathname;
     const method = (

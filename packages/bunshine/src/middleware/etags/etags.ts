@@ -45,6 +45,7 @@ export function etags({
         status,
       });
     }
+    // @ts-expect-error  bun-types is wrong
     return new Response(buffer, {
       headers: resp.headers,
       status: 200,

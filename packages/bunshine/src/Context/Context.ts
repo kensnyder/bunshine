@@ -21,7 +21,7 @@ export default class Context<
   /** Alias for `request` */
   req: Request;
   /** The Bun server instance */
-  server: Server;
+  server: Server<any>;
   /** The HttpRouter instance */
   app: HttpRouter;
   /** The request params from URL placeholders */
@@ -37,7 +37,7 @@ export default class Context<
   /** If an error has been thrown, the error Object */
   error: Error | null = null;
   // construct this Context object
-  constructor(request: Request, server: Server, app: HttpRouter) {
+  constructor(request: Request, server: Server<any>, app: HttpRouter) {
     this.request = request;
     this.req = request;
     this.server = server;

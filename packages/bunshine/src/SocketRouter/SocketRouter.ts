@@ -108,6 +108,7 @@ export default class SocketRouter {
         // upgrade the request to a WebSocket
         if (
           c.server.upgrade(c.request, {
+            // @ts-expect-error  bun-types is wrong
             data: {
               sc,
             },

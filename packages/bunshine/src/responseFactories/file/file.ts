@@ -141,6 +141,7 @@ async function getFileResponse(
     }
   }
   const buffer = await getFileFull(file);
+  // @ts-expect-error  bun-types is wrong
   return new Response(buffer, {
     status: 200,
     headers: {
