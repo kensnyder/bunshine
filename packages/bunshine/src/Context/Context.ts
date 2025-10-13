@@ -94,6 +94,8 @@ export default class Context<
   };
   /** Get the number of milliseconds that have elapsed since the request was received */
   took = (precision = 0) => {
-    return (performance.now() - this.now).toFixed(precision);
+    const elapsed = performance.now() - this.now;
+    const factor = Math.pow(10, precision);
+    return Math.round(elapsed * factor) / factor;
   };
 }
