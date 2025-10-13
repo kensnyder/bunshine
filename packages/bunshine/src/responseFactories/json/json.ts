@@ -1,10 +1,5 @@
-import Context from '../../Context/Context';
-
-export default function json(
-  this: Context,
-  data: any,
-  init: ResponseInit = {}
-) {
+/** A shorthand for `new Response(JSON.stringify(data), { headers: { 'Content-type': 'application/json' } })` */
+export default function jsonResponse(data: any, init: ResponseInit = {}) {
   const body = JSON.stringify(data);
   init.headers = new Headers(init.headers || {});
   if (!init.headers.has('Content-Type')) {

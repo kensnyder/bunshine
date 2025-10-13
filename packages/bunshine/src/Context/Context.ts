@@ -1,17 +1,17 @@
 import type { Server } from 'bun';
 import type HttpRouter from '../HttpRouter/HttpRouter';
-import factory from '../responseFactories/factory/factory';
+import {
+  cssResponse,
+  htmlResponse,
+  jsResponse,
+  plaintextResponse,
+  xmlResponse,
+} from '../responseFactories/factory/factory';
 import file, { type FileResponseOptions } from '../responseFactories/file/file';
 import { FileLike } from '../responseFactories/file/file-io';
-import json from '../responseFactories/json/json';
+import jsonResponse from '../responseFactories/json/json';
 import redirect from '../responseFactories/redirect/redirect';
 import sse, { type SseSetupFunction } from '../responseFactories/sse/sse';
-
-const textPlain = factory('text/plain');
-const textJs = factory('text/javascript');
-const textHtml = factory('text/html');
-const textXml = factory('text/xml');
-const textCss = factory('text/css');
 
 export default class Context<
   ParamsShape extends Record<string, string> = Record<string, string>,
@@ -52,27 +52,27 @@ export default class Context<
   }
   /** A shorthand for `new Response(text, { headers: { 'Content-type': 'text/plain' } })` */
   text = (text: string, init: ResponseInit = {}) => {
-    return textPlain.call(this, text, init);
+    return plaintextResponse(text, init);
   };
   /** A shorthand for `new Response(js, { headers: { 'Content-type': 'text/javascript' } })` */
   js = (js: string, init: ResponseInit = {}) => {
-    return textJs.call(this, js, init);
+    return jsResponse(js, init);
   };
   /** A shorthand for `new Response(html, { headers: { 'Content-type': 'text/html' } })` */
   html = (html: string, init: ResponseInit = {}) => {
-    return textHtml.call(this, html, init);
+    return htmlResponse(html, init);
   };
   /** A shorthand for `new Response(html, { headers: { 'Content-type': 'text/css' } })` */
   css = (css: string, init: ResponseInit = {}) => {
-    return textCss.call(this, css, init);
+    return cssResponse(css, init);
   };
   /** A shorthand for `new Response(xml, { headers: { 'Content-type': 'text/xml' } })` */
   xml = (xml: string, init: ResponseInit = {}) => {
-    return textXml.call(this, xml, init);
+    return xmlResponse(xml, init);
   };
   /** A shorthand for `new Response(JSON.stringify(data), { headers: { 'Content-type': 'application/json' } })` */
   json = (data: any, init: ResponseInit = {}) => {
-    return json.call(this, data, init);
+    return jsonResponse(data, init);
   };
   /** A shorthand for `new Response(null, { headers: { Location: url }, status: 301 })` */
   redirect = (url: string, status?: number) => {
@@ -91,5 +91,9 @@ export default class Context<
   /** A shorthand for `new Response({ headers: { 'Content-type': 'text/event-stream' } })` */
   sse = (setup: SseSetupFunction, init: ResponseInit = {}) => {
     return sse.call(this, this.request.signal, setup, init);
+  };
+  /** Get the number of milliseconds that have elapsed since the request was received */
+  took = (precision = 0) => {
+    return (performance.now() - this.now).toFixed(precision);
   };
 }
