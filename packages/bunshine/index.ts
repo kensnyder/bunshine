@@ -1,5 +1,3 @@
-import jsonResponse from './src/responseFactories/json/json';
-
 export { default as Context } from './src/Context/Context';
 export {
   default as HttpRouter,
@@ -51,15 +49,14 @@ export { default as ms } from './src/ms/ms';
 export { default as parseRangeHeader } from './src/parseRangeHeader/parseRangeHeader';
 export {
   cssResponse,
+  default as factory,
   htmlResponse,
   jsResponse,
   plaintextResponse,
   xmlResponse,
-  default as factory,
 } from './src/responseFactories/factory/factory';
-export { default as jsonResponse
-} from './src/responseFactories/json/json';
 export { type FileResponseOptions } from './src/responseFactories/file/file';
+export { default as jsonResponse } from './src/responseFactories/json/json';
 export {
   type SseClose,
   type SseSend,
