@@ -17,13 +17,13 @@ export default class SocketContext<
   ParamsShape = Record<string, any>,
 > {
   public ws?: ServerWebSocket<WsDataShape<UpgradeShape, ParamsShape>>;
-  public server: Server;
+  public server: Server<UpgradeShape>;
   public url: URL;
   public params: ParamsShape;
   public data: UpgradeShape;
   public type: SocketEventName;
   constructor(
-    server: Server,
+    server: Server<UpgradeShape>,
     url: URL,
     params: ParamsShape,
     data: UpgradeShape
