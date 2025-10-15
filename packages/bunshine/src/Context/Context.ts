@@ -50,35 +50,35 @@ export default class Context<
   get ip(): { address: string; family: string; port: number } | null {
     return this.server.requestIP(this.request);
   }
-  /** A shorthand for `new Response(text, { headers: { 'Content-type': 'text/plain' } })` */
+  /** Shorthand for `new Response(text, { headers: { 'Content-type': 'text/plain' } })` */
   text = (text: string, init: ResponseInit = {}) => {
     return plaintextResponse(text, init);
   };
-  /** A shorthand for `new Response(js, { headers: { 'Content-type': 'text/javascript' } })` */
+  /** Shorthand for `new Response(js, { headers: { 'Content-type': 'text/javascript' } })` */
   js = (js: string, init: ResponseInit = {}) => {
     return jsResponse(js, init);
   };
-  /** A shorthand for `new Response(html, { headers: { 'Content-type': 'text/html' } })` */
+  /** Shorthand for `new Response(html, { headers: { 'Content-type': 'text/html' } })` */
   html = (html: string, init: ResponseInit = {}) => {
     return htmlResponse(html, init);
   };
-  /** A shorthand for `new Response(html, { headers: { 'Content-type': 'text/css' } })` */
+  /** Shorthand for `new Response(html, { headers: { 'Content-type': 'text/css' } })` */
   css = (css: string, init: ResponseInit = {}) => {
     return cssResponse(css, init);
   };
-  /** A shorthand for `new Response(xml, { headers: { 'Content-type': 'text/xml' } })` */
+  /** Shorthand for `new Response(xml, { headers: { 'Content-type': 'text/xml' } })` */
   xml = (xml: string, init: ResponseInit = {}) => {
     return xmlResponse(xml, init);
   };
-  /** A shorthand for `new Response(JSON.stringify(data), { headers: { 'Content-type': 'application/json' } })` */
+  /** Shorthand for `new Response(JSON.stringify(data), { headers: { 'Content-type': 'application/json' } })` */
   json = (data: any, init: ResponseInit = {}) => {
     return jsonResponse(data, init);
   };
-  /** A shorthand for `new Response(null, { headers: { Location: url }, status: 301 })` */
+  /** Shorthand for `new Response(null, { headers: { Location: url }, status: 301 })` */
   redirect = (url: string, status?: number) => {
     return redirect(url, status);
   };
-  /** A shorthand for `new Response(bunFile, fileHeaders)` plus range features */
+  /** Shorthand for `new Response(bunFile, fileHeaders)` plus range features */
   file = async (
     pathOrData: FileLike,
     fileOptions: FileResponseOptions = {}
@@ -88,7 +88,7 @@ export default class Context<
       ...fileOptions,
     });
   };
-  /** A shorthand for `new Response({ headers: { 'Content-type': 'text/event-stream' } })` */
+  /** Shorthand for `new Response({ headers: { 'Content-type': 'text/event-stream' } })` */
   sse = (setup: SseSetupFunction, init: ResponseInit = {}) => {
     return sse.call(this, this.request.signal, setup, init);
   };

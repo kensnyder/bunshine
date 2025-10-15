@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.5.1 - June 18, 2025
+
+- Update deps
+- Expose response creation shorthand functions such as jsonResponse(data, init?)
+- Add Context.took(precision) function to return milliseconds since request start
+
 ## v3.4.2 - June 18, 2025
 
 - Update deps
