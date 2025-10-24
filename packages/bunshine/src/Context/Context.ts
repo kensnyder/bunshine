@@ -44,40 +44,26 @@ export default class Context<
     this.app = app;
     this.url = new URL(request.url);
     this.date = new Date();
-    this.now = performance.now();
+    this.now = Date.now();
   }
   /** Get the IP address info of the client */
   get ip(): { address: string; family: string; port: number } | null {
     return this.server.requestIP(this.request);
   }
   /** Shorthand for `new Response(text, { headers: { 'Content-type': 'text/plain' } })` */
-  text = (text: string, init: ResponseInit = {}) => {
-    return plaintextResponse(text, init);
-  };
+  text = plaintextResponse;
   /** Shorthand for `new Response(js, { headers: { 'Content-type': 'text/javascript' } })` */
-  js = (js: string, init: ResponseInit = {}) => {
-    return jsResponse(js, init);
-  };
+  js = jsResponse;
   /** Shorthand for `new Response(html, { headers: { 'Content-type': 'text/html' } })` */
-  html = (html: string, init: ResponseInit = {}) => {
-    return htmlResponse(html, init);
-  };
+  html = htmlResponse;
   /** Shorthand for `new Response(html, { headers: { 'Content-type': 'text/css' } })` */
-  css = (css: string, init: ResponseInit = {}) => {
-    return cssResponse(css, init);
-  };
+  css = cssResponse;
   /** Shorthand for `new Response(xml, { headers: { 'Content-type': 'text/xml' } })` */
-  xml = (xml: string, init: ResponseInit = {}) => {
-    return xmlResponse(xml, init);
-  };
+  xml = xmlResponse;
   /** Shorthand for `new Response(JSON.stringify(data), { headers: { 'Content-type': 'application/json' } })` */
-  json = (data: any, init: ResponseInit = {}) => {
-    return jsonResponse(data, init);
-  };
+  json = jsonResponse;
   /** Shorthand for `new Response(null, { headers: { Location: url }, status: 301 })` */
-  redirect = (url: string, status?: number) => {
-    return redirect(url, status);
-  };
+  redirect = redirect;
   /** Shorthand for `new Response(bunFile, fileHeaders)` plus range features */
   file = async (
     pathOrData: FileLike,
@@ -94,7 +80,7 @@ export default class Context<
   };
   /** Get the number of milliseconds that have elapsed since the request was received */
   took = (precision = 0) => {
-    const elapsed = performance.now() - this.now;
+    const elapsed = Date.now() - this.now;
     const factor = Math.pow(10, precision);
     return Math.round(elapsed * factor) / factor;
   };
