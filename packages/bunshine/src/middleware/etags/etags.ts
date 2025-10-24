@@ -40,7 +40,7 @@ export function etags({
   return async (context: Context, next: NextFunction) => {
     const resp = await next();
 
-      // Normalize header casing if upstream used non-standard 'Etag'
+    // Normalize header casing if upstream used non-standard 'Etag'
     const existingLower = resp.headers.get('Etag');
     if (existingLower) {
       // Set canonical header without deleting, since header names are case-insensitive
@@ -79,8 +79,11 @@ export function etags({
           const statusText = (resp as any).statusText;
           resp.headers.delete('Content-Length');
           // Do not set ETag in this path
-          // @ts-expect-error bun-types may not include statusText
-          return new Response(buffer, { headers: resp.headers, status, statusText });
+          return new Response(buffer, {
+            headers: resp.headers,
+            status,
+            statusText,
+          });
         }
         computedBuffer = buffer;
         etag = `"${hash}"`;

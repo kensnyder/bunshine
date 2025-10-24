@@ -1,6 +1,11 @@
 # Changelog
 
-## v3.5.1 - June 18, 2025
+## v3.6.1 - Oct 24, 2025
+
+- Fixes and enhancements to etags middleware
+- Add zstd compression support in `compression` middleware
+
+## v3.5.1 - Oct 14, 2025
 
 - Update deps
 - Expose response creation shorthand functions such as jsonResponse(data, init?)
