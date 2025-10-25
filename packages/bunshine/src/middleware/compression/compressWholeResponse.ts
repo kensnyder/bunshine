@@ -26,21 +26,8 @@ export default async function compressWholeResponse(
 
   if (compressionType === 'br') {
     compressed = await brPromise(oldBody, compressionOptions as BrotliOptions);
-  } else if (compressionType === 'zstd') {
-    if (zstdPromise) {
-      // Bun returns a Uint8Array
-      compressed = await zstdPromise(
-        oldBody,
-        compressionOptions as ZstdOptions
-      );
-    } else {
-      // Fallback to gzip if zstd unavailable
-      actualEncoding = 'gzip';
-      compressed = await gzipPromise(
-        oldBody,
-        compressionOptions as ZlibOptions
-      );
-    }
+  } else if (compressionType === 'zstd' && zstdPromise) {
+    compressed = await zstdPromise(oldBody, compressionOptions as ZstdOptions);
   } else {
     compressed = await gzipPromise(oldBody, compressionOptions as ZlibOptions);
   }

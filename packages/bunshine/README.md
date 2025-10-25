@@ -176,7 +176,7 @@ app.get('/hello', (c: Context, next: NextFunction) => {
   c.error; // An error object available to handlers registered with app.onError()
   c.ip; // The IP address of the client or load balancer (not necessarily the end user)
   c.date; // The Date of the request
-  c.now; // The result of performance.now() at the start of the request
+  c.now; // The result of Date.now() at the start of the request
 
   // To respond, return a Response object:
   return new Response(JSON.stringify(payload), {
@@ -1606,10 +1606,6 @@ The following decisions are based on scripts in /benchmarks:
 - `TextEncoder-reuse.ts` - The Context object's response factories (`c.json()`,
   `c.html()`, etc.) reuse a single `TextEncoder` object. That gains about 18%
   which turns out to be only on the order of 10s of nanoseconds.
-- `timer-resolution.ts` - `performance.now()` is faster than `Date.now()` even
-  though it provides additional precision. The `performanceHeader()` middleware
-  uses `performance.now()` when it sets the `X-Took` header with the number of
-  milliseconds rounded to 3 decimal places.
 
 Some additional design decisions:
 
@@ -1626,7 +1622,7 @@ Some additional design decisions:
   for creating responses, sending responses, and setting headers.
 - Handlers receive a raw `URL` object. `URL` objects are a fast and standardized
   way to parse incoming URLs. The router only needs to know the path, and so
-  does no other processing for query parameters, ports and so on. There are many
+  does no other processing for query parameters, ports, and so on. There are many
   approaches to parse query parameters; Bunshine is agnostic. Use
   `c.url.searchParams` however you like.
 

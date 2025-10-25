@@ -13,30 +13,75 @@ import jsonResponse from '../responseFactories/json/json';
 import redirect from '../responseFactories/redirect/redirect';
 import sse, { type SseSetupFunction } from '../responseFactories/sse/sse';
 
+/**
+ * Context is created per incoming request and is passed to every route handler and middleware.
+ * It provides convenient access to the Request, related server/router objects, parsed URL,
+ * route params, a locals bag for per-request state, and several response factory helpers.
+ *
+ * Generics:
+ * - ParamsShape: shape of the `params` object extracted from the matched route placeholders.
+ *
+ * Typical usage:
+ *
+ * app.get('/hello/:name', (c) => {
+ *   const { name } = c.params;
+ *   return c.text(`Hello ${name}!`);
+ * });
+ */
 export default class Context<
   ParamsShape extends Record<string, string> = Record<string, string>,
 > {
   /** The raw request object */
   request: Request;
-  /** Alias for `request` */
+  /**
+   * Alias for `request`.
+   * Provided for convenience if you prefer shorter property names.
+   */
   req: Request;
-  /** The Bun server instance */
+  /**
+   * The Bun server instance that accepted this request.
+   * Useful for low-level information like `c.ip` via `server.requestIP()`.
+   */
   server: Server<any>;
-  /** The HttpRouter instance */
+  /**
+   * The HttpRouter instance handling this request.
+   * You typically won't need this inside handlers, but it can be useful for advanced patterns.
+   */
   app: HttpRouter;
-  /** The request params from URL placeholders */
+  /**
+   * The request params parsed from the matched route's placeholder segments.
+   * Example: for route "/users/:id" and path "/users/123", params.id === "123".
+   */
   params: ParamsShape = {} as ParamsShape;
-  /** A place to persist data between handlers for the duration of the request */
+  /**
+   * A per-request mutable store for middleware/handlers to share data.
+   * Cleared after the request is completed.
+   */
   locals: Record<string, any> = {};
-  /** A URL object constructed with `new URL(request.url)` */
+  /**
+   * A URL object constructed with `new URL(request.url)`.
+   * Handy for accessing pathname, searchParams, origin, etc.
+   */
   url: URL;
-  /** The date the request was received */
+  /**
+   * The Date when the request was received and the Context was created.
+   * Useful for logging and response headers.
+   */
   date: Date;
-  /** The milliseconds between server start and this request, as float (from performance.now()) */
+  /** Epoch milliseconds captured when the request was received (from Date.now()) */
   now: number;
-  /** If an error has been thrown, the error Object */
+  /**
+   * If an error was thrown while handling the request, it can be stored here
+   * by error-handling middleware for inspection/logging.
+   */
   error: Error | null = null;
-  // construct this Context object
+  /**
+   * Construct a new Context for a single incoming request.
+   *
+   * @param request - The native Request object received by the server.
+   * @param server - The Bun Server instance handling the request.
+   * @param app - The HttpRouter instance your routes are registered on.
+   */
   constructor(request: Request, server: Server<any>, app: HttpRouter) {
     this.request = request;
     this.req = request;
@@ -46,25 +91,85 @@ export default class Context<
     this.date = new Date();
     this.now = Date.now();
   }
-  /** Get the IP address info of the client */
+  /**
+   * Get the client's remote address information, if available.
+   *
+   * Returns null when Bun cannot determine the client IP (e.g., Unix sockets).
+   * Note: If your app is behind a reverse proxy or load balancer, prefer
+   * using the appropriate forwarded headers from `c.request.headers`.
+   */
   get ip(): { address: string; family: string; port: number } | null {
     return this.server.requestIP(this.request);
   }
-  /** Shorthand for `new Response(text, { headers: { 'Content-type': 'text/plain' } })` */
+  /**
+   * Create a plain text Response with Content-Type: text/plain; charset=utf-8.
+   *
+   * @param body - The response body as a string.
+   * @param init - Optional ResponseInit (headers, status, etc). Existing headers are preserved.
+   * @returns Response
+   */
   text = plaintextResponse;
-  /** Shorthand for `new Response(js, { headers: { 'Content-type': 'text/javascript' } })` */
+  /**
+   * Create a JavaScript Response with Content-Type: text/javascript; charset=utf-8.
+   *
+   * @param body - The JS source as a string.
+   * @param init - Optional ResponseInit to override status/headers.
+   * @returns Response
+   */
   js = jsResponse;
-  /** Shorthand for `new Response(html, { headers: { 'Content-type': 'text/html' } })` */
+  /**
+   * Create an HTML Response with Content-Type: text/html; charset=utf-8.
+   *
+   * @param body - The HTML markup as a string.
+   * @param init - Optional ResponseInit to override status/headers.
+   * @returns Response
+   */
   html = htmlResponse;
-  /** Shorthand for `new Response(html, { headers: { 'Content-type': 'text/css' } })` */
+  /**
+   * Create a CSS Response with Content-Type: text/css; charset=utf-8.
+   *
+   * @param body - The CSS stylesheet as a string.
+   * @param init - Optional ResponseInit to override status/headers.
+   * @returns Response
+   */
   css = cssResponse;
-  /** Shorthand for `new Response(xml, { headers: { 'Content-type': 'text/xml' } })` */
+  /**
+   * Create an XML Response with Content-Type: text/xml; charset=utf-8.
+   *
+   * @param body - The XML document as a string.
+   * @param init - Optional ResponseInit to override status/headers.
+   * @returns Response
+   */
   xml = xmlResponse;
-  /** Shorthand for `new Response(JSON.stringify(data), { headers: { 'Content-type': 'application/json' } })` */
+  /**
+   * Create a JSON Response with Content-Type: application/json; charset=utf-8.
+   *
+   * Internally stringifies the provided data with JSON.stringify.
+   * @param data - Any JSON-serializable value.
+   * @param init - Optional ResponseInit to override status/headers.
+   * @returns Response
+   */
   json = jsonResponse;
-  /** Shorthand for `new Response(null, { headers: { Location: url }, status: 301 })` */
+  /**
+   * Create a redirect Response with a Location header.
+   *
+   * @param url - The absolute or relative URL to redirect to.
+   * @param status - HTTP status code (default 302). Common values: 301, 302, 303, 307, 308.
+   * @returns Response
+   */
   redirect = redirect;
-  /** Shorthand for `new Response(bunFile, fileHeaders)` plus range features */
+  /**
+   * Send a file or arbitrary binary/text content with appropriate headers.
+   *
+   * - Supports HTTP range requests automatically when the incoming request
+   *   contains a `Range` header.
+   * - When given a file path or BunFile, will infer Content-Type from extension
+   *   if not provided in options.
+   *
+   * @param pathOrData - A filesystem path, BunFile, Blob, ArrayBuffer, or string content.
+   * @param fileOptions - Options such as contentType, downloadName, etag, cache control, etc.
+   * @returns Response
+   */
   file = async (
     pathOrData: FileLike,
     fileOptions: FileResponseOptions = {}
@@ -74,11 +179,26 @@ export default class Context<
       ...fileOptions,
     });
   };
-  /** Shorthand for `new Response({ headers: { 'Content-type': 'text/event-stream' } })` */
+  /**
+   * Create a Server-Sent Events (SSE) Response with Content-Type: text/event-stream.
+   *
+   * The provided setup callback will be invoked with an SSE controller that lets you
+   * send events. The stream will close automatically when the request's AbortSignal
+   * is aborted (client disconnect) or when you close it from the setup.
+   *
+   * @param setup - A function to set up event emission and lifecycle.
+   * @param init - Optional ResponseInit to add/override headers such as Cache-Control.
+   * @returns Response
+   */
   sse = (setup: SseSetupFunction, init: ResponseInit = {}) => {
     return sse.call(this, this.request.signal, setup, init);
   };
-  /** Get the number of milliseconds that have elapsed since the request was received */
+  /**
+   * Get the elapsed time in milliseconds since the Context was created.
+   *
+   * @param precision - Number of decimal places to include (default 0).
+   * @returns Milliseconds elapsed, rounded to the given precision.
+   */
   took = (precision = 0) => {
     const elapsed = Date.now() - this.now;
     const factor = Math.pow(10, precision);

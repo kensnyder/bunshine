@@ -97,8 +97,8 @@ export default class HttpRouter {
   /**
    * Stop the HTTP server
    */
-  async close() {
-    return this.server?.stop?.();
+  async close(closeActiveConnections: boolean) {
+    return this.server?.stop?.(closeActiveConnections);
   }
   /**
    * Emit the server URL to a logger function once the server is started.

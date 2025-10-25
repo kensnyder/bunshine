@@ -265,7 +265,7 @@ describe('HttpRouter', () => {
     });
   });
   describe('listening', () => {
-    let server: Server;
+    let server: Server<any>;
     afterEach(() => {
       server.stop(true);
     });
@@ -282,13 +282,13 @@ describe('HttpRouter', () => {
   });
   describe('server', () => {
     let app: HttpRouter;
-    let server: Server;
+    let server: Server<any>;
     beforeEach(() => {
       app = new HttpRouter();
       server = app.listen({ port: 0 });
     });
     afterEach(() => {
-      server.stop(true);
+      app.close(true);
     });
     it('should get client ip info', async () => {
       app.get('/', c => c.json(c.ip));
@@ -470,10 +470,19 @@ describe('HttpRouter', () => {
       expect(resp.status).toBe(200);
       expect(await resp.text()).toBe('bar');
     });
+    it('should support file routing', async () => {
+      await app.registerFileRoutes(
+        `${import.meta.dir}/../../testFixtures/fileRoutes`
+      );
+      const home = await fetch(`${server.url}/home`).then(r => r.text());
+      const about = await fetch(`${server.url}/about`).then(r => r.text());
+      expect(home).toBe('Home');
+      expect(about).toBe('About');
+    });
   });
   describe('ssl', () => {
     let app: HttpRouter;
-    let server: Server;
+    let server: Server<any>;
     beforeEach(() => {
       app = new HttpRouter();
       server = app.listen({
@@ -496,7 +505,6 @@ describe('HttpRouter', () => {
       app.get('/', () => new Response('Hello https'));
       expect(server.url.protocol).toBe('https:');
       const resp = await fetch(`${server.url}`, {
-        // @ts-expect-error  Type is wrong
         tls: {
           // Accept self-signed certificates
           rejectUnauthorized: false,

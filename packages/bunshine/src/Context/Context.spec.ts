@@ -75,5 +75,9 @@ describe('Context', () => {
       expect(resp.headers.get('Content-type')).toStartWith('application/json');
       expect(resp.headers.get('X-Hello')).toBe('World');
     });
+    it('should indicate time elapsed', async () => {
+      expect(c.took()).toBeGreaterThanOrEqual(0);
+      expect(c.took()).toBeLessThanOrEqual(100);
+    });
   });
 });
