@@ -1,9 +1,10 @@
 # Changelog
 
-## v3.6.1 - Oct 24, 2025
+## v3.6.0 - Oct 24, 2025
 
-- Fixes and enhancements to etags middleware
+- Fixes and enhancements to `etags` middleware
 - Add zstd compression support in `compression` middleware
+- Add `app.registerFileRoutes(path, glob)` function
 
 ## v3.5.1 - Oct 14, 2025
 
