@@ -2,13 +2,13 @@ import { Server, ServerWebSocket, ServerWebSocketSendStatus } from 'bun';
 import { WsDataShape } from './SocketRouter';
 
 /**
- * Narrowly and correctly detect Bun.BufferSource values.
- * Bun.BufferSource is ArrayBuffer | ArrayBufferView (e.g., Buffer, Uint8Array, DataView, etc.).
+ * Narrowly and correctly detect BufferSource values.
+ * BufferSource is ArrayBuffer | ArrayBufferView (e.g., Buffer, Uint8Array, DataView, etc.).
  *
  * @param obj - Unknown value to test.
  * @returns True if the value is an ArrayBuffer or any ArrayBufferView (including Node/Bun Buffer).
  */
-function isBufferSource(obj: unknown): obj is Bun.BufferSource {
+function isBufferSource(obj: unknown): obj is BufferSource {
   if (obj == null) {
     return false;
   }
@@ -119,7 +119,8 @@ export default class SocketContext<
       );
       return this.ws!.sendBinary(view, compress);
     } else if (isBufferSource(message)) {
-      return this.ws!.send(message as Bun.BufferSource, compress);
+      // @ts-expect-error TypeScript can't tell that our isBufferSource works
+      return this.ws!.send(message, compress);
     } else {
       return this.ws!.sendText(JSON.stringify(message), compress);
     }
@@ -179,16 +180,15 @@ export default class SocketContext<
    * Cork batches multiple sends into a single frame flush. Most users do not need this.
    *
    * If a callback is provided, all sends within the callback are batched.
-   * If omitted, a no-op cork is performed for compatibility.
    *
-   * @param callback - Optional function within which to perform batched sends.
+   * @param callback - Function within which to perform batched sends.
    */
   cork(
-    callback: (
-      ws: ServerWebSocket<WsDataShape<UpgradeShape, ParamsShape>>
-    ) => WsDataShape<UpgradeShape, ParamsShape>
+    callback: (ctx: SocketContext<UpgradeShape, ParamsShape>) => void
   ): void {
-    this.ws!.cork(callback);
+    this.ws!.cork(() => {
+      callback(this);
+    });
   }
   /**
    * Publish a message to all clients subscribed to a topic.
@@ -206,6 +206,7 @@ export default class SocketContext<
       message instanceof Buffer ||
       isBufferSource(message)
     ) {
+      // @ts-expect-error TypeScript doesn't trust our isBufferSource
       return this.ws!.publish(topic, message, compress);
     } else {
       return this.ws!.publish(topic, JSON.stringify(message), compress);
@@ -219,8 +220,12 @@ export default class SocketContext<
    * @param data - Optional ping payload.
    * @returns The send status from Bun.
    */
-  ping(data?: string | Bun.BufferSource): ServerWebSocketSendStatus {
-    if (typeof data === 'string' || isBufferSource(data)) {
+  ping(data?: string | BufferSource | any): ServerWebSocketSendStatus {
+    if (
+      typeof data === 'string' ||
+      isBufferSource(data) ||
+      data === undefined
+    ) {
       return this.ws!.ping(data);
     } else {
       return this.ws!.ping(JSON.stringify(data));
@@ -234,8 +239,12 @@ export default class SocketContext<
    * @param data - Optional pong payload.
    * @returns The send status from Bun.
    */
-  pong(data?: string | Bun.BufferSource): ServerWebSocketSendStatus {
-    if (typeof data === 'string' || isBufferSource(data)) {
+  pong(data?: string | BufferSource | any): ServerWebSocketSendStatus {
+    if (
+      typeof data === 'string' ||
+      isBufferSource(data) ||
+      data === undefined
+    ) {
       return this.ws!.pong(data);
     } else {
       return this.ws!.pong(JSON.stringify(data));
@@ -323,11 +332,8 @@ export class SocketMessage<T extends SocketEventName> {
   }
   /**
    * Get the payload as a ReadableStream.
-   *
-   * Note: The optional chunkSize parameter is kept for backward-compatibility
-   * but is ignored; Blob.stream() does not accept it.
    */
-  readableStream(_chunkSize: number = 1024) {
+  readableStream() {
     // Return a standard ReadableStream; chunkSize is ignored for compatibility
     // @ts-expect-error Not sure why types are incorrect
     return new Blob([this.buffer()]).stream();

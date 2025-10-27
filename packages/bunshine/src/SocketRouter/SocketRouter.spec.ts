@@ -4,7 +4,7 @@ import HttpRouter from '../HttpRouter/HttpRouter';
 
 describe('server', () => {
   let app: HttpRouter;
-  let server: Server;
+  let server: Server<any>;
   beforeEach(() => {
     app = new HttpRouter();
   });
@@ -15,6 +15,7 @@ describe('server', () => {
     const result: {
       binaryType: string | undefined;
       address: string;
+      readyState: number;
       fruit: string;
       room: string;
       type: string;
@@ -32,6 +33,7 @@ describe('server', () => {
           resolve({
             binaryType: sc.binaryType,
             address: sc.remoteAddress,
+            readyState: sc.readyState,
             fruit: sc.data.fruit,
             room: sc.params.room,
             type: sc.type,
@@ -49,6 +51,7 @@ describe('server', () => {
     });
     expect(result.binaryType).toBe('nodebuffer');
     expect(typeof result.address).toBe('string');
+    expect(result.readyState).toBe(1);
     expect(result.fruit).toBe('apple');
     expect(result.room).toBe('123');
     expect(result.type).toBe('message');
@@ -119,9 +122,49 @@ describe('server', () => {
     });
     expect(result).toEqual({ hello: 'world' });
   });
+  it('should cork', async () => {
+    const result = await new Promise((resolve, reject) => {
+      app.socket.at<{ room: string }>('/chat/:room', {
+        open(sc) {
+          sc.cork(() => {
+            sc.send('one\n');
+            sc.send('two\n');
+            sc.send('three');
+          });
+          setTimeout(() => sc.close(), 0);
+        },
+      });
+      server = app.listen({ port: 0 });
+      const chat = new WebSocket(`${server.url}chat/123`);
+      const messages: string[] = [];
+      chat.addEventListener('message', evt => messages.push(evt.data));
+      chat.onclose = () => resolve(messages.join(''));
+    });
+    expect(result).toEqual('one\ntwo\nthree');
+  });
+  it('should ping and pong', async () => {
+    const result = await new Promise((resolve, reject) => {
+      app.socket.at<{ room: string }>('/chat/:room', {
+        open(sc) {
+          sc.ping('one\n');
+          sc.send('two\n');
+          sc.pong('three');
+          setTimeout(() => sc.close(), 0);
+        },
+      });
+      server = app.listen({ port: 0 });
+      const chat = new WebSocket(`${server.url}chat/123`);
+      const messages: string[] = [];
+      chat.addEventListener('message', evt => messages.push(evt.data));
+      chat.addEventListener('ping', evt => messages.push(evt.data));
+      chat.addEventListener('pong', evt => messages.push(evt.data));
+      chat.onclose = () => resolve(messages.join(''));
+    });
+    expect(result).toEqual('one\ntwo\nthree');
+  });
   it('should upgrade http requests and pass messages', async () => {
     const result = await new Promise((resolve, reject) => {
-      let s: Server;
+      let s: Server<any>;
       const result: any = [];
       app.socket.at<{ id: string }>('/chat/:id', {
         upgrade(c) {
@@ -230,6 +273,7 @@ describe('server', () => {
     spy.mockRestore();
   });
   it('should allow pub-sub', async () => {
+    let wasSubscribed = false;
     const [messages, events] = await new Promise<[string[], string[]]>(
       async resolve => {
         let messages: string[] = [];
@@ -251,6 +295,7 @@ describe('server', () => {
             events.push(`${sc.data.user} entered the chat`);
           },
           message(sc, message) {
+            wasSubscribed = sc.isSubscribed(`room-${sc.data.id}`);
             messages.push(message.text());
             sc.publish(`room-${sc.data.id}`, message.toString());
             sc.send(message.text());

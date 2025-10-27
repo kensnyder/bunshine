@@ -29,16 +29,19 @@ export type ListenOptions =
   | Omit<Serve.Options<any, any>, 'fetch' | 'websocket'>
   | number;
 
-export type HttpMethods =
-  | 'ALL'
-  | 'GET'
-  | 'POST'
-  | 'PUT'
-  | 'PATCH'
-  | 'DELETE'
-  | 'HEAD'
-  | 'OPTIONS'
-  | 'TRACE';
+export const httpMethods = [
+  'ALL',
+  'GET',
+  'POST',
+  'PUT',
+  'PATCH',
+  'DELETE',
+  'HEAD',
+  'OPTIONS',
+  'TRACE',
+];
+
+export type HttpMethods = (typeof httpMethods)[number];
 
 export type HttpRouterOptions = {
   cacheSize?: number;
@@ -183,11 +186,23 @@ export default class HttpRouter {
     const scanner = new Bun.Glob(glob);
     const registeredFiles: string[] = [];
     for await (const file of scanner.scan(scanPath)) {
+      const routePath = path
+        .basename(file)
+        .replaceAll('.', '/')
+        .replaceAll('$', ':');
       const absolutePath = path.join(scanPath, file);
       const module = await import(absolutePath);
       if (typeof module.default === 'function') {
         module.default(this);
         registeredFiles.push(absolutePath);
+      }
+      for (const VERB of httpMethods) {
+        if (!registeredFiles.includes(file)) {
+          registeredFiles.push(absolutePath);
+        }
+        if (typeof module[VERB] === 'function') {
+          this.on(VERB, routePath, module[VERB]);
+        }
       }
     }
     return registeredFiles;

@@ -475,8 +475,13 @@ describe('HttpRouter', () => {
         `${import.meta.dir}/../../testFixtures/fileRoutes`
       );
       const home = await fetch(`${server.url}/home`).then(r => r.text());
+      const homePost = await fetch(`${server.url}/home`, {
+        body: 'My Post',
+        method: 'POST',
+      }).then(r => r.text());
       const about = await fetch(`${server.url}/about`).then(r => r.text());
       expect(home).toBe('Home');
+      expect(homePost).toBe('My Post');
       expect(about).toBe('About');
     });
   });
