@@ -4,7 +4,7 @@
 
 - Fixes and enhancements to `etags` middleware
 - Add zstd compression support in `compression` middleware
-- Add `app.registerFileRoutes(path, glob)` function
+- Add `app.registerFileRoutes({ path, glob })` function
 
 ## v3.5.1 - Oct 14, 2025
 

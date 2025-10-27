@@ -5,5 +5,5 @@ export default function setupHome(app: HttpRouter) {
 }
 
 export const POST: SingleHandler = async c => {
-  return c.json(await c.request.text());
+  return c.text(await c.request.text());
 };

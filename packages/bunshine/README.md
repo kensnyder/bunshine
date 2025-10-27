@@ -16,9 +16,6 @@ A Bun HTTP & WebSocket server that is a little ray of sunshine.
 bun add bunshine
 ```
 
-_Or to run Bunshine on Node,
-[install Nodeshine](https://npmjs.com/package/nodeshine)._
-
 ## Motivation
 
 1. Use bare `Request` and `Response` objects
@@ -57,12 +54,13 @@ _Or to run Bunshine on Node,
     - [performanceHeader](#performanceheader)
     - [etags](#etags)
     - [Recommended Middleware](#recommended-middleware)
-12. [TypeScript pro-tips](#typescript-pro-tips)
-13. [Examples of common http server setup](#examples-of-common-http-server-setup)
-14. [Design Decisions](#design-decisions)
-15. [Roadmap](#roadmap)
-16. [Change Log](./CHANGELOG.md)
-17. [ISC License](./LICENSE.md)
+12. [File-based routing](#file-based-routing)
+13. [TypeScript pro-tips](#typescript-pro-tips)
+14. [Examples of common http server setup](#examples-of-common-http-server-setup)
+15. [Design Decisions](#design-decisions)
+16. [Roadmap](#roadmap)
+17. [Change Log](./CHANGELOG.md)
+18. [ISC License](./LICENSE.md)
 
 ## Upgrading from 1.x to 2.x
 
@@ -1398,6 +1396,53 @@ ensures that the ETag reflects the exact version of the compressed content sent
 to the client. If you generate the ETag before compression, it will correspond
 to the uncompressed content, leading to mismatches when clients compare ETags
 for cached compressed responses.
+
+## File-based routing
+
+Bunshine support file routing. Example:
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+app.registerFileRoutes({ path: `${import.meta.dir}/routes` });
+```
+
+Then in the ./routes directory, each file can register routes in one of 2 ways:
+
+1. If the default export is a function, it will be invoked with the current
+   `app` instance to allow the function to add a route or routes.
+2. If the file exports verbs such as GET, POST, PATCH, etc., each function will
+   be registered with the corresponding verb according to the file name.
+
+A file can register routes both ways.
+
+```ts
+// ./routes/about
+import { HttpRouter } from 'bunshine';
+
+export default function setupAboutRoutes(app: HttpRouter) {
+  app.get('/about/me', me);
+  app.get('/about/you', you);
+}
+```
+
+```ts
+// ./routes/api.users.$userId.ts
+import { Handler } from 'bunshine';
+
+export const GET: Handler<{ userId: string }> = async c => {
+  return c.json(lookupUser(c.params.userId));
+};
+
+export const POST: Handler<{ userId: string }> = [
+  authMiddleware,
+  async c => {
+    const res = await updateUser(c.params.userId, await c.request.json());
+    return c.json(lookupUser(c.params.userId));
+  },
+];
+```
 
 ## TypeScript pro-tips
 

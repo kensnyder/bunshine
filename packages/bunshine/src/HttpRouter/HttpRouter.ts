@@ -182,30 +182,41 @@ export default class HttpRouter {
    * @param glob Glob pattern for files to include. Defaults to a recursive TypeScript glob.
    * @returns List of absolute file paths that were registered.
    */
-  async registerFileRoutes(scanPath: string, glob = '**/*.ts') {
+  async registerFileRoutes({
+    path: scanPath,
+    glob = '**/*.ts',
+  }: {
+    path: string;
+    glob?: string;
+  }) {
     const scanner = new Bun.Glob(glob);
-    const registeredFiles: string[] = [];
+    const registeredFiles = new Set<string>();
     for await (const file of scanner.scan(scanPath)) {
-      const routePath = path
-        .basename(file)
-        .replaceAll('.', '/')
-        .replaceAll('$', ':');
+      const routePath =
+        '/' +
+        path
+          .basename(file)
+          .replace(/\..+$/, '')
+          .replaceAll('.', '/')
+          .replaceAll('$', ':');
       const absolutePath = path.join(scanPath, file);
       const module = await import(absolutePath);
       if (typeof module.default === 'function') {
         module.default(this);
-        registeredFiles.push(absolutePath);
+        registeredFiles.add(absolutePath);
       }
       for (const VERB of httpMethods) {
-        if (!registeredFiles.includes(file)) {
-          registeredFiles.push(absolutePath);
-        }
-        if (typeof module[VERB] === 'function') {
+        if (
+          typeof module[VERB] === 'function' ||
+          (Array.isArray(module[VERB]) &&
+            module[VERB].every(f => typeof f === 'function'))
+        ) {
+          registeredFiles.add(absolutePath);
           this.on(VERB, routePath, module[VERB]);
         }
       }
     }
-    return registeredFiles;
+    return Array.from(registeredFiles);
   }
   /**
    * Register one or more handlers for a route path and HTTP method(s).

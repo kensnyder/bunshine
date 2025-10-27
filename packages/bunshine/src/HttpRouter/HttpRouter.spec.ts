@@ -471,9 +471,9 @@ describe('HttpRouter', () => {
       expect(await resp.text()).toBe('bar');
     });
     it('should support file routing', async () => {
-      await app.registerFileRoutes(
-        `${import.meta.dir}/../../testFixtures/fileRoutes`
-      );
+      await app.registerFileRoutes({
+        path: `${import.meta.dir}/../../testFixtures/fileRoutes`,
+      });
       const home = await fetch(`${server.url}/home`).then(r => r.text());
       const homePost = await fetch(`${server.url}/home`, {
         body: 'My Post',
