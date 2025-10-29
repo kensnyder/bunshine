@@ -5,7 +5,7 @@ export function flattenHeaders(headers: OutgoingHttpHeaders) {
   const flatHeaders: [string, string][] = [];
 
   for (const [key, value] of Object.entries(headers)) {
-    if (value === undefined || value === null) {
+    if (value === undefined) {
       continue;
     }
 

@@ -7,11 +7,12 @@ import {
   type ZlibOptions,
   type ZstdOptions,
 } from 'node:zlib';
+import { CompressionType } from './compression';
 
 export default async function compressStreamResponse(
   response: Response,
-  compressionType: 'gzip' | 'br' | 'zstd' = 'gzip',
-  compressionOptions: BrotliOptions | ZlibOptions | ZstdOptions
+  compressionType: CompressionType = 'zstd',
+  compressionOptions: Partial<BrotliOptions | ZlibOptions | ZstdOptions>
 ): Promise<Response> {
   // Return early if there's no body to compress
   if (!response.body) {
@@ -19,21 +20,20 @@ export default async function compressStreamResponse(
   }
 
   // Choose compressor based on requested encoding and availability
-  let actualEncoding: 'gzip' | 'br' | 'zstd' = compressionType;
+  let actualEncoding: CompressionType;
   let compressor: NodeJS.ReadWriteStream;
 
   if (compressionType === 'br') {
     compressor = createBrotliCompress(compressionOptions as BrotliOptions);
-  } else if (compressionType === 'zstd') {
-    if (createZstdCompress) {
-      compressor = createZstdCompress(compressionOptions as ZstdOptions);
-    } else {
-      // Fallback to gzip if zstd streaming is not supported
-      actualEncoding = 'gzip';
-      compressor = createGzip(compressionOptions as ZlibOptions);
-    }
-  } else {
+    actualEncoding = 'br';
+  } else if (compressionType === 'zstd' && createZstdCompress) {
+    compressor = createZstdCompress(compressionOptions as ZstdOptions);
+    actualEncoding = 'zstd';
+  } else if (compressionType === 'gzip' || !createZstdCompress) {
     compressor = createGzip(compressionOptions as ZlibOptions);
+    actualEncoding = 'gzip';
+  } else {
+    return response;
   }
 
   // Create new headers, copying from original response
@@ -41,6 +41,7 @@ export default async function compressStreamResponse(
   headers.set('Content-Encoding', actualEncoding);
 
   // If there was a Content-Length, delete it as it's no longer valid
+  // Bun will set new content-length automatically
   headers.delete('Content-Length');
 
   // Append Vary: Accept-Encoding (preserve existing values)
@@ -59,14 +60,14 @@ export default async function compressStreamResponse(
   }
 
   // Convert response.body ReadableStream to Node Readable
-  // @ts-expect-error  Typings are incomplete
+  // @ts-expect-error Typings are incomplete
   const nodeReadable = Readable.fromWeb(response.body);
 
   // Pipe through compressor
   const compressedStream = nodeReadable.pipe(compressor);
 
   // Convert back to web ReadableStream
-  // @ts-expect-error  Readable.toWeb is not yet in the Node.js typings
+  // @ts-expect-error Readable.toWeb is not yet in the Node.js typings
   const webStream = Readable.toWeb(compressedStream) as ReadableStream;
 
   // Return new response with compressed body

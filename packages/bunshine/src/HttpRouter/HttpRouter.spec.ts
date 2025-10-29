@@ -471,18 +471,26 @@ describe('HttpRouter', () => {
       expect(await resp.text()).toBe('bar');
     });
     it('should support file routing', async () => {
+      // Files are users.ts, users.$id.ts, users.me.ts
       await app.registerFileRoutes({
         path: `${import.meta.dir}/../../testFixtures/fileRoutes`,
       });
-      const home = await fetch(`${server.url}/home`).then(r => r.text());
-      const homePost = await fetch(`${server.url}/home`, {
-        body: 'My Post',
+      // GET /users
+      const users = await fetch(`${server.url}/users`).then(r => r.text());
+      expect(users).toBe('List of users');
+      // POST /users
+      const newUser = await fetch(`${server.url}/users`, {
         method: 'POST',
+        body: JSON.stringify({ name: 'Charlie' }),
       }).then(r => r.text());
-      const about = await fetch(`${server.url}/about`).then(r => r.text());
-      expect(home).toBe('Home');
-      expect(homePost).toBe('My Post');
-      expect(about).toBe('About');
+      expect(newUser).toBe('Created user with {"name":"Charlie"}');
+      // GET /users/2
+      const user2 = await fetch(`${server.url}/users/2`).then(r => r.text());
+      expect(user2).toBe('Get user id=2');
+      // GET /users/me
+      const me = await fetch(`${server.url}/users/me`);
+      expect(me.headers.get('took')).toMatch(/^\d+$/);
+      expect(await me.text()).toBe('Me');
     });
   });
   describe('ssl', () => {

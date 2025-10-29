@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'bun:test';
 import connectToFetch from './connectToFetch';
 import { ConnectErrorHandler, ConnectRouteHandler } from './handler.types';
 
-describe('connectToBunshine', () => {
+describe('connectToFetch', () => {
   let server: Server;
   afterEach(() => {
     server.stop(true);

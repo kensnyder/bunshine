@@ -2,7 +2,11 @@ import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { gzipSync } from 'node:zlib';
 import HttpRouter from '../../HttpRouter/HttpRouter';
-import { compression, type CompressionOptions } from './compression';
+import {
+  compression,
+  type CompressionOptions,
+  getPreferredEncoding,
+} from './compression';
 import compressStreamResponse from './compressStreamResponse';
 
 const html = await fetch('https://www.npmjs.com/package/bunshine').then(res =>
@@ -18,7 +22,8 @@ describe('compression middleware', () => {
     let app: HttpRouter;
     beforeEach(() => {
       app = new HttpRouter();
-      app.use(compression());
+      app.use(compression({ prefer: ['gzip', 'br'] }));
+      app.on500(c => console.error(c.error));
       server = app.listen({ port: 0 });
     });
     afterEach(() => {
@@ -58,7 +63,7 @@ describe('compression middleware', () => {
       expect(resp.headers.get('Content-encoding')).toBe(null);
       expect(text).toBe(html);
     });
-    it("should use br if gzip isn't supported", async () => {
+    it("should use br if gzip isn't requested", async () => {
       app.get('/', c => c.html(html));
       const resp = await fetch(server.url, {
         headers: { 'Accept-Encoding': 'br' },
@@ -68,7 +73,7 @@ describe('compression middleware', () => {
       expect(resp.headers.get('Content-encoding')).toBe('br');
       expect(text).toBe(html);
     });
-    it("should use gzip if br isn't supported", async () => {
+    it("should use gzip if br isn't requested", async () => {
       app.get('/', c => c.html(html));
       const resp = await fetch(server.url, {
         headers: { 'Accept-Encoding': 'gzip' },
@@ -80,7 +85,7 @@ describe('compression middleware', () => {
     });
   });
 
-  for (const compressionType of ['gzip', 'br']) {
+  for (const compressionType of ['zstd', 'gzip', 'br']) {
     describe(`streaming responses with ${compressionType}`, () => {
       let server: Server<any>;
       let app: HttpRouter;
@@ -163,28 +168,27 @@ describe('compression middleware', () => {
     });
   }
 
-  describe('compression middleware - extra coverage', () => {
-    describe('q-value parsing and prefer tie-breaker', () => {
-      let server: Server<any>;
-      let app: HttpRouter;
-      beforeEach(() => {
-        app = new HttpRouter();
-        app.use(compression({ prefer: 'br' }));
-        server = app.listen({ port: 0 });
-        app.get('/', c => c.html(html));
+  describe('compression middleware - preferred encoding order', () => {
+    it('should honor q-values', async () => {
+      const req = new Request('http://localhost/test', {
+        headers: { 'Accept-Encoding': 'gzip;q=0.5, br;q=1' },
       });
-      afterEach(() => {
-        server.stop(true);
+      const preferred = getPreferredEncoding(req, ['zstd', 'gzip', 'br']);
+      expect(preferred).toBe('br');
+    });
+    it('should honor equal q-values and choose preferred encoding', async () => {
+      const req = new Request('http://localhost/test', {
+        headers: { 'Accept-Encoding': 'gzip;q=0.5, br;q=0.5' },
       });
-      it('should honor equal q-values and choose preferred encoding', async () => {
-        const resp = await fetch(server.url, {
-          headers: { 'Accept-Encoding': 'gzip;q=0.5, br;q=0.5' },
-        });
-        expect(resp.status).toBe(200);
-        const text = await resp.text();
-        expect(text).toBe(html);
-        expect(resp.headers.get('Content-encoding')).toBe('br');
+      const preferred = getPreferredEncoding(req, ['zstd', 'br', 'gzip']);
+      expect(preferred).toBe('br');
+    });
+    it('should return null for identity', async () => {
+      const req = new Request('http://localhost/test', {
+        headers: { 'Accept-Encoding': 'identity' },
       });
+      const preferred = getPreferredEncoding(req, ['zstd', 'br', 'gzip']);
+      expect(preferred).toBe('identity');
     });
 
     describe('wildcard Accept-Encoding propagation', () => {
@@ -251,7 +255,6 @@ describe('compression middleware', () => {
         app.get(
           '/',
           () =>
-            // @ts-expect-error  Types are wrong
             new Response(gzipSync(Buffer.from(html)), {
               headers: {
                 'Content-Type': 'text/html',
@@ -410,7 +413,8 @@ function testWithOptions(
       if (options.prefer === 'none') {
         expect(resp.headers.get('Content-encoding')).toBe(null);
       } else {
-        expect(resp.headers.get('Content-encoding')).toBe(options.prefer!);
+        const preferred = options.prefer === 'gzip' ? 'gzip' : 'br';
+        expect(resp.headers.get('Content-encoding')).toBe(preferred);
       }
     });
   });

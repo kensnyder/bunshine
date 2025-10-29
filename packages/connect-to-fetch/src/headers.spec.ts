@@ -27,18 +27,10 @@ describe('flattenHeaders', () => {
       ['Link', 'two'],
     ]);
   });
-  it('should ignore null values in arrays', async () => {
-    const flat = flattenHeaders({
-      'Content-Type': 'text/html',
-      Link: [null],
-    });
-    expect(flat).toEqual([['Content-Type', 'text/html']]);
-  });
-  it('should ignore null and undefined headers', async () => {
+  it('should ignore undefined headers', async () => {
     const flat = flattenHeaders({
       'Content-Type': 'text/html',
       'x-undefined': undefined,
-      'x-null': null,
     });
     expect(flat).toEqual([['Content-Type', 'text/html']]);
   });

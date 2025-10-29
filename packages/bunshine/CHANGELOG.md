@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.6.0 - Oct 24, 2025
+## v3.6.2 - Oct 29, 2025
 
 - Fixes and enhancements to `etags` middleware
 - Add zstd compression support in `compression` middleware

@@ -10,8 +10,12 @@ import compressStreamResponse from './compressStreamResponse';
 import compressWholeResponse from './compressWholeResponse';
 import isCompressibleMime from './isCompressibleMime';
 
+export const compressionTypes = ['zstd', 'gzip', 'br'];
+
+export type CompressionType = (typeof compressionTypes)[number];
+
 export type CompressionOptions = {
-  prefer: 'zstd' | 'br' | 'gzip' | 'none';
+  prefer: CompressionType | CompressionType[] | 'none';
   br: BrotliOptions;
   gzip: ZlibOptions;
   zstd: ZstdOptions;
@@ -23,8 +27,8 @@ export type CompressionOptions = {
   ) => boolean | Promise<boolean>;
 };
 
-export const compressionDefaults = {
-  prefer: 'gzip' as const,
+export const compressionDefaults: CompressionOptions = {
+  prefer: compressionTypes,
   br: {} as BrotliOptions,
   gzip: {} as ZlibOptions,
   zstd: {} as ZstdOptions,
@@ -40,9 +44,22 @@ export function compression(
   options: Partial<CompressionOptions> = {}
 ): Middleware {
   if (options.prefer === 'none') {
+    // empty middleware
     return () => {};
   }
+  // convert string preferred options to arrays
   const resolvedOptions = { ...compressionDefaults, ...options };
+  const preferred =
+    typeof resolvedOptions.prefer === 'string'
+      ? [resolvedOptions.prefer, ...compressionTypes]
+      : resolvedOptions.prefer;
+  if (!Bun.zstdCompress) {
+    // zstd only available in Bun 1.3+
+    // @ts-ignore We know that prefer is an Array at this point
+    resolvedOptions.prefer = resolvedOptions.prefer.filter(
+      (p: string) => p !== 'zstd'
+    );
+  }
   const exceptWhen = withTryCatch({
     label:
       'Bunshine compression middleware: your exceptWhen function threw an error',
@@ -65,94 +82,11 @@ export function compression(
       return resp;
     }
 
-    // Parse Accept-Encoding with q-values; default identity=1.0 when header missing
-    const accept = context.request.headers.get('Accept-Encoding') ?? '';
-    type Ae = 'gzip' | 'br' | 'zstd' | 'identity' | '*';
-    const q: Record<Ae, number> = {
-      gzip: 0,
-      br: 0,
-      zstd: 0,
-      identity: 1,
-      '*': 0,
-    };
-    if (accept) {
-      // reset identity default when header present (RFC: if present and doesn't list identity, identity is implied except q=0 via *; we keep identity unless explicitly q=0)
-      q.identity = 1;
-      for (const part of accept
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean)) {
-        const [tokenRaw, params] = part.split(';', 2);
-        const token = tokenRaw.toLowerCase() as Ae;
-        let quality = 1;
-        if (params) {
-          const m = params.match(/q\s*=\s*([0-9.]+)/i);
-          if (m) quality = Math.max(0, Math.min(1, parseFloat(m[1])));
-        }
-        if (
-          token === '*' ||
-          token === 'gzip' ||
-          token === 'br' ||
-          token === 'zstd' ||
-          token === 'identity'
-        ) {
-          q[token] = quality;
-        }
-      }
-      // If * is specified, apply to unspecified tokens
-      if (q['*'] > 0) {
-        if (q.gzip === 0) {
-          q.gzip = q['*'];
-        }
-        if (q.br === 0) {
-          q.br = q['*'];
-        }
-        if (q.zstd === 0) {
-          q.zstd = q['*'];
-        }
-      }
-      // If identity is explicitly q=0 via header, honor it
-      // (already captured if provided)
-    }
-
-    // Determine client-acceptable encodings (>0)
-    const clientAllows = new Set<Ae>(
-      (['zstd', 'br', 'gzip'] as const).filter(e => q[e] > 0) as Ae[]
-    );
-    const hasZstdImpl = !!Bun.zstdCompress; // runtime support (Bun 1.3+)
-    const serverAvailable: Array<'zstd' | 'br' | 'gzip'> = [];
-    if (clientAllows.has('zstd') && hasZstdImpl) {
-      serverAvailable.push('zstd');
-    }
-    if (clientAllows.has('br')) {
-      serverAvailable.push('br');
-    }
-    if (clientAllows.has('gzip')) {
-      serverAvailable.push('gzip');
-    }
-
-    if (serverAvailable.length === 0) {
-      // no acceptable encoding we can provide; return identity
+    const encoding = getPreferredEncoding(context.request, preferred);
+    if (encoding === 'identity') {
+      // "identity" means no encoding
       return resp;
     }
-
-    // Choose encoding: highest q, then prefer option if tie, else fallback precedence zstd > br > gzip
-    let encoding: 'zstd' | 'br' | 'gzip' = serverAvailable[0];
-    // Sort by client q descending, then by prefer match, then by fixed order
-    const order = (e: 'zstd' | 'br' | 'gzip') => ({
-      e,
-      q: q[e],
-      prefer: e === (resolvedOptions.prefer as any) ? 1 : 0,
-      rank: e === 'zstd' ? 3 : e === 'br' ? 2 : 1,
-    });
-    serverAvailable.sort((a, b) => {
-      const A = order(a);
-      const B = order(b);
-      if (B.q !== A.q) return B.q - A.q;
-      if (B.prefer !== A.prefer) return B.prefer - A.prefer;
-      return B.rank - A.rank;
-    });
-    encoding = serverAvailable[0];
 
     const options =
       encoding === 'br'
@@ -175,7 +109,7 @@ export function compression(
       contentType.includes('audio/') ||
       !resp.headers.has('Content-Length')
     ) {
-      return compressStreamResponse(resp, encoding as any, options as any);
+      return compressStreamResponse(resp, encoding, options as any);
     }
 
     const contentLength = parseInt(
@@ -187,9 +121,88 @@ export function compression(
       contentLength > resolvedOptions.maxSize ||
       contentLength < resolvedOptions.minSize
     ) {
+      // will take too long to compress
       return resp;
     }
 
-    return compressWholeResponse(resp, encoding as any, options as any);
+    return compressWholeResponse(resp, encoding, options as any);
   };
+}
+
+const bunshineRecognizedEncodings = [...compressionTypes, 'identity', '*'];
+
+export type RecognizedEncoding = (typeof bunshineRecognizedEncodings)[number];
+
+export function getPreferredEncoding(
+  request: Request,
+  preferred: CompressionType[]
+) {
+  // Parse Accept-Encoding with q-values; default identity=1.0 when header missing
+  const accept = request.headers.get('Accept-Encoding') ?? '';
+  if (!accept) {
+    return 'identity';
+  }
+  const q: Record<string, number> = {
+    gzip: 0,
+    br: 0,
+    zstd: 0,
+    identity: 1,
+    '*': 0,
+  };
+  if (accept) {
+    // reset identity default when header present (RFC: if present and doesn't list identity, identity is implied except q=0 via *; we keep identity unless explicitly q=0)
+    q.identity = 1;
+    for (const part of accept
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)) {
+      const [tokenRaw, params] = part.split(';', 2);
+      const token = tokenRaw.toLowerCase();
+      let quality = 1;
+      if (params) {
+        const m = params.match(/q\s*=\s*([0-9.]+)/i);
+        if (m) {
+          quality = Math.max(0, Math.min(1, parseFloat(m[1])));
+        }
+      }
+      if (bunshineRecognizedEncodings.includes(token)) {
+        q[token] = quality;
+      }
+    }
+    // If * is specified, apply to unspecified tokens
+    if (q['*'] > 0) {
+      if (q.gzip === 0) {
+        q.gzip = q['*'];
+      }
+      if (q.br === 0) {
+        q.br = q['*'];
+      }
+      if (q.zstd === 0) {
+        q.zstd = q['*'];
+      }
+    }
+    // If identity is explicitly q=0 via header, honor it
+    // (already captured if provided)
+  }
+
+  // Determine client-acceptable encodings (>0)
+  const clientAllows = compressionTypes.filter(e => q[e] > 0);
+  const serverAvailable = preferred.filter(t => clientAllows.includes(t));
+
+  if (serverAvailable.length === 0) {
+    // no acceptable encoding we can provide; return identity
+    return 'identity';
+  }
+  if (serverAvailable.length === 1) {
+    return serverAvailable[0];
+  }
+
+  // Choose encoding: highest q, then first in priority array
+  serverAvailable.sort((encodingA, encodingB) => {
+    return (
+      q[encodingB] - q[encodingA] ||
+      serverAvailable.indexOf(encodingA) - serverAvailable.indexOf(encodingB)
+    );
+  });
+  return serverAvailable[0];
 }

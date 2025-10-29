@@ -18,6 +18,8 @@ export {
   compression,
   compressionDefaults,
   type CompressionOptions,
+  type CompressionType,
+  type RecognizedEncoding,
 } from './src/middleware/compression/compression';
 export {
   cors,

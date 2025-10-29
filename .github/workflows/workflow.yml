@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         package: [bunshine, connect-to-fetch]
-        bun-version: [1.1.43, 1.2.0, latest]
+        bun-version: [1.3.0, latest]
 
     steps:
       - name: ➡️ Checkout repository

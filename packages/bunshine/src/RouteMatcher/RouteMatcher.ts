@@ -1,3 +1,5 @@
+import { FileRouteShape } from '../HttpRouter/HttpRouter';
+
 type Registration<T> = {
   matcher: (subject: string) => null | Record<string, string>;
   pattern: string;
@@ -139,11 +141,37 @@ export default class RouteMatcher<Target extends any> {
       }
     }
   }
+  /**
+   * Sort routes by specificity.
+   * @example: /users/me has higher specificity than /users/:id.
+   * If the latter were registered first, the former would never be invoked.
+   * @param a The first route
+   * @param b The second route
+   */
+  static sortBySpecificity(a: FileRouteShape, b: FileRouteShape) {
+    const A = analyzeSpecificity(a.path);
+    const B = analyzeSpecificity(b.path);
+    // Fewer params is more specific
+    if (A.paramsCount !== B.paramsCount) {
+      return A.paramsCount - B.paramsCount;
+    }
+    // More static content length is more specific
+    if (A.routeLength !== B.routeLength) {
+      return B.routeLength - A.routeLength;
+    }
+    // More segments is more specific
+    if (A.segmentCount !== B.segmentCount) {
+      return B.segmentCount - A.segmentCount;
+    }
+    // Stable tie-breaker: alphabetical order
+    return a.path.localeCompare(b.path);
+  }
 }
 
 function regexEsc(str: string) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
 function getPathSegment(identifier: string, delimiter: string) {
   if (identifier.at(-1) === delimiter) {
     identifier = identifier.slice(0, -1);
@@ -156,4 +184,29 @@ function getPathSegment(identifier: string, delimiter: string) {
   const segment = `(${classes}+)${escapedDelimiter}`;
   const name = identifier.slice(1);
   return [segment, name];
+}
+
+// Higher specificity means:
+// - fewer parameter segments (e.g., :id)
+// - more and longer static segments
+// - more segments when other metrics tie
+function analyzeSpecificity(p: string) {
+  const segments = p.split('/').filter(Boolean);
+  let paramsCount = 0;
+  let staticCount = 0;
+  let routeLength = 0;
+  for (const s of segments) {
+    if (s.startsWith(':')) {
+      paramsCount++;
+    } else {
+      staticCount++;
+      routeLength += s.length;
+    }
+  }
+  return {
+    paramsCount,
+    staticCount,
+    routeLength,
+    segmentCount: segments.length,
+  };
 }

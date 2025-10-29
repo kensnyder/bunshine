@@ -4,6 +4,7 @@ import path from 'node:path';
 import bunshinePkg from '../../package.json' assert { type: 'json' };
 import Context from '../Context/Context';
 import MatcherWithCache from '../MatcherWithCache/MatcherWithCache';
+import RouteMatcher from '../RouteMatcher/RouteMatcher';
 import SocketRouter from '../SocketRouter/SocketRouter';
 import { fallback404 } from './fallback404';
 import { fallback500 } from './fallback500';
@@ -41,7 +42,16 @@ export const httpMethods = [
   'TRACE',
 ];
 
+export const methodsPlusAliases = [...httpMethods, 'HEADGET'];
+
 export type HttpMethods = (typeof httpMethods)[number];
+
+export type FileRouteShape = {
+  filename: string;
+  method: string;
+  path: string;
+  handler: Handler;
+};
 
 export type HttpRouterOptions = {
   cacheSize?: number;
@@ -190,33 +200,37 @@ export default class HttpRouter {
     glob?: string;
   }) {
     const scanner = new Bun.Glob(glob);
-    const registeredFiles = new Set<string>();
+    const routes: FileRouteShape[] = [];
     for await (const file of scanner.scan(scanPath)) {
-      const routePath =
-        '/' +
-        path
-          .basename(file)
-          .replace(/\..+$/, '')
-          .replaceAll('.', '/')
-          .replaceAll('$', ':');
       const absolutePath = path.join(scanPath, file);
       const module = await import(absolutePath);
-      if (typeof module.default === 'function') {
-        module.default(this);
-        registeredFiles.add(absolutePath);
-      }
+      const routePath =
+        '/' +
+        file
+          .replace(/\.[^.]+$/, '') // remove extension
+          .replaceAll('.', '/') // dots represent slashes
+          .replaceAll('$', ':'); // $ means a dynamic segment
       for (const VERB of httpMethods) {
         if (
           typeof module[VERB] === 'function' ||
           (Array.isArray(module[VERB]) &&
-            module[VERB].every(f => typeof f === 'function'))
+            module[VERB].flat(9).every(f => typeof f === 'function'))
         ) {
-          registeredFiles.add(absolutePath);
-          this.on(VERB, routePath, module[VERB]);
+          routes.push({
+            filename: file,
+            method: VERB,
+            path: routePath,
+            handler: module[VERB],
+          });
         }
       }
     }
-    return Array.from(registeredFiles);
+
+    routes.sort(RouteMatcher.sortBySpecificity).forEach(r => {
+      this.on(r.method, r.path, r.handler);
+    });
+
+    return routes;
   }
   /**
    * Register one or more handlers for a route path and HTTP method(s).

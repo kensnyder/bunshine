@@ -7,6 +7,7 @@ import {
   type ZlibOptions,
   type ZstdOptions,
 } from 'node:zlib';
+import { CompressionType } from './compression';
 
 const brPromise = promisify(brotliCompress);
 const gzipPromise = promisify(gzip);
@@ -14,22 +15,26 @@ const zstdPromise = zstdCompress ? promisify(zstdCompress) : null;
 
 export default async function compressWholeResponse(
   response: Response,
-  compressionType: 'br' | 'gzip' | 'zstd' = 'gzip',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  compressionOptions: BrotliOptions | ZlibOptions | Record<string, any> = {}
+  compressionType: CompressionType = 'zstd',
+  compressionOptions: Partial<BrotliOptions | ZlibOptions | ZstdOptions> = {}
 ): Promise<Response> {
   // Get the entire body as a buffer
   const oldBody = await response.arrayBuffer();
 
   let compressed: Buffer | Uint8Array;
-  let actualEncoding: 'br' | 'gzip' | 'zstd' = compressionType;
+  let actualEncoding: CompressionType;
 
   if (compressionType === 'br') {
     compressed = await brPromise(oldBody, compressionOptions as BrotliOptions);
+    actualEncoding = 'br';
   } else if (compressionType === 'zstd' && zstdPromise) {
     compressed = await zstdPromise(oldBody, compressionOptions as ZstdOptions);
-  } else {
+    actualEncoding = 'zstd';
+  } else if (compressionType === 'gzip' || !zstdPromise) {
     compressed = await gzipPromise(oldBody, compressionOptions as ZlibOptions);
+    actualEncoding = 'gzip';
+  } else {
+    return response;
   }
 
   const headers = new Headers(response.headers);
@@ -50,7 +55,7 @@ export default async function compressWholeResponse(
     headers.set('Vary', 'Accept-Encoding');
   }
 
-  // @ts-expect-error  bun-types is wrong
+  // @ts-expect-error bun-types is wrong
   return new Response(compressed, {
     status: response.status,
     statusText: response.statusText,

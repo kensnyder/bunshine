@@ -1403,53 +1403,6 @@ to the client. If you generate the ETag before compression, it will correspond
 to the uncompressed content, leading to mismatches when clients compare ETags
 for cached compressed responses.
 
-## File-based routing
-
-Bunshine support file routing. Example:
-
-```ts
-import { HttpRouter } from 'bunshine';
-
-const app = new HttpRouter();
-app.registerFileRoutes({ path: `${import.meta.dir}/routes` });
-```
-
-Then in the ./routes directory, each file can register routes in one of 2 ways:
-
-1. If the default export is a function, it will be invoked with the current
-   `app` instance to allow the function to add a route or routes.
-2. If the file exports verbs such as GET, POST, PATCH, etc., each function will
-   be registered with the corresponding verb according to the file name.
-
-A file can register routes both ways.
-
-```ts
-// ./routes/about
-import { HttpRouter } from 'bunshine';
-
-export default function setupAboutRoutes(app: HttpRouter) {
-  app.get('/about/me', me);
-  app.get('/about/you', you);
-}
-```
-
-```ts
-// ./routes/api.users.$userId.ts
-import { Handler } from 'bunshine';
-
-export const GET: Handler<{ userId: string }> = async c => {
-  return c.json(lookupUser(c.params.userId));
-};
-
-export const POST: Handler<{ userId: string }> = [
-  authMiddleware,
-  async c => {
-    const res = await updateUser(c.params.userId, await c.request.json());
-    return c.json(lookupUser(c.params.userId));
-  },
-];
-```
-
 ## TypeScript pro-tips
 
 Bun embraces TypeScript and so does Bunshine. Here are some tips for getting
@@ -1630,6 +1583,50 @@ app.get('/api/*', async ({ url, request, json }) => {
 
 // listen on random port
 app.listen({ port: 0, reusePort: true });
+```
+
+## File-based routing
+
+Bunshine supports file routing. Example:
+
+```ts
+import { HttpRouter } from 'bunshine';
+
+const app = new HttpRouter();
+app.registerFileRoutes({ path: `${import.meta.dir}/routes` });
+```
+
+Then in the `./routes` directory, each file can register routes corresponding
+to one or more http methods. In other words, if the file exports handlers such as
+GET, POST, PATCH, etc., each function will be registered with the corresponding
+method with a path according to the file name.
+
+Rules about file names:
+
+1. File extension is ignored
+2. Dots in filenames represent path slashes (e.g.) `users.me.ts` => "/users/me"
+3. Routes in folders will be expanded (e.g.) `users/me.ts` => "/users/me"
+4. "$" are converted to dynamic segments (e.g.) `users.$id.ts` => "/users/:id"
+5. Routes are automatically sorted by specificity (e.g.) route order will
+   be "users/me" then "users/:id", otherwise the former will never match
+
+```ts
+// ./routes/api.users.$userId.ts
+import type { Handler } from 'bunshine';
+
+// Provide generic shape for Handler if you want intellisense on dynamic params
+export const GET: Handler<{ userId: string }> = async c => {
+  return c.json(lookupUser(c.params.userId));
+};
+
+// Exports can also be arrays, allowing middleware to be specified
+export const POST: Handler<{ userId: string }> = [
+  authMiddleware,
+  async c => {
+    const res = await updateUser(c.params.userId, await c.request.json());
+    return c.json(lookupUser(c.params.userId));
+  },
+];
 ```
 
 ## Design Decisions

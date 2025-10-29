@@ -1,24 +1,39 @@
 import { promisify } from 'node:util';
-import { brotliCompress, deflate, gzip } from 'node:zlib';
+import { brotliCompress, deflate, gzip, zstdCompress } from 'node:zlib';
 import { runBenchmarks } from './runBenchmarks';
 
 /*
 Conclusion:
-Gzip is a tradeoff between bandwidth vs. CPU time.
+zstd is the best tradeoff between bandwidth vs. CPU time.
 
-Gzipping HTML of various sizes on my MacBook M2:
-Unzipped Size   Duration   Gzipped Size
-1kb             8 µs       343 bytes
-10kb            48 µs      3.2kb
-100kb           463 µs     12kb
+Data: comparison of algorithm speed across range of payload sizes
+┌───┬──────┬──────────┬─────────────────────────┬────────────┬────────┬─────────┐
+│   │ Rank │ Speed    │ Task Name               │ Avg Time   │ Margin │ Samples │
+├───┼──────┼──────────┼─────────────────────────┼────────────┼────────┼─────────┤
+│ 0 │ #1   │ 5282.53x │ regular response string │ 226.388 µs │ ±0.51% │ 44,173  │
+│ 1 │ #2   │ 200.57x  │ zstd response string    │ 5.366 ms   │ ±0.34% │ 1,864   │
+│ 2 │ #3   │ 96.68x   │ deflate response string │ 11.106 ms  │ ±0.36% │ 901     │
+│ 3 │ #4   │ 95.90x   │ gzip response string    │ 11.203 ms  │ ±0.40% │ 893     │
+│ 4 │ #5   │ 1.00x    │ brotli response string  │ 1.072 s    │ ±0.33% │ 64      │
+└───┴──────┴──────────┴─────────────────────────┴────────────┴────────┴─────────┘
+Data: comparison of algorithm payload size savings
+┌───┬───────┬───────┬─────────┬────────┬───────┐
+│   │ bytes │ gzip  │ deflate │ brotli │ zstd  │
+├───┼───────┼───────┼─────────┼────────┼───────┤
+│ 0 │ 1kb   │ 36.0% │ 34.8%   │ 25.6%  │ 36.8% │
+│ 1 │ 10kb  │ 35.3% │ 35.1%   │ 29.5%  │ 36.4% │
+│ 2 │ 100kb │ 14.0% │ 14.0%   │ 11.4%  │ 16.1% │
+└───┴───────┴───────┴─────────┴────────┴───────┘
 
-Brotli provides 2-8% size savings but at the cost of milliseconds,
-about 7-10x as much CPU time.
+Notes:
+Brotli provides 2-8% size savings but at the cost of about 96x as much CPU time.
+zstd is about 2x as fast as gzip and provides only 13%-1% less size savings
 */
 
 const brPromise = promisify(brotliCompress);
 const gzipPromise = promisify(gzip);
 const deflatePromise = promisify(deflate);
+const zstdPromise = promisify(zstdCompress);
 
 // some data!
 const html = await fetch('https://www.npmjs.com/package/bunshine').then(res =>
@@ -56,7 +71,16 @@ async function benchmarks() {
     });
   }
 
+  async function zstdResponse(data: Uint8Array) {
+    return new Response(await zstdPromise(data), {
+      headers: {
+        'Content-Encoding': 'zstd',
+      },
+    });
+  }
+
   async function normalResponse(data: Uint8Array) {
+    // @ts-ignore Uint8Array does work in Bun
     return new Response(data, {
       headers: {},
     });
@@ -97,49 +121,38 @@ async function benchmarks() {
   }
 
   console.log('---');
-  console.log('comparison of algorithms');
+  console.log('comparison of algorithm speed');
   await runBenchmarks(
     {
       'gzip response string': () => testWithFakeData(all, gzipResponse),
-      'brotli response string': () => testWithFakeData(all, brotliResponse),
       'deflate response string': () => testWithFakeData(all, deflateResponse),
+      'brotli response string': () => testWithFakeData(all, brotliResponse),
+      'zstd response string': () => testWithFakeData(all, zstdResponse),
       'regular response string': () => testWithFakeData(all, normalResponse),
     },
     { time: 10000 }
   );
 
-  console.log('---');
-  console.log('gzip times for various sizes of html');
-  await runBenchmarks(
-    {
-      '1kb': () => testWithFakeData([t1k], gzipResponse),
-      '10kb': () => testWithFakeData([t10k], gzipResponse),
-      '100kb': () => testWithFakeData([t100k], gzipResponse),
-    },
-    { time: 4000 }
-  );
+  const toTest = {
+    gzip: gzipResponse,
+    deflate: deflateResponse,
+    brotli: brotliResponse,
+    zstd: zstdResponse,
+    uncompressed: normalResponse,
+  };
 
-  console.log('---');
-  console.log('deflate times for various sizes of html');
-  await runBenchmarks(
-    {
-      '1kb': () => testWithFakeData([t1k], deflateResponse),
-      '10kb': () => testWithFakeData([t10k], deflateResponse),
-      '100kb': () => testWithFakeData([t100k], deflateResponse),
-    },
-    { time: 4000 }
-  );
-
-  console.log('---');
-  console.log('brotli times for various sizes of html');
-  await runBenchmarks(
-    {
-      '1kb': () => testWithFakeData([t1k], brotliResponse),
-      '10kb': () => testWithFakeData([t10k], brotliResponse),
-      '100kb': () => testWithFakeData([t100k], brotliResponse),
-    },
-    { time: 4000 }
-  );
+  for (const [label, resp] of Object.entries(toTest)) {
+    console.log('---');
+    console.log(`${label} times for various sizes of html`);
+    await runBenchmarks(
+      {
+        '1kb': () => testWithFakeData([t1k], resp),
+        '10kb': () => testWithFakeData([t10k], resp),
+        '100kb': () => testWithFakeData([t100k], resp),
+      },
+      { time: 4000 }
+    );
+  }
 }
 
 async function savings() {
@@ -154,15 +167,32 @@ async function savings() {
 
   const gzSize = async (text: string) => getSize(text, gzipPromise);
   const brSize = async (text: string) => getSize(text, brPromise);
-  const dfsize = async (text: string) => getSize(text, deflatePromise);
+  const dfSize = async (text: string) => getSize(text, deflatePromise);
+  const zsSize = async (text: string) => getSize(text, zstdPromise);
 
   // compare sizes
-  console.log(`
----  
-Comparison of html size after compression
-Bytes    Gzip     Deflate  Brotli
-1kb      ${await gzSize(t1k)}    ${await dfsize(t1k)}    ${await brSize(t1k)}
-10kb     ${await gzSize(t10k)}    ${await dfsize(t10k)}    ${await brSize(t10k)}
-100kb    ${await gzSize(t100k)}    ${await dfsize(t100k)}    ${await brSize(t100k)}
-`);
+  console.log('---\nComparison of html size after compression');
+  console.table([
+    {
+      bytes: '1kb',
+      gzip: await gzSize(t1k),
+      deflate: await dfSize(t1k),
+      brotli: await brSize(t1k),
+      zstd: await zsSize(t1k),
+    },
+    {
+      bytes: '10kb',
+      gzip: await gzSize(t10k),
+      deflate: await dfSize(t10k),
+      brotli: await brSize(t10k),
+      zstd: await zsSize(t10k),
+    },
+    {
+      bytes: '100kb',
+      gzip: await gzSize(t100k),
+      deflate: await dfSize(t100k),
+      brotli: await brSize(t100k),
+      zstd: await zsSize(t100k),
+    },
+  ]);
 }
