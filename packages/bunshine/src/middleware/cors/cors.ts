@@ -161,7 +161,7 @@ function getAccessHeaderHandler(
     if (opts.origin !== '*') {
       response.headers.set('Vary', 'Origin');
     }
-    if (opts.credentials) {
+    if (opts.credentials && allowOrigin !== '*') {
       response.headers.set('Access-Control-Allow-Credentials', 'true');
     }
     if (opts.exposeHeaders?.length) {

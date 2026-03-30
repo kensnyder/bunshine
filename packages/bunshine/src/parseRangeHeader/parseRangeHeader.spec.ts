@@ -159,4 +159,26 @@ describe('parseRangeHeader', () => {
       status: 206,
     });
   });
+  it('should return 200 when suffix-length exceeds file size', () => {
+    const result = parseRangeHeader({
+      rangeHeader: 'bytes=-2000',
+      totalFileSize: 500,
+    });
+    expect(result).toEqual({
+      slice: null,
+      contentLength: 500,
+      status: 200,
+    });
+  });
+  it('should return 416 when start is greater than end', () => {
+    const result = parseRangeHeader({
+      rangeHeader: 'bytes=100-50',
+      totalFileSize: 1000,
+    });
+    expect(result).toEqual({
+      slice: null,
+      contentLength: null,
+      status: 416,
+    });
+  });
 });

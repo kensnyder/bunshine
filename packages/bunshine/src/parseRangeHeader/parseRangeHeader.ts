@@ -26,8 +26,10 @@ export default function parseRangeHeader({
   let start: number;
   let end: number;
   if (match[1] === '') {
-    // e.g. bytes=-100
+    // e.g. bytes=-100 (last N bytes)
     start = totalFileSize - parseInt(match[2]);
+    // RFC 7233: if suffix-length >= file size, treat as entire file
+    if (start < 0) start = 0;
     end = totalFileSize - 1;
   } else if (match[2] === '') {
     // e.g. bytes=100-
@@ -37,6 +39,9 @@ export default function parseRangeHeader({
     // e.g. bytes=100-199 or bytes=0-199
     start = parseInt(match[1]);
     end = parseInt(match[2]);
+    if (start > end) {
+      return { slice: null, contentLength: null, status: 416 };
+    }
   }
   if (start > totalFileSize - 1 || end > totalFileSize - 1) {
     return { slice: null, contentLength: null, status: 416 };

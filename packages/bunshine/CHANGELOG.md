@@ -1,5 +1,20 @@
 # Changelog
 
+## v3.7.0
+
+- `get()` now automatically handles HEAD requests. Bun strips the response body;
+  headers and status are preserved. Register an explicit `head()` handler to
+  override this behavior.
+- Deprecated `headGet()`. Use `get()` instead; it now covers both methods.
+- Fix: `bytes=-N` range requests where N exceeds the file size now correctly
+  serve the entire file (status 200) per RFC 7233, instead of producing an
+  invalid negative byte offset.
+- Fix: `bytes=start-end` range requests where start > end now return 416 per
+  RFC 7233 instead of silently serving an empty range.
+- Fix: CORS middleware no longer sets `Access-Control-Allow-Credentials: true`
+  when `Access-Control-Allow-Origin` resolves to `*`, which violates the Fetch
+  spec and causes browsers to reject the response.
+
 ## v3.6.2 - Oct 29, 2025
 
 - Fixes and enhancements to `etags` middleware

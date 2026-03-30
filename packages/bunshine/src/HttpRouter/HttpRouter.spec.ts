@@ -353,6 +353,27 @@ describe('HttpRouter', () => {
       expect(resp.status).toBe(200);
       expect(resp.headers.get('Message')).toBe('Hi Bob');
     });
+    it('should auto-handle HEAD via GET handler', async () => {
+      app.get('/resource', () =>
+        new Response('body content', {
+          headers: { 'X-Custom': 'value' },
+        })
+      );
+      const resp = await fetch(`${server.url}/resource`, { method: 'HEAD' });
+      expect(resp.status).toBe(200);
+      expect(resp.headers.get('X-Custom')).toBe('value');
+      // HEAD responses must not include a body
+      expect(await resp.text()).toBe('');
+    });
+    it('should prefer explicit HEAD handler over GET auto-handling', async () => {
+      app.get('/resource', () => new Response('from GET'));
+      app.head('/resource', () =>
+        new Response(null, { headers: { 'X-Source': 'explicit-head' } })
+      );
+      const resp = await fetch(`${server.url}/resource`, { method: 'HEAD' });
+      expect(resp.status).toBe(200);
+      expect(resp.headers.get('X-Source')).toBe('explicit-head');
+    });
     it('should handle POST', async () => {
       app.post('/parrot', async ({ request }) => {
         const formData = await request.formData();

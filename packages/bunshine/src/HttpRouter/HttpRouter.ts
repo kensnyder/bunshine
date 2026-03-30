@@ -237,6 +237,10 @@ export default class HttpRouter {
   /**
    * Register handlers for HTTP GET on a path.
    *
+   * HEAD requests to the same path are handled automatically: the GET handler
+   * runs and Bun strips the response body. Register an explicit `head()` handler
+   * to override this behavior.
+   *
    * @template ParamsShape The shape of route params available on the Context.
    * @param path Path pattern as a string or RegExp.
    * @param handlers One or more handler functions or arrays of handlers.
@@ -349,7 +353,8 @@ export default class HttpRouter {
   /**
    * Register handlers for HTTP HEAD and GET on a path.
    *
-   * Useful for resources where HEAD should resolve to the same handlers as GET.
+   * @deprecated Since v3.7.0, `get()` automatically handles HEAD requests.
+   * Use `get()` instead. To define custom HEAD behavior, use `head()`.
    *
    * @template ParamsShape The shape of route params available on the Context.
    * @param path Path pattern as a string or RegExp.
@@ -432,11 +437,18 @@ export default class HttpRouter {
    * @returns A Response from a route, a 404 fallback, or a 500 fallback.
    */
   dispatch = (method: HttpMethods, pathname: string, context: Context) => {
-    const matched = this.routeMatcher.match(
-      method,
-      pathname,
-      this._on404Handlers
-    );
+    // Match route handlers first (without 404 fallbacks)
+    let routeMatches = this.routeMatcher.match(method, pathname);
+    // Auto-handle HEAD via GET when no explicit HEAD handler is registered
+    if (method === 'HEAD' && routeMatches.length === 0) {
+      routeMatches = this.routeMatcher.match('GET', pathname);
+    }
+    const matched: Array<[SingleHandler, Record<string, string>]> = [
+      ...routeMatches,
+      ...this._on404Handlers.map(
+        h => [h, {}] as [SingleHandler, Record<string, string>]
+      ),
+    ];
     let i = 0;
     const next: NextFunction = async () => {
       const match = matched[i++];

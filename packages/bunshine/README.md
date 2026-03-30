@@ -73,13 +73,20 @@ bun add bunshine
 `RegExp` symbols are not allowed in route definitions to avoid ReDoS
 vulnerabilities.
 
+## Upgrading from 3.6.x to 3.7.x
+
+- `get()` now automatically handles HEAD requests (body is stripped by Bun).
+  You no longer need to register HEAD explicitly for GET routes.
+- `headGet()` is therefore deprecated. Replace `app.headGet(path, ...)` with
+  `app.get(path, ...)`. To define custom HEAD behavior, use `app.head()`.
+
 ## Upgrading from 2.x to 3.x
 
 - The `securityHeaders` middleware has been discontinued. Use a library such as
   [@side/fortifyjs](https://www.npmjs.com/package/@side/fortifyjs) instead.
 - The `serveFiles` middleware no longer accepts options for `etags` or `gzip`.
   Instead, compose the `etags` and `compression` middlewares:
-  `app.headGet('/files/*', etags(), compression(), serveFiles(...))`
+  `app.get('/files/*', etags(), compression(), serveFiles(...))`
 
 ## Basic example
 
@@ -962,7 +969,6 @@ import { HttpRouter } from 'bunshine';
 
 const app = new HttpRouter();
 
-app.head('/posts/:id', doesPostExist);
 app.get('/posts/:id', getPost);
 app.post('/posts/:id', addPost);
 app.patch('/posts/:id', editPost);
@@ -970,9 +976,6 @@ app.put('/posts/:id', upsertPost);
 app.trace('/posts/:id', tracePost);
 app.delete('/posts/:id', deletePost);
 app.options('/posts/:id', getPostCors);
-
-// special case for specifying both head and get
-app.headGet('/files/*', serveFiles(`${import.meta.dir}/files`));
 
 // any list of multiple verbs (must be uppercase)
 app.on(['POST', 'PATCH'], '/posts/:id', addEditPost);
@@ -982,6 +985,10 @@ app.get(/^\/author\/([a-z]+)$/i, getPost);
 
 app.listen({ port: 3100, reusePort: true });
 ```
+
+> **Note:** `get()` automatically handles HEAD requests (the response body is
+> stripped by Bun). Register an explicit `head()` handler to override this
+> behavior.
 
 ## Included middleware
 
@@ -997,20 +1004,6 @@ import { HttpRouter, serveFiles } from 'bunshine';
 const app = new HttpRouter();
 
 app.get('/public/*', serveFiles(`${import.meta.dir}/public`));
-
-app.listen({ port: 3100, reusePort: true });
-```
-
-How to respond to both GET and HEAD requests:
-
-```ts
-import { HttpRouter, serveFiles } from 'bunshine';
-
-const app = new HttpRouter();
-
-app.headGet('/public/*', serveFiles(`${import.meta.dir}/public`));
-// or
-app.on(['HEAD', 'GET'], '/public/*', serveFiles(`${import.meta.dir}/public`));
 
 app.listen({ port: 3100, reusePort: true });
 ```
@@ -1539,7 +1532,7 @@ app.use(async (c, next) => {
   return resp;
 });
 // Later modify CSP at a certain route
-app.headGet('/embeds/*', async (c, next) => {
+app.get('/embeds/*', async (c, next) => {
   const resp = await next();
   const csp = response.headers.get('Content-Security-Headers');
   if (csp) {

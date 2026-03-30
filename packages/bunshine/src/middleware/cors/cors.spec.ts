@@ -186,4 +186,25 @@ describe('cors middleware', () => {
     };
     expect(thrower).toThrowError('Invalid cors origin option');
   });
+  it('should NOT set credentials header when origin is wildcard', async () => {
+    app.use(cors({ origin: '*', credentials: true }), c => c.text('hello'));
+    const resp = await fetch(server.url, {
+      headers: { Origin: 'https://example.com' },
+    });
+    expect(resp.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(resp.headers.get('Access-Control-Allow-Credentials')).toBeNull();
+  });
+  it('should set credentials header when origin is specific and credentials=true', async () => {
+    app.use(
+      cors({ origin: 'https://example.com', credentials: true }),
+      c => c.text('hello')
+    );
+    const resp = await fetch(server.url, {
+      headers: { Origin: 'https://example.com' },
+    });
+    expect(resp.headers.get('Access-Control-Allow-Origin')).toBe(
+      'https://example.com'
+    );
+    expect(resp.headers.get('Access-Control-Allow-Credentials')).toBe('true');
+  });
 });
