@@ -1609,6 +1609,8 @@ Rules about file names:
 4. "$" are converted to dynamic segments (e.g.) `users.$id.ts` => "/users/:id"
 5. Routes are automatically sorted by specificity (e.g.) route order will
    be "users/me" then "users/:id", otherwise the former will never match
+6. `$splat.ts` has special meaning; it acts as "\*". In all other cases, `$param`
+   only matches one segment.
 
 ```ts
 // ./routes/api.users.$userId.ts

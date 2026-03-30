@@ -1,13 +1,12 @@
 import { Serve, Server } from 'bun';
 import os from 'node:os';
-import path from 'node:path';
 import bunshinePkg from '../../package.json' assert { type: 'json' };
 import Context from '../Context/Context';
 import MatcherWithCache from '../MatcherWithCache/MatcherWithCache';
-import RouteMatcher from '../RouteMatcher/RouteMatcher';
 import SocketRouter from '../SocketRouter/SocketRouter';
 import { fallback404 } from './fallback404';
 import { fallback500 } from './fallback500';
+import { registerFileRoutes } from './registerFileRoutes';
 
 export type NextFunction = () => Promise<Response>;
 
@@ -40,18 +39,9 @@ export const httpMethods = [
   'HEAD',
   'OPTIONS',
   'TRACE',
-];
-
-export const methodsPlusAliases = [...httpMethods, 'HEADGET'];
+] as const;
 
 export type HttpMethods = (typeof httpMethods)[number];
-
-export type FileRouteShape = {
-  filename: string;
-  method: string;
-  path: string;
-  handler: Handler;
-};
 
 export type HttpRouterOptions = {
   cacheSize?: number;
@@ -188,49 +178,18 @@ export default class HttpRouter {
    *
    * Each matched module whose default export is a function will be invoked with this router.
    *
-   * @param scanPath Absolute or relative directory path to scan.
+   * @param path Path to scan. Can be absolute or directory relative to cwd.
    * @param glob Glob pattern for files to include. Defaults to a recursive TypeScript glob.
    * @returns List of absolute file paths that were registered.
    */
   async registerFileRoutes({
-    path: scanPath,
+    path,
     glob = '**/*.ts',
   }: {
     path: string;
     glob?: string;
   }) {
-    const scanner = new Bun.Glob(glob);
-    const routes: FileRouteShape[] = [];
-    for await (const file of scanner.scan(scanPath)) {
-      const absolutePath = path.join(scanPath, file);
-      const module = await import(absolutePath);
-      const routePath =
-        '/' +
-        file
-          .replace(/\.[^.]+$/, '') // remove extension
-          .replaceAll('.', '/') // dots represent slashes
-          .replaceAll('$', ':'); // $ means a dynamic segment
-      for (const VERB of httpMethods) {
-        if (
-          typeof module[VERB] === 'function' ||
-          (Array.isArray(module[VERB]) &&
-            module[VERB].flat(9).every(f => typeof f === 'function'))
-        ) {
-          routes.push({
-            filename: file,
-            method: VERB,
-            path: routePath,
-            handler: module[VERB],
-          });
-        }
-      }
-    }
-
-    routes.sort(RouteMatcher.sortBySpecificity).forEach(r => {
-      this.on(r.method, r.path, r.handler);
-    });
-
-    return routes;
+    return registerFileRoutes(this, { path, glob });
   }
   /**
    * Register one or more handlers for a route path and HTTP method(s).
