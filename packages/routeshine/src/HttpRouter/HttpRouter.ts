@@ -7,18 +7,21 @@ export type NextFunction = () => Promise<Response>;
 
 export type SingleHandler<
   ParamsShape extends Record<string, string> = Record<string, string>,
+  TContext extends Context = Context,
 > = (
-  context: Context<ParamsShape>,
+  context: TContext & Context<ParamsShape>,
   next: NextFunction
 ) => Response | void | Promise<Response | void>;
 
 export type Handler<
   ParamsShape extends Record<string, string> = Record<string, string>,
-> = SingleHandler<ParamsShape> | Handler<ParamsShape>[];
+  TContext extends Context = Context,
+> = SingleHandler<ParamsShape, TContext> | Handler<ParamsShape, TContext>[];
 
 export type Middleware<
   ParamsShape extends Record<string, string> = Record<string, string>,
-> = SingleHandler<ParamsShape> | Handler<ParamsShape>[];
+  TContext extends Context = Context,
+> = SingleHandler<ParamsShape, TContext> | Handler<ParamsShape, TContext>[];
 
 export const httpMethods = [
   'ALL',
@@ -38,13 +41,13 @@ export type HttpRouterOptions = {
   cacheSize?: number;
 };
 
-export default class HttpRouter {
+export default class HttpRouter<TContext extends Context = Context> {
   locals: Record<string, any> = {};
-  routeMatcher: RouteMatcher<SingleHandler>;
-  onNotFound: (...handlers: Handler[]) => HttpRouter;
-  onError: (...handlers: Handler[]) => HttpRouter;
-  private _on404Handlers: SingleHandler[] = [];
-  private _on500Handlers: SingleHandler[] = [];
+  routeMatcher: RouteMatcher<SingleHandler<Record<string, string>, TContext>>;
+  onNotFound: (...handlers: Handler<Record<string, string>, TContext>[]) => this;
+  onError: (...handlers: Handler<Record<string, string>, TContext>[]) => this;
+  private _on404Handlers: SingleHandler<Record<string, string>, TContext>[] = [];
+  private _on500Handlers: SingleHandler<Record<string, string>, TContext>[] = [];
   /**
    * Create a new HttpRouter instance.
    *
@@ -52,7 +55,9 @@ export default class HttpRouter {
    * @param options.cacheSize Ignored in routeshine base class (used by bunshine's cached subclass).
    */
   constructor(_options: HttpRouterOptions = {}) {
-    this.routeMatcher = new RouteMatcher<SingleHandler>();
+    this.routeMatcher = new RouteMatcher<
+      SingleHandler<Record<string, string>, TContext>
+    >();
     this.onNotFound = this.on404;
     this.onError = this.on500;
   }
@@ -71,7 +76,7 @@ export default class HttpRouter {
   on<ParamsShape extends Record<string, string> = Record<string, string>>(
     verbOrVerbs: HttpMethods | HttpMethods[],
     path: string | RegExp,
-    ...handlers: Handler<ParamsShape>[]
+    ...handlers: Handler<ParamsShape, TContext>[]
   ) {
     if (Array.isArray(verbOrVerbs)) {
       for (const verb of verbOrVerbs) {
@@ -80,7 +85,11 @@ export default class HttpRouter {
       return this;
     }
     for (const handler of handlers.flat(9)) {
-      this.routeMatcher.add(verbOrVerbs, path, handler as SingleHandler);
+      this.routeMatcher.add(
+        verbOrVerbs,
+        path,
+        handler as SingleHandler<Record<string, string>, TContext>
+      );
     }
     return this;
   }
@@ -95,7 +104,7 @@ export default class HttpRouter {
    */
   all<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
-    ...handlers: Handler<ParamsShape>[]
+    ...handlers: Handler<ParamsShape, TContext>[]
   ) {
     return this.on<ParamsShape>('ALL', path, handlers);
   }
@@ -113,7 +122,7 @@ export default class HttpRouter {
    */
   get<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
-    ...handlers: Handler<ParamsShape>[]
+    ...handlers: Handler<ParamsShape, TContext>[]
   ) {
     return this.on<ParamsShape>('GET', path, handlers);
   }
@@ -127,7 +136,7 @@ export default class HttpRouter {
    */
   put<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
-    ...handlers: Handler<ParamsShape>[]
+    ...handlers: Handler<ParamsShape, TContext>[]
   ) {
     return this.on<ParamsShape>('PUT', path, handlers);
   }
@@ -141,7 +150,7 @@ export default class HttpRouter {
    */
   head<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
-    ...handlers: Handler<ParamsShape>[]
+    ...handlers: Handler<ParamsShape, TContext>[]
   ) {
     return this.on<ParamsShape>('HEAD', path, handlers);
   }
@@ -155,7 +164,7 @@ export default class HttpRouter {
    */
   post<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
-    ...handlers: Handler<ParamsShape>[]
+    ...handlers: Handler<ParamsShape, TContext>[]
   ) {
     return this.on<ParamsShape>('POST', path, handlers);
   }
@@ -169,7 +178,7 @@ export default class HttpRouter {
    */
   patch<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
-    ...handlers: Handler<ParamsShape>[]
+    ...handlers: Handler<ParamsShape, TContext>[]
   ) {
     return this.on<ParamsShape>('PATCH', path, handlers);
   }
@@ -183,7 +192,7 @@ export default class HttpRouter {
    */
   trace<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
-    ...handlers: Handler<ParamsShape>[]
+    ...handlers: Handler<ParamsShape, TContext>[]
   ) {
     return this.on<ParamsShape>('TRACE', path, handlers);
   }
@@ -197,7 +206,7 @@ export default class HttpRouter {
    */
   delete<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
-    ...handlers: Handler<ParamsShape>[]
+    ...handlers: Handler<ParamsShape, TContext>[]
   ) {
     return this.on<ParamsShape>('DELETE', path, handlers);
   }
@@ -211,7 +220,7 @@ export default class HttpRouter {
    */
   options<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
-    ...handlers: Handler<ParamsShape>[]
+    ...handlers: Handler<ParamsShape, TContext>[]
   ) {
     return this.on<ParamsShape>('OPTIONS', path, handlers);
   }
@@ -228,7 +237,7 @@ export default class HttpRouter {
    */
   headGet<ParamsShape extends Record<string, string> = Record<string, string>>(
     path: string | RegExp,
-    ...handlers: Handler<ParamsShape>[]
+    ...handlers: Handler<ParamsShape, TContext>[]
   ) {
     return this.on<ParamsShape>(['HEAD', 'GET'], path, handlers);
   }
@@ -240,7 +249,7 @@ export default class HttpRouter {
    * @param handlers One or more handler functions or arrays of handlers.
    * @returns This HttpRouter instance for chaining.
    */
-  use = (...handlers: Handler[]) => {
+  use = (...handlers: Handler<Record<string, string>, TContext>[]) => {
     return this.all('*', handlers);
   };
   /**
@@ -252,8 +261,10 @@ export default class HttpRouter {
    * @param handlers One or more handler functions or arrays of handlers.
    * @returns This HttpRouter instance for chaining.
    */
-  on404 = (...handlers: Handler[]) => {
-    this._on404Handlers.push(...(handlers.flat(9) as SingleHandler[]));
+  on404 = (...handlers: Handler<Record<string, string>, TContext>[]) => {
+    this._on404Handlers.push(
+      ...(handlers.flat(9) as SingleHandler<Record<string, string>, TContext>[])
+    );
     return this;
   };
   /**
@@ -265,8 +276,10 @@ export default class HttpRouter {
    * @param handlers One or more handler functions or arrays of handlers.
    * @returns This HttpRouter instance for chaining.
    */
-  on500 = (...handlers: Handler[]) => {
-    this._on500Handlers.push(...(handlers.flat(9) as SingleHandler[]));
+  on500 = (...handlers: Handler<Record<string, string>, TContext>[]) => {
+    this._on500Handlers.push(
+      ...(handlers.flat(9) as SingleHandler<Record<string, string>, TContext>[])
+    );
     return this;
   };
   /**
@@ -280,7 +293,7 @@ export default class HttpRouter {
    * @returns A Response resolved from route or error handlers.
    */
   fetch = async (request: Request, server?: unknown) => {
-    const context = new Context(request, server, this);
+    const context = new Context(request, server, this) as unknown as TContext;
     const pathname = context.url.pathname;
     const method = (
       request.headers.get('X-HTTP-Method-Override') || request.method
@@ -301,17 +314,23 @@ export default class HttpRouter {
    * @param context Request context object.
    * @returns A Response from a route, a 404 fallback, or a 500 fallback.
    */
-  dispatch = (method: HttpMethods, pathname: string, context: Context) => {
+  dispatch = (method: HttpMethods, pathname: string, context: TContext) => {
     // Match route handlers first (without 404 fallbacks)
     let routeMatches = this.routeMatcher.match(method, pathname);
     // Auto-handle HEAD via GET when no explicit HEAD handler is registered
     if (method === 'HEAD' && routeMatches.length === 0) {
       routeMatches = this.routeMatcher.match('GET', pathname);
     }
-    const matched: Array<[SingleHandler, Record<string, string>]> = [
+    const matched: Array<
+      [SingleHandler<Record<string, string>, TContext>, Record<string, string>]
+    > = [
       ...routeMatches,
       ...this._on404Handlers.map(
-        h => [h, {}] as [SingleHandler, Record<string, string>]
+        h =>
+          [h, {}] as [
+            SingleHandler<Record<string, string>, TContext>,
+            Record<string, string>,
+          ]
       ),
     ];
     let i = 0;
@@ -320,11 +339,14 @@ export default class HttpRouter {
       if (!match) {
         return fallback404(context);
       }
-      const handler = match[0] as SingleHandler;
-      context.params = match[1];
+      const handler = match[0];
+      (context as Context).params = match[1];
 
       try {
-        let result = await handler(context, next);
+        let result = await handler(
+          context as TContext & Context<Record<string, string>>,
+          next
+        );
         if (result instanceof Response) {
           return result;
         } else {
@@ -339,7 +361,7 @@ export default class HttpRouter {
         // a response has been thrown; respond to client with it
         return e;
       }
-      context.error = e as Error;
+      (context as Context).error = e as Error;
       let idx = 0;
       const nextError: NextFunction = async () => {
         const handler = this._on500Handlers[idx++];
@@ -347,7 +369,10 @@ export default class HttpRouter {
           return fallback500(context);
         }
         try {
-          let result = handler(context, nextError);
+          let result = handler(
+            context as TContext & Context<Record<string, string>>,
+            nextError
+          );
           if (result instanceof Response) {
             return result;
           }
@@ -358,7 +383,7 @@ export default class HttpRouter {
             }
           }
         } catch (e) {
-          context.error = e as Error;
+          (context as Context).error = e as Error;
         }
         return nextError();
       };

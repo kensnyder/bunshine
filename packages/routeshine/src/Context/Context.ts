@@ -1,4 +1,6 @@
 import type HttpRouter from '../HttpRouter/HttpRouter';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyHttpRouter = HttpRouter<any>;
 import {
   cssResponse,
   htmlResponse,
@@ -46,7 +48,7 @@ export default class Context<
    * The HttpRouter instance handling this request.
    * You typically won't need this inside handlers, but it can be useful for advanced patterns.
    */
-  app: HttpRouter;
+  app: AnyHttpRouter;
   /**
    * The request params parsed from the matched route's placeholder segments.
    * Example: for route "/users/:id" and path "/users/123", params.id === "123".
@@ -81,7 +83,7 @@ export default class Context<
    * @param server - The server instance handling the request (runtime-specific).
    * @param app - The HttpRouter instance your routes are registered on.
    */
-  constructor(request: Request, server: TServer, app: HttpRouter) {
+  constructor(request: Request, server: TServer, app: AnyHttpRouter) {
     this.request = request;
     this.req = request;
     this.server = server;
