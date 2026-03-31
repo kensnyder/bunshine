@@ -12,10 +12,10 @@ The following power npm packages with the same name.
 
 - [bunshine](./packages/bunshine/README.md) - The original Bunshine HTTP Server package
 - [cloudshine](./packages/cloudshine/README.md) - Compatible with Cloudflare Workers
-- [nodeshine](./packages/cloudshine/README.md) - Compatible with Node
-- [connect-to-fetch](./packages/connect-to-fetch/README.md) - A package to use [connect-style middleware](https://github.com/senchalabs/connect) such as an [Express](https://expressjs.com/) middleware with Fetch environments such as `Bun.serve`, `Deno.serve`, and Cloudflare Workers
+- [nodeshine](./packages/nodeshine/README.md) - Compatible with Node
+- [connect-to-fetch](./packages/connect-to-fetch/README.md) - A general package for running [connect-style middleware](https://github.com/senchalabs/connect) such as an [Express](https://expressjs.com/) middleware in `Fetch` HTTP server environments such as `Bun.serve`, `Deno.serve`, and Cloudflare Workers.
+- [react-router-shine](./packages/react-router-shine/README.md) - Use Remix+Vite with `bunshine` or `nodeshine`.
 
-The following are supporting packages 
+The following are supporting code not published separately to npm.
 
 - [routeshine](./packages/routeshine/README.md) - The handler and middleware runner common to other packages
-- [react-router-shine](./packages/react-router-bunshine/README.md) - Use Remix+Vite with `bunshine` or `nodeshine`.
