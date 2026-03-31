@@ -1,6 +1,8 @@
 # Agent Guide for Multibyte
 
-This `bunshine` monorepo is focused on creating a fast HTTP server based on Bun's HTTP & Websocket server APIs. Handlers receive a context function that allows reading native `Request` objects and returning native `Response` objects.
+This `bunshine` monorepo is focused on creating a fast HTTP server that uses standard Request/Response objects. There is a package for Bun, Cloudflare Workers, and Node. With Bun, you get Bun's ultra-fast HTTP server and integrated web socket APIs. 
+
+Handlers receive a context function that allows reading native `Request` objects and returning native `Response` objects. It supports
 
 ## General
 
