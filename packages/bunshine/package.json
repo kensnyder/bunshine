@@ -49,7 +49,8 @@
   "homepage": "https://github.com/kensnyder/bunshine#readme",
   "dependencies": {
     "file-type": "^19.6.0",
-    "lru-cache": "^11.2.2"
+    "lru-cache": "^11.2.2",
+    "routeshine": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "^1.3.1",

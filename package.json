@@ -1,0 +1,10 @@
+{
+  "name": "bunshine-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/bunshine",
+    "packages/routeshine",
+    "packages/connect-to-fetch",
+    "packages/remix-adapter-bunshine"
+  ]
+}
