@@ -4,7 +4,7 @@ import HttpRouter from '../../HttpRouter/HttpRouter';
 
 describe('c.file()', () => {
   let app: HttpRouter;
-  let server: Server;
+  let server: Server<unknown>;
   beforeEach(() => {
     app = new HttpRouter();
     server = app.listen({ port: 0 });

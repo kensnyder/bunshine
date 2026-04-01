@@ -22,6 +22,7 @@ export type FileRouteShape = {
   method: FileRouteFunctionName;
   path: string;
   handler: Handler;
+  specificityScore: number[];
 };
 
 /**

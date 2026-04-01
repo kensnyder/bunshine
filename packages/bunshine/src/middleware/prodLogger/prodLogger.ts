@@ -1,8 +1,8 @@
 import os from 'node:os';
-import bunshinePkg from '../../../package.json' assert { type: 'json' };
+import bunshinePkg from '../../../package.json' with { type: 'json' };
 import type { Middleware } from '../../HttpRouter/HttpRouter';
 import withTryCatch from '../../withTryCatch/withTryCatch';
-import { LoggerOptions } from '../LoggerOptions';
+import type { LoggerOptions } from '../LoggerOptions';
 
 const machine = os.hostname();
 const runtime = process.versions.bun

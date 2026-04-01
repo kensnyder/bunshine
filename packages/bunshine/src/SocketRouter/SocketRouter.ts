@@ -116,8 +116,7 @@ export default class SocketRouter {
           // See https://bun.sh/guides/websocket/upgrade
           return undefined;
         }
-      } catch (e) {
-        const error = e as Error;
+      } catch (_e) {
         return c.text('Internal server error', {
           status: 500,
         });

@@ -101,7 +101,6 @@ export default function sse(
   headers.set('Content-Type', 'text/event-stream; charset=utf-8');
   headers.set('Cache-Control', 'no-cache');
   headers.set('Connection', 'keep-alive');
-  // @ts-expect-error
   return new Response(stream, { ...init, headers });
 }
 
