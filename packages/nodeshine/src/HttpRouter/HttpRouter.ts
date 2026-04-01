@@ -8,7 +8,7 @@ import {
   type Middleware as BaseMiddleware,
   type SingleHandler as BaseSingleHandler,
 } from 'routeshine';
-import NodeContext from '../Context/Context.ts';
+import NodeContext from '../Context/Context';
 
 export type NextFunction = () => Promise<Response>;
 

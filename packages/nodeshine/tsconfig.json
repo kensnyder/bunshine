@@ -17,8 +17,7 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "strict": true,
-    "downlevelIteration": true,
-    "noImplicitAny": false,
+"noImplicitAny": false,
     "types": ["bun-types", "node"]
   }
 }

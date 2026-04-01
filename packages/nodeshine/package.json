@@ -6,7 +6,10 @@
   "main": "index.ts",
   "types": "dist/index.d.ts",
   "scripts": {
+    "build": "bun run build:dts && bun run build:esm && bun run build:cjs",
     "build:dts": "yes | bunx dts-bundle-generator -o dist/index.d.ts index.ts",
+    "build:esm": "bun build ./index.ts --bundle --platform=node --format=esm --outfile=dist/index.mjs",
+    "build:cjs": "bun build ./index.ts --bundle --platform=node --format=cjs --outfile=dist/index.cjs",
     "hello": "node --import tsx/esm testFixtures/hello.ts"
   },
   "sideEffects": false,

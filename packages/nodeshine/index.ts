@@ -1,4 +1,4 @@
-export { default as Context } from './src/Context/Context.ts';
+export { default as Context } from './src/Context/Context';
 export {
   default as HttpRouter,
   type Handler,
@@ -9,7 +9,7 @@ export {
   type Middleware,
   type NextFunction,
   type SingleHandler,
-} from './src/HttpRouter/HttpRouter.ts';
+} from './src/HttpRouter/HttpRouter';
 export {
   type ApplyHandlerIfArgs,
   applyHandlerIf,

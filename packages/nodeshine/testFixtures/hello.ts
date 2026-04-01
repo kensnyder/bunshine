@@ -1,4 +1,4 @@
-import { HttpRouter } from '../index.ts';
+import { HttpRouter } from '../index';
 
 const app = new HttpRouter();
 

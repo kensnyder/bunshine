@@ -1,6 +1,6 @@
 import type { IncomingMessage, Server } from 'node:http';
 import { Context as BaseContext } from 'routeshine';
-import type NodeHttpRouter from '../HttpRouter/HttpRouter.ts';
+import type NodeHttpRouter from '../HttpRouter/HttpRouter';
 
 /**
  * Node.js-specific Context extends the platform-agnostic base Context with
