@@ -1,11 +1,6 @@
 import os from 'node:os';
 import type { Serve, Server } from 'bun';
-import bunshinePkg from '../../package.json';
-
-assert;
-{
-  type: 'json';
-}
+import bunshinePkg from '../../package.json' with { type: 'json' };
 
 import {
   type Handler as BaseHandler,

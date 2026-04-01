@@ -1,10 +1,12 @@
 # macOS
 .DS_Store
-node_modules
 
 # IDEs
 .idea
 .vscode
 .history
 
+# Others
+.wrangler
+node_modules
 vite-examples
