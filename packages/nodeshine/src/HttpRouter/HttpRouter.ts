@@ -4,11 +4,11 @@ import {
   type Handler as BaseHandler,
   HttpRouter as BaseHttpRouter,
   type HttpMethods,
+  MatcherWithCache,
   type Middleware as BaseMiddleware,
   type SingleHandler as BaseSingleHandler,
 } from 'routeshine';
 import NodeContext from '../Context/Context.ts';
-import MatcherWithCache from '../MatcherWithCache/MatcherWithCache.ts';
 
 export type NextFunction = () => Promise<Response>;
 

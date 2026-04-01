@@ -5,11 +5,11 @@ import bunshinePkg from '../../package.json' with { type: 'json' };
 import {
   type Handler as BaseHandler,
   HttpRouter as BaseHttpRouter,
+  MatcherWithCache,
   type Middleware as BaseMiddleware,
   type SingleHandler as BaseSingleHandler,
 } from 'routeshine';
 import BunContext from '../Context/Context';
-import MatcherWithCache from '../MatcherWithCache/MatcherWithCache';
 import SocketRouter from '../SocketRouter/SocketRouter';
 import { registerFileRoutes } from './registerFileRoutes';
 

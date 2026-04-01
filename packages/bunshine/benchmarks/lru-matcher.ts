@@ -1,5 +1,4 @@
-import MatcherWithCache from '../src/MatcherWithCache/MatcherWithCache.ts';
-import RouteMatcher from '../src/RouteMatcher/RouteMatcher.ts';
+import { MatcherWithCache, RouteMatcher } from 'routeshine';
 import { runBenchmarks } from './runBenchmarks.ts';
 
 /*

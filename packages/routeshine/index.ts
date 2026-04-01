@@ -33,6 +33,7 @@ export {
 export { performanceHeader } from './src/middleware/performanceHeader/performanceHeader';
 export { trailingSlashes } from './src/middleware/trailingSlashes/trailingSlashes';
 export { default as ms } from './src/ms/ms';
+export { default as MatcherWithCache } from './src/MatcherWithCache/MatcherWithCache';
 export { default as RouteMatcher } from './src/RouteMatcher/RouteMatcher';
 export {
   cssResponse,
