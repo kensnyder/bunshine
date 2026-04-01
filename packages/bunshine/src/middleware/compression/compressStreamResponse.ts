@@ -7,7 +7,7 @@ import {
   type ZlibOptions,
   type ZstdOptions,
 } from 'node:zlib';
-import { CompressionType } from './compression';
+import type { CompressionType } from './compression';
 
 export default async function compressStreamResponse(
   response: Response,

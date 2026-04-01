@@ -11,40 +11,40 @@ export {
   type SingleHandler,
 } from './src/HttpRouter/HttpRouter';
 export {
-  applyHandlerIf,
   type ApplyHandlerIfArgs,
+  applyHandlerIf,
 } from './src/middleware/applyHandlerIf/applyHandlerIf';
 export {
-  compression,
-  compressionDefaults,
   type CompressionOptions,
   type CompressionType,
+  compression,
+  compressionDefaults,
   type RecognizedEncoding,
 } from './src/middleware/compression/compression';
 export {
+  type CorsOptions,
   cors,
   corsDefaults,
-  type CorsOptions,
 } from './src/middleware/cors/cors';
 export { devLogger } from './src/middleware/devLogger/devLogger';
 export {
   defaultEtagsCalculator,
-  etags,
   type EtagHashCalculator,
   type EtagOptions,
+  etags,
 } from './src/middleware/etags/etags';
 export {
-  headers,
   type HeaderCondition,
   type HeaderValue,
   type HeaderValues,
+  headers,
 } from './src/middleware/headers/headers';
-export { type LoggerOptions } from './src/middleware/LoggerOptions';
+export type { LoggerOptions } from './src/middleware/LoggerOptions';
 export { performanceHeader } from './src/middleware/performanceHeader/performanceHeader';
 export { prodLogger } from './src/middleware/prodLogger/prodLogger';
 export {
-  serveFiles,
   type ServeFilesOptions,
+  serveFiles,
 } from './src/middleware/serveFiles/serveFiles';
 export { trailingSlashes } from './src/middleware/trailingSlashes/trailingSlashes';
 export { default as ms } from './src/ms/ms';
@@ -57,17 +57,17 @@ export {
   plaintextResponse,
   xmlResponse,
 } from './src/responseFactories/factory/factory';
-export { type FileResponseOptions } from './src/responseFactories/file/file';
+export type { FileResponseOptions } from './src/responseFactories/file/file';
 export { default as jsonResponse } from './src/responseFactories/json/json';
-export {
-  type SseClose,
-  type SseSend,
-  type SseSetupFunction,
+export type {
+  SseClose,
+  SseSend,
+  SseSetupFunction,
 } from './src/responseFactories/sse/sse';
 export {
-  default as SocketRouter,
   type BunHandlers,
   type BunshineHandlers,
+  default as SocketRouter,
   type SocketCloseHandler,
   type SocketErrorHandler,
   type SocketEventType,

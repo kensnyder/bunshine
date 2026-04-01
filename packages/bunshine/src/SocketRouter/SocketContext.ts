@@ -1,5 +1,5 @@
-import { Server, ServerWebSocket, ServerWebSocketSendStatus } from 'bun';
-import { WsDataShape } from './SocketRouter';
+import type { Server, ServerWebSocket, ServerWebSocketSendStatus } from 'bun';
+import type { WsDataShape } from './SocketRouter';
 
 /**
  * Narrowly and correctly detect BufferSource values.

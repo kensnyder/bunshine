@@ -1,5 +1,5 @@
-import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import type { Server } from 'bun';
 import HttpRouter from './HttpRouter';
 
 // @ts-expect-error
@@ -354,10 +354,12 @@ describe('HttpRouter', () => {
       expect(resp.headers.get('Message')).toBe('Hi Bob');
     });
     it('should auto-handle HEAD via GET handler', async () => {
-      app.get('/resource', () =>
-        new Response('body content', {
-          headers: { 'X-Custom': 'value' },
-        })
+      app.get(
+        '/resource',
+        () =>
+          new Response('body content', {
+            headers: { 'X-Custom': 'value' },
+          })
       );
       const resp = await fetch(`${server.url}/resource`, { method: 'HEAD' });
       expect(resp.status).toBe(200);
@@ -367,8 +369,9 @@ describe('HttpRouter', () => {
     });
     it('should prefer explicit HEAD handler over GET auto-handling', async () => {
       app.get('/resource', () => new Response('from GET'));
-      app.head('/resource', () =>
-        new Response(null, { headers: { 'X-Source': 'explicit-head' } })
+      app.head(
+        '/resource',
+        () => new Response(null, { headers: { 'X-Source': 'explicit-head' } })
       );
       const resp = await fetch(`${server.url}/resource`, { method: 'HEAD' });
       expect(resp.status).toBe(200);
@@ -433,7 +436,7 @@ describe('HttpRouter', () => {
       expect(body).toEqual({ name: 'Charlie' });
     });
     it('should handle TRACE', async () => {
-      let body: { name: string } = { name: '' };
+      const body: { name: string } = { name: '' };
       app.trace('/', () => {
         return new Response(null, {
           headers: {

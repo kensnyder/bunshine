@@ -1,10 +1,6 @@
-import {
-  type BrotliOptions,
-  type ZlibOptions,
-  type ZstdOptions,
-} from 'node:zlib';
+import type { BrotliOptions, ZlibOptions, ZstdOptions } from 'node:zlib';
 import type Context from '../../Context/Context';
-import { Middleware } from '../../HttpRouter/HttpRouter';
+import type { Middleware } from '../../HttpRouter/HttpRouter';
 import withTryCatch from '../../withTryCatch/withTryCatch';
 import compressStreamResponse from './compressStreamResponse';
 import compressWholeResponse from './compressWholeResponse';
@@ -55,7 +51,7 @@ export function compression(
       : resolvedOptions.prefer;
   if (!Bun.zstdCompress) {
     // zstd only available in Bun 1.3+
-    // @ts-ignore We know that prefer is an Array at this point
+    // @ts-expect-error We know that prefer is an Array at this point
     resolvedOptions.prefer = resolvedOptions.prefer.filter(
       (p: string) => p !== 'zstd'
     );

@@ -1,5 +1,5 @@
-import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import type { Server } from 'bun';
 import HttpRouter from '../../HttpRouter/HttpRouter';
 import { cors } from './cors';
 
@@ -195,9 +195,8 @@ describe('cors middleware', () => {
     expect(resp.headers.get('Access-Control-Allow-Credentials')).toBeNull();
   });
   it('should set credentials header when origin is specific and credentials=true', async () => {
-    app.use(
-      cors({ origin: 'https://example.com', credentials: true }),
-      c => c.text('hello')
+    app.use(cors({ origin: 'https://example.com', credentials: true }), c =>
+      c.text('hello')
     );
     const resp = await fetch(server.url, {
       headers: { Origin: 'https://example.com' },

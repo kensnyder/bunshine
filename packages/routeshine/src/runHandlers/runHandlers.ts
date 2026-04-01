@@ -1,5 +1,9 @@
-import Context from '../Context/Context';
-import { Handler, NextFunction, SingleHandler } from '../HttpRouter/HttpRouter';
+import type Context from '../Context/Context';
+import type {
+  Handler,
+  NextFunction,
+  SingleHandler,
+} from '../HttpRouter/HttpRouter';
 
 export type FallbackHandler = (c: Context) => Response | Promise<Response>;
 
@@ -28,7 +32,7 @@ export default function runHandlers({
       }
     }
     try {
-      let result = await handler(context, next);
+      const result = await handler(context, next);
       if (result instanceof Response) {
         return result;
       } else {

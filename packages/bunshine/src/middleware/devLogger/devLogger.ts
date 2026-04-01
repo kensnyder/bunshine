@@ -1,6 +1,6 @@
 import type { Middleware } from '../../HttpRouter/HttpRouter';
 import withTryCatch from '../../withTryCatch/withTryCatch';
-import { LoggerOptions } from '../LoggerOptions';
+import type { LoggerOptions } from '../LoggerOptions';
 
 export function devLogger(options: LoggerOptions = {}): Middleware {
   const safeWriter = withTryCatch({
@@ -23,7 +23,7 @@ export function devLogger(options: LoggerOptions = {}): Middleware {
       return resp;
     }
     const range = c.request.headers.get('Range');
-    let maybeRange = range ? ` ${gray(range)}` : '';
+    const maybeRange = range ? ` ${gray(range)}` : '';
     // log response status
     const ms = (performance.now() - start).toFixed(1);
     safeWriter(

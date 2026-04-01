@@ -44,10 +44,14 @@ export type HttpRouterOptions = {
 export default class HttpRouter<TContext extends Context = Context> {
   locals: Record<string, any> = {};
   routeMatcher: RouteMatcher<SingleHandler<Record<string, string>, TContext>>;
-  onNotFound: (...handlers: Handler<Record<string, string>, TContext>[]) => this;
+  onNotFound: (
+    ...handlers: Handler<Record<string, string>, TContext>[]
+  ) => this;
   onError: (...handlers: Handler<Record<string, string>, TContext>[]) => this;
-  private _on404Handlers: SingleHandler<Record<string, string>, TContext>[] = [];
-  private _on500Handlers: SingleHandler<Record<string, string>, TContext>[] = [];
+  private _on404Handlers: SingleHandler<Record<string, string>, TContext>[] =
+    [];
+  private _on500Handlers: SingleHandler<Record<string, string>, TContext>[] =
+    [];
   /**
    * Create a new HttpRouter instance.
    *
@@ -343,7 +347,7 @@ export default class HttpRouter<TContext extends Context = Context> {
       (context as Context).params = match[1];
 
       try {
-        let result = await handler(
+        const result = await handler(
           context as TContext & Context<Record<string, string>>,
           next
         );

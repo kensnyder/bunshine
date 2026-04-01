@@ -1,5 +1,5 @@
-import Context from '../../Context/Context';
-import {
+import type Context from '../../Context/Context';
+import type {
   Handler,
   Middleware,
   SingleHandler,

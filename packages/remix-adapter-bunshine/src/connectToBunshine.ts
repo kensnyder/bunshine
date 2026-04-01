@@ -1,11 +1,11 @@
-import { type Middleware } from 'bunshine';
+import type { Middleware } from 'bunshine';
 import { connectToFetch, type FlatHandlers } from 'connect-to-fetch';
 
 export default function connectToBunshine(
   ...connectHandlers: FlatHandlers[]
 ): Middleware {
   const getResponse = connectToFetch(...connectHandlers);
-  return async function (c) {
+  return async c => {
     try {
       return await getResponse(c.request);
     } catch (e) {

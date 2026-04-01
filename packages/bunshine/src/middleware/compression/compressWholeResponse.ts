@@ -1,13 +1,13 @@
 import { promisify } from 'node:util';
 import {
+  type BrotliOptions,
   brotliCompress,
   gzip,
-  zstdCompress,
-  type BrotliOptions,
   type ZlibOptions,
   type ZstdOptions,
+  zstdCompress,
 } from 'node:zlib';
-import { CompressionType } from './compression';
+import type { CompressionType } from './compression';
 
 const brPromise = promisify(brotliCompress);
 const gzipPromise = promisify(gzip);

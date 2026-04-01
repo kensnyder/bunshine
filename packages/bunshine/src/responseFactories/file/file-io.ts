@@ -1,8 +1,8 @@
-import { BunFile } from 'bun';
+import path from 'node:path';
+import type { BunFile } from 'bun';
 import { fileTypeFromBuffer } from 'file-type';
 import fs from 'fs/promises';
 import { LRUCache } from 'lru-cache';
-import path from 'node:path';
 
 export type FileLike = string | Blob | Uint8Array | ArrayBuffer;
 

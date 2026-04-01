@@ -1,5 +1,5 @@
-import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
+import type { Server } from 'bun';
 import HttpRouter from '../HttpRouter/HttpRouter';
 
 describe('server', () => {
@@ -229,7 +229,7 @@ describe('server', () => {
   });
   it('should handle errors', async () => {
     const errorData = await new Promise((resolve, reject) => {
-      let data: Array<{ type: string; message: string }> = [];
+      const data: Array<{ type: string; message: string }> = [];
       app.socket.at('/chat/:id', {
         error(sc, error) {
           data.push({ type: sc.type, message: error.message });
@@ -276,8 +276,8 @@ describe('server', () => {
     let wasSubscribed = false;
     const [messages, events] = await new Promise<[string[], string[]]>(
       async resolve => {
-        let messages: string[] = [];
-        let events: string[] = [];
+        const messages: string[] = [];
+        const events: string[] = [];
         app.socket.at<{ id: string; user: string }>('/chat/:id', {
           upgrade({ url, params }) {
             return {

@@ -1,4 +1,4 @@
-import { Middleware } from '../../HttpRouter/HttpRouter';
+import type { Middleware } from '../../HttpRouter/HttpRouter';
 
 export function trailingSlashes(mode: 'add' | 'remove'): Middleware {
   if (mode === 'add') {

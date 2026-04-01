@@ -1,5 +1,5 @@
-import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import type { Server } from 'bun';
 import HttpRouter from '../../HttpRouter/HttpRouter';
 import { trailingSlashes } from './trailingSlashes';
 

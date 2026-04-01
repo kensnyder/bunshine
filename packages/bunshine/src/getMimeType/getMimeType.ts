@@ -1,4 +1,4 @@
-import { BunFile } from 'bun';
+import type { BunFile } from 'bun';
 
 export default function getMimeType(file: BunFile) {
   // Currently, we let Bun.file handle looking up mime types

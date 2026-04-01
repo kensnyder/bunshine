@@ -8,7 +8,7 @@ type Registration<T> = {
 
 type Result<T> = Array<[T, Record<string, string>]>;
 
-export default class RouteMatcher<Target extends any> {
+export default class RouteMatcher<Target> {
   registered: Registration<Target>[] = [];
   match(method: string, subject: string, fallbacks?: Target[]) {
     const matched: Result<Target> = [];

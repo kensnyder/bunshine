@@ -44,7 +44,7 @@ export function cors(options: CorsOptions = {}): Middleware {
   const optionsRequestHandler = getOptionsRequestHandler(opts, originResolver);
   const maybeAddAccessHeaders = getAccessHeaderHandler(opts, originResolver);
   const exceptWhen = withTryCatch({
-    label: 'Routeshine cors middleware: your exceptWhen function threw an error',
+    label: 'cors middleware: your exceptWhen function threw an error',
     defaultReturn: false,
     func: opts.exceptWhen,
   });

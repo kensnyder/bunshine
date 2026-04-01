@@ -4,52 +4,52 @@ export {
   type Handler,
   type HttpMethods,
   type HttpRouterOptions,
+  httpMethods,
   type Middleware,
   type NextFunction,
   type SingleHandler,
-  httpMethods,
 } from './src/HttpRouter/HttpRouter';
 export {
-  applyHandlerIf,
   type ApplyHandlerIfArgs,
+  applyHandlerIf,
 } from './src/middleware/applyHandlerIf/applyHandlerIf';
 export {
+  type CorsOptions,
   cors,
   corsDefaults,
-  type CorsOptions,
 } from './src/middleware/cors/cors';
 export {
   defaultEtagsCalculator,
-  etags,
   type EtagHashCalculator,
   type EtagOptions,
+  etags,
 } from './src/middleware/etags/etags';
 export {
-  headers,
   type HeaderCondition,
   type HeaderValue,
   type HeaderValues,
+  headers,
 } from './src/middleware/headers/headers';
 export { performanceHeader } from './src/middleware/performanceHeader/performanceHeader';
 export { trailingSlashes } from './src/middleware/trailingSlashes/trailingSlashes';
 export { default as ms } from './src/ms/ms';
+export { default as RouteMatcher } from './src/RouteMatcher/RouteMatcher';
 export {
   cssResponse,
   default as factory,
+  type Factory,
   htmlResponse,
   jsResponse,
   plaintextResponse,
   xmlResponse,
-  type Factory,
 } from './src/responseFactories/factory/factory';
 export { default as jsonResponse } from './src/responseFactories/json/json';
 export { default as redirect } from './src/responseFactories/redirect/redirect';
-export {
-  type SseClose,
-  type SseSend,
-  type SseSetupFunction,
+export type {
+  SseClose,
+  SseSend,
+  SseSetupFunction,
 } from './src/responseFactories/sse/sse';
-export { default as RouteMatcher } from './src/RouteMatcher/RouteMatcher';
 export {
   default as runHandlers,
   type FallbackHandler,

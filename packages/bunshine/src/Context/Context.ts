@@ -2,7 +2,7 @@ import type { Server } from 'bun';
 import { Context as BaseContext } from 'routeshine';
 import type HttpRouter from '../HttpRouter/HttpRouter';
 import file, { type FileResponseOptions } from '../responseFactories/file/file';
-import { FileLike } from '../responseFactories/file/file-io';
+import type { FileLike } from '../responseFactories/file/file-io';
 
 /**
  * Bun-specific Context extends the platform-agnostic base Context with

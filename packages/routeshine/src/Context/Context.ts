@@ -1,6 +1,8 @@
 import type HttpRouter from '../HttpRouter/HttpRouter';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyHttpRouter = HttpRouter<any>;
+
 import {
   cssResponse,
   htmlResponse,
@@ -171,7 +173,7 @@ export default class Context<
    */
   took = (precision = 0) => {
     const elapsed = Date.now() - this.now;
-    const factor = Math.pow(10, precision);
+    const factor = 10 ** precision;
     return Math.round(elapsed * factor) / factor;
   };
 }

@@ -80,7 +80,7 @@ export default function sse(
     },
   });
 
-  let headers = new Headers(init.headers);
+  const headers = new Headers(init.headers);
   if (
     headers.has('Content-Type') &&
     !/^text\/event-stream/.test(headers.get('Content-Type')!)
@@ -101,7 +101,7 @@ export default function sse(
   headers.set('Content-Type', 'text/event-stream; charset=utf-8');
   headers.set('Cache-Control', 'no-cache');
   headers.set('Connection', 'keep-alive');
-  // @ts-ignore
+  // @ts-expect-error
   return new Response(stream, { ...init, headers });
 }
 

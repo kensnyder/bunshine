@@ -1,8 +1,8 @@
 // Adapted from https://github.com/vikejs/vike-node/blob/main/packages/vike-node/src/runtime/adapters/createServerResponse.ts
 import {
-  ServerResponse,
   type IncomingMessage,
   type OutgoingHttpHeaders,
+  ServerResponse,
 } from 'node:http';
 import { PassThrough, Readable } from 'node:stream';
 

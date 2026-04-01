@@ -1,7 +1,7 @@
-import type { Server } from 'bun';
 import { afterEach, describe, expect, it } from 'bun:test';
+import type { Server } from 'bun';
 import connectToFetch from './connectToFetch';
-import { ConnectErrorHandler, ConnectRouteHandler } from './handler.types';
+import type { ConnectErrorHandler, ConnectRouteHandler } from './handler.types';
 
 describe('connectToFetch', () => {
   let server: Server;

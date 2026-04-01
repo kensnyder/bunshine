@@ -1,7 +1,7 @@
-import Context from '../../Context/Context';
+import type Context from '../../Context/Context';
 import parseRangeHeader from '../../parseRangeHeader/parseRangeHeader';
 import {
-  FileLike,
+  type FileLike,
   getFileBaseName,
   getFileChunk,
   getFileFull,

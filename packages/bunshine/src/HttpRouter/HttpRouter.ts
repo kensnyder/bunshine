@@ -1,9 +1,15 @@
-import { Serve, Server } from 'bun';
 import os from 'node:os';
-import bunshinePkg from '../../package.json' assert { type: 'json' };
+import type { Serve, Server } from 'bun';
+import bunshinePkg from '../../package.json';
+
+assert;
+{
+  type: 'json';
+}
+
 import {
-  HttpRouter as BaseHttpRouter,
   type Handler as BaseHandler,
+  HttpRouter as BaseHttpRouter,
   type Middleware as BaseMiddleware,
   type SingleHandler as BaseSingleHandler,
 } from 'routeshine';
@@ -30,7 +36,11 @@ export type ListenOptions =
   | Omit<Serve.Options<any, any>, 'fetch' | 'websocket'>
   | number;
 
-export { httpMethods, type HttpMethods, type HttpRouterOptions } from 'routeshine';
+export {
+  type HttpMethods,
+  type HttpRouterOptions,
+  httpMethods,
+} from 'routeshine';
 
 export type EmitUrlOptions = {
   verbose?: boolean;

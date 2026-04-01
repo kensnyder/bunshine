@@ -1,7 +1,7 @@
-import type { Server } from 'bun';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import type { Server } from 'bun';
 import { HttpRouter } from 'bunshine';
-import {
+import type {
   ConnectErrorHandler,
   ConnectRouteHandler,
 } from '../../connect-to-fetch/src/handler.types';

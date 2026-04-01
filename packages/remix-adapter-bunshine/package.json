@@ -49,8 +49,6 @@
   "devDependencies": {
     "@types/bun": "^1.2.1",
     "bunshine": "^3.3.4",
-    "prettier": "^3.4.2",
-    "prettier-plugin-organize-imports": "^4.1.0",
     "typescript": "^5.7.3",
     "vite": "^6.0.0"
   }

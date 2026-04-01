@@ -1,7 +1,7 @@
 export type Factory = (body: string, init?: ResponseInit) => Response;
 
 export default function factory(contentType: string): Factory {
-  return function (body: string, init: ResponseInit = {}) {
+  return (body: string, init: ResponseInit = {}) => {
     init.headers = new Headers(init.headers || {});
     if (!init.headers.has('Content-Type')) {
       init.headers.set('Content-Type', `${contentType}; charset=utf-8`);

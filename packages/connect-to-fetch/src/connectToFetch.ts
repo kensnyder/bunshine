@@ -1,9 +1,9 @@
 // Adapted from https://github.com/vikejs/vike-node/blob/main/packages/vike-node/src/runtime/adapters/connectToWeb.ts
-import { type IncomingMessage } from 'node:http';
+import type { IncomingMessage } from 'node:http';
 import { Readable } from 'node:stream';
 import createIncomingMessage from './createIncomingMessage';
 import createServerResponse from './createServerResponse';
-import { FlatHandlers, MappedHandler } from './handler.types';
+import type { FlatHandlers, MappedHandler } from './handler.types';
 import { flattenHeaders } from './headers';
 
 const statusCodesWithoutBody = [
@@ -23,7 +23,7 @@ export default function connectToFetch(...connectHandlers: FlatHandlers[]) {
     fn,
   })) as MappedHandler[];
   // function that takes a Request and returns a Promise<Response> by running handlers
-  return function (request: Request) {
+  return (request: Request) => {
     const req = createIncomingMessage(request);
     const { res, onReadable } = createServerResponse(
       req as unknown as IncomingMessage

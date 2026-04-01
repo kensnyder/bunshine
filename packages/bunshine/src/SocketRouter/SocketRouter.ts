@@ -1,7 +1,8 @@
 import type { ServerWebSocket } from 'bun';
-import { RequireAtLeastOne } from 'type-fest';
-import Context from '../Context/Context';
-import HttpRouter, { NextFunction } from '../HttpRouter/HttpRouter';
+import type { RequireAtLeastOne } from 'type-fest';
+import type Context from '../Context/Context';
+import type HttpRouter from '../HttpRouter/HttpRouter';
+import type { NextFunction } from '../HttpRouter/HttpRouter';
 import RouteMatcher from '../RouteMatcher/RouteMatcher';
 import SocketContext, { SocketMessage } from './SocketContext';
 
@@ -93,9 +94,7 @@ export default class SocketRouter {
     handlers: BunshineHandlers<U, P>
   ) => {
     if (!handlers.upgrade) {
-      handlers.upgrade = function () {
-        return {} as U;
-      };
+      handlers.upgrade = () => ({}) as U;
     }
     // capture the matcher details
     // @ts-expect-error  Handlers are more specific than any
