@@ -4,6 +4,7 @@
   "workspaces": [
     "packages/bunshine",
     "packages/cloudshine",
+    "packages/nodeshine",
     "packages/routeshine",
     "packages/connect-to-fetch",
     "packages/remix-adapter-bunshine"

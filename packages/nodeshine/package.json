@@ -1,0 +1,44 @@
+{
+  "name": "nodeshine",
+  "version": "1.0.0",
+  "module": "index.ts",
+  "type": "module",
+  "main": "index.ts",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build:dts": "yes | bunx dts-bundle-generator -o dist/index.d.ts index.ts",
+    "hello": "node --import tsx/esm testFixtures/hello.ts"
+  },
+  "sideEffects": false,
+  "keywords": [
+    "Node.js HTTP Server",
+    "HTTP Router",
+    "WinterCG",
+    "Middleware",
+    "CORS",
+    "ETags",
+    "Server-Sent Events"
+  ],
+  "author": "kendsnyder@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kensnyder/bunshine/issues"
+  },
+  "homepage": "https://github.com/kensnyder/bunshine#readme",
+  "dependencies": {
+    "lru-cache": "^11.2.2",
+    "routeshine": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist",
+    "src",
+    "index.ts",
+    "README.md",
+    "LICENSE.md"
+  ]
+}
